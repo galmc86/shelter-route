@@ -229,11 +229,34 @@ export function MapView({
 
     markersLayer.clearLayers();
 
+    const showDistanceLabels = shelters.length < 20;
+
     shelters.forEach((shelter) => {
-      const icon = selectedShelterId === shelter.id ? selectedShelterIcon : shelterIcon;
+      const distanceMeters = Math.round(shelter.distanceFromRoute);
+      const metersAbbr = tRaw(language, 'shelters.distanceMeters');
+      const isSelected = selectedShelterId === shelter.id;
+
+      let markerIcon: L.DivIcon;
+      if (showDistanceLabels) {
+        const svgHtml = isSelected ? SELECTED_SHELTER_SVG : SHELTER_ICON_SVG;
+        const iconW = isSelected ? 36 : 28;
+        const iconH = isSelected ? 44 : 34;
+        markerIcon = L.divIcon({
+          html: `<div style="display:flex;flex-direction:column;align-items:center;">
+            ${svgHtml}
+            <span class="shelter-distance-label">${distanceMeters} ${metersAbbr}</span>
+          </div>`,
+          className: `shelter-marker-icon${isSelected ? ' selected' : ''}`,
+          iconSize: [Math.max(iconW, 48), iconH + 18],
+          iconAnchor: [Math.max(iconW, 48) / 2, iconH],
+          popupAnchor: [0, -iconH],
+        });
+      } else {
+        markerIcon = isSelected ? selectedShelterIcon : shelterIcon;
+      }
 
       const marker = L.marker([shelter.lat, shelter.lon], {
-        icon,
+        icon: markerIcon,
         title: shelter.name,
       });
 

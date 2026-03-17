@@ -188,27 +188,35 @@ export function SearchPanel({
             />
           </div>
 
-          <button
-            className="search-btn"
-            onClick={handleSearch}
-            disabled={!canSearch}
-            aria-label={canSearch ? t('search.button.ariaEnabled') : t('search.button.ariaDisabled')}
-          >
-            {isSearching ? (
-              <>
-                <span className="loading-spinner small" aria-hidden="true" />
-                {t('search.searching')}
-              </>
-            ) : (
-              <>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <circle cx="10.5" cy="10.5" r="7" stroke="white" strokeWidth="2.5" />
-                  <path d="M16 16l5.5 5.5" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
-                </svg>
-                {t('search.button')}
-              </>
+          <div className="search-btn-wrapper">
+            <button
+              className="search-btn"
+              onClick={handleSearch}
+              disabled={!canSearch}
+              title={!canSearch ? t('search.button.tooltip') : undefined}
+              aria-label={canSearch ? t('search.button.ariaEnabled') : t('search.button.ariaDisabled')}
+            >
+              {isSearching ? (
+                <>
+                  <span className="loading-spinner small" aria-hidden="true" />
+                  {t('search.searching')}
+                </>
+              ) : (
+                <>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <circle cx="10.5" cy="10.5" r="7" stroke="white" strokeWidth="2.5" />
+                    <path d="M16 16l5.5 5.5" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+                  </svg>
+                  {t('search.button')}
+                </>
+              )}
+            </button>
+            {!canSearch && (
+              <span className="search-btn-tooltip" aria-hidden="true">
+                {t('search.button.tooltip')}
+              </span>
             )}
-          </button>
+          </div>
         </>
       )}
 
@@ -267,6 +275,25 @@ export function SearchPanel({
           </svg>
           <span>{t('shelters.noSheltersFound')}</span>
         </div>
+      )}
+
+      {/* Shelter Loading Skeletons */}
+      {sheltersLoading && nearbyShelters.length === 0 && (
+        <>
+          <div className="divider" />
+          <div className="shelter-list" role="status" aria-label={t('shelters.loading')}>
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="shelter-skeleton" aria-hidden="true">
+                <div className="skeleton-icon" />
+                <div className="skeleton-info">
+                  <div className="skeleton-name" />
+                  <div className="skeleton-address" />
+                </div>
+                <div className="skeleton-distance" />
+              </div>
+            ))}
+          </div>
+        </>
       )}
 
       {/* Shelter List */}
