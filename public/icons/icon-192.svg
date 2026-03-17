@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
+  <circle cx="96" cy="96" r="96" fill="#0D47A1"/>
+  <g transform="translate(96,96)">
+    <!-- Shelter roof -->
+    <polygon points="0,-52 48,-16 -48,-16" fill="white"/>
+    <!-- Shelter body -->
+    <rect x="-36" y="-16" width="72" height="48" fill="white" rx="4"/>
+    <!-- Door -->
+    <rect x="-12" y="4" width="24" height="28" fill="#0D47A1" rx="3"/>
+  </g>
+</svg>
