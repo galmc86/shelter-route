@@ -67,6 +67,17 @@ export const translations = {
     'map.ariaLabel': 'מפת מקלטים',
     'map.yourLocation': 'המיקום שלך',
 
+    // Theme
+    'theme.toggleDark': 'מצב כהה',
+    'theme.toggleLight': 'מצב בהיר',
+
+    // Share
+    'share.button': 'שתף מסלול',
+    'share.copied': 'הקישור הועתק!',
+    'share.title': 'מסלול מקלטים',
+    'share.text': 'מסלול עם {{count}} מקלטים',
+    'share.sharedLocation': 'מיקום משותף',
+
     // Errors
     'error.mapLoad': 'שגיאה בטעינת המפה',
     'error.mapLoadDesc': 'ודא שמפתח OpenRouteService מוגדר בקובץ .env',
@@ -136,6 +147,17 @@ export const translations = {
     'map.loadingAriaLabel': 'Loading map',
     'map.ariaLabel': 'Shelter map',
     'map.yourLocation': 'Your location',
+
+    // Theme
+    'theme.toggleDark': 'Dark mode',
+    'theme.toggleLight': 'Light mode',
+
+    // Share
+    'share.button': 'Share route',
+    'share.copied': 'Link copied!',
+    'share.title': 'Shelter Route',
+    'share.text': 'Route with {{count}} shelters',
+    'share.sharedLocation': 'Shared location',
 
     // Errors
     'error.mapLoad': 'Error loading map',

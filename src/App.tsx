@@ -9,12 +9,14 @@ import { useShelters } from './hooks/useShelters';
 import { useCurrentLocation } from './hooks/useCurrentLocation';
 import { useNearestShelters } from './hooks/useNearestShelters';
 import { useLanguage } from './i18n';
+import { useTheme } from './theme';
 import type { TravelMode, LatLng } from './types';
 import type { ShelterWithDistance } from './hooks/useShelters';
 import './App.css';
 
 function App() {
   const { language, t } = useLanguage();
+  const { theme } = useTheme();
   const { isLoaded, error: mapsError } = useGoogleMaps();
   const { routeInfo, isLoading: isRouteLoading, error: routeError, searchRoute } = useRoute();
   const { allShelters, nearbyShelters, isLoading: sheltersLoading, filterByRoute } = useShelters();
@@ -23,6 +25,39 @@ function App() {
   const [selectedShelterId, setSelectedShelterId] = useState<string | null>(null);
   const [emergencyMode, setEmergencyMode] = useState(false);
   const [panelExpanded, setPanelExpanded] = useState(true);
+  const [shareOrigin, setShareOrigin] = useState<LatLng | null>(null);
+  const [shareDestination, setShareDestination] = useState<LatLng | null>(null);
+  const [shareTravelMode, setShareTravelMode] = useState<TravelMode>('WALKING');
+
+  // Parse URL params on mount for shared routes
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const from = params.get('from');
+    const to = params.get('to');
+    const mode = params.get('mode') as TravelMode | null;
+
+    if (from && to) {
+      const [fromLat, fromLng] = from.split(',').map(Number);
+      const [toLat, toLng] = to.split(',').map(Number);
+
+      if (!isNaN(fromLat) && !isNaN(fromLng) && !isNaN(toLat) && !isNaN(toLng)) {
+        const origin: LatLng = { lat: fromLat, lng: fromLng };
+        const destination: LatLng = { lat: toLat, lng: toLng };
+        const travelMode: TravelMode = (mode && ['WALKING', 'BICYCLING', 'DRIVING'].includes(mode)) ? mode : 'WALKING';
+
+        setShareOrigin(origin);
+        setShareDestination(destination);
+        setShareTravelMode(travelMode);
+
+        // Auto-trigger route search
+        setPanelExpanded(false);
+        searchRoute(origin, destination, travelMode);
+
+        // Clean up URL params without reload
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Filter shelters whenever route changes
   useEffect(() => {
@@ -42,6 +77,9 @@ function App() {
       setEmergencyMode(false);
       clearNearest();
       setPanelExpanded(false);
+      setShareOrigin(origin);
+      setShareDestination(destination);
+      setShareTravelMode(travelMode);
       searchRoute(origin, destination, travelMode);
     },
     [searchRoute, clearNearest]
@@ -68,7 +106,7 @@ function App() {
 
   if (mapsError) {
     return (
-      <div className="app" dir={language === 'he' ? 'rtl' : 'ltr'}>
+      <div className="app" dir={language === 'he' ? 'rtl' : 'ltr'} data-theme={theme}>
         <AppHeader />
         <div className="error-screen">
           <div className="error-icon">
@@ -85,7 +123,7 @@ function App() {
   }
 
   return (
-    <div className="app" dir={language === 'he' ? 'rtl' : 'ltr'}>
+    <div className="app" dir={language === 'he' ? 'rtl' : 'ltr'} data-theme={theme}>
       <AppHeader />
       <main className="main-content">
         <SearchPanel
@@ -107,6 +145,9 @@ function App() {
           onExitEmergency={handleExitEmergency}
           panelExpanded={panelExpanded}
           onTogglePanel={() => setPanelExpanded((v) => !v)}
+          shareOrigin={shareOrigin}
+          shareDestination={shareDestination}
+          shareTravelMode={shareTravelMode}
         />
         <MapView
           isLoaded={isLoaded}
