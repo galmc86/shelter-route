@@ -47,6 +47,8 @@ export const translations = {
     'shelters.publicShelter': 'מקלט ציבורי',
     'shelters.navigateToShelter': 'נווט למקלט',
     'shelters.loading': 'טוען',
+    'search.button.tooltip': 'נא להזין נקודת התחלה ויעד',
+    'shelters.distanceMeters': 'מ׳',
 
     // Location
     'location.useMyLocation': 'השתמש במיקום הנוכחי שלי',
@@ -128,6 +130,8 @@ export const translations = {
     'shelters.publicShelter': 'Public shelter',
     'shelters.navigateToShelter': 'Navigate to shelter',
     'shelters.loading': 'Loading',
+    'search.button.tooltip': 'Please enter start point and destination',
+    'shelters.distanceMeters': 'm',
 
     // Location
     'location.useMyLocation': 'Use my current location',
