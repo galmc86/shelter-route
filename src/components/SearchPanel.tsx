@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { LocationInput } from './LocationInput';
 import { TravelModeSelector } from './TravelModeSelector';
 import { useLanguage } from '../i18n';
-import type { TravelMode, RouteInfo, LatLng } from '../types';
+import type { TravelMode, RouteInfo, RouteOption, LatLng } from '../types';
 import type { ShelterWithDistance } from '../hooks/useShelters';
 import type { LocationPoint } from '../types';
 import type { NominatimResult } from '../services/nominatimService';
@@ -12,6 +12,9 @@ interface SearchPanelProps {
   onSearch: (origin: LatLng, destination: LatLng, travelMode: TravelMode) => void;
   isSearching: boolean;
   routeInfo: RouteInfo | null;
+  routes?: RouteOption[];
+  selectedRouteIndex?: number;
+  onSelectRoute?: (index: number) => void;
   nearbyShelters: ShelterWithDistance[];
   sheltersLoading: boolean;
   currentLocation: LocationPoint | null;
@@ -36,6 +39,9 @@ export function SearchPanel({
   onSearch,
   isSearching,
   routeInfo,
+  routes,
+  selectedRouteIndex,
+  onSelectRoute,
   nearbyShelters,
   sheltersLoading,
   currentLocation,
@@ -284,6 +290,24 @@ export function SearchPanel({
           <div className="divider" />
           <div className="route-info" aria-label={t('route.details')}>
             <div className="route-info-header">{t('route.details')}</div>
+            {routes && routes.length > 1 && (
+              <div className="route-options" role="radiogroup" aria-label={t('route.alternatives')}>
+                {routes.map((route, index) => (
+                  <button
+                    key={index}
+                    className={`route-option ${selectedRouteIndex === index ? 'route-option-selected' : ''}`}
+                    onClick={() => onSelectRoute?.(index)}
+                    role="radio"
+                    aria-checked={selectedRouteIndex === index}
+                  >
+                    <span className="route-option-label">{t('route.optionLabel')} {index + 1}</span>
+                    <span className="route-option-stats">
+                      {route.duration} · {route.distance}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
             <div className="route-stats">
               <div className="stat">
                 <span className="stat-icon" aria-hidden="true">

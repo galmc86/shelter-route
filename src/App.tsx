@@ -18,7 +18,7 @@ function App() {
   const { language, t } = useLanguage();
   const { theme } = useTheme();
   const { isLoaded, error: mapsError } = useGoogleMaps();
-  const { routeInfo, isLoading: isRouteLoading, error: routeError, searchRoute } = useRoute();
+  const { routes, selectedRouteIndex, selectedRoute, selectRoute, isLoading: isRouteLoading, error: routeError, searchRoute } = useRoute();
   const { allShelters, nearbyShelters, isLoading: sheltersLoading, filterByRoute } = useShelters();
   const { location: currentLocation, isLoading: isLoadingLocation, error: locationError, getLocation } = useCurrentLocation();
   const { nearestShelters, isSearching: isEmergencySearching, findNearest, clear: clearNearest } = useNearestShelters();
@@ -61,8 +61,8 @@ function App() {
 
   // Filter shelters whenever route changes
   useEffect(() => {
-    filterByRoute(routeInfo);
-  }, [routeInfo, filterByRoute]);
+    filterByRoute(selectedRoute);
+  }, [selectedRoute, filterByRoute]);
 
   // When emergency mode activates and we get location, find nearest shelters
   useEffect(() => {
@@ -130,7 +130,10 @@ function App() {
           isLoaded={isLoaded}
           onSearch={handleSearch}
           isSearching={isRouteLoading}
-          routeInfo={emergencyMode ? null : routeInfo}
+          routeInfo={emergencyMode ? null : selectedRoute}
+          routes={emergencyMode ? [] : routes}
+          selectedRouteIndex={selectedRouteIndex}
+          onSelectRoute={selectRoute}
           nearbyShelters={displayShelters}
           sheltersLoading={sheltersLoading || isEmergencySearching}
           currentLocation={currentLocation}
@@ -151,7 +154,10 @@ function App() {
         />
         <MapView
           isLoaded={isLoaded}
-          routeInfo={emergencyMode ? null : routeInfo}
+          routeInfo={emergencyMode ? null : selectedRoute}
+          routes={emergencyMode ? [] : routes}
+          selectedRouteIndex={selectedRouteIndex}
+          onSelectRoute={selectRoute}
           shelters={displayShelters}
           onShelterClick={handleShelterClick}
           selectedShelterId={selectedShelterId}

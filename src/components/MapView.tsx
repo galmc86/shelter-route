@@ -6,12 +6,15 @@ import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import { useLanguage } from '../i18n';
 import type { Language, TranslationKey } from '../i18n';
 import { translations } from '../i18n/translations';
-import type { RouteInfo, LocationPoint } from '../types';
+import type { RouteInfo, RouteOption, LocationPoint } from '../types';
 import type { ShelterWithDistance } from '../hooks/useShelters';
 
 interface MapViewProps {
   isLoaded: boolean;
   routeInfo: RouteInfo | null;
+  routes?: RouteOption[];
+  selectedRouteIndex?: number;
+  onSelectRoute?: (index: number) => void;
   shelters: ShelterWithDistance[];
   onShelterClick?: (shelter: ShelterWithDistance) => void;
   selectedShelterId?: string | null;
@@ -135,6 +138,9 @@ function buildUserLocationPopupHtml(lang: Language): string {
 export function MapView({
   isLoaded,
   routeInfo,
+  routes,
+  selectedRouteIndex = 0,
+  onSelectRoute,
   shelters,
   onShelterClick,
   selectedShelterId,
@@ -143,7 +149,7 @@ export function MapView({
   const { language, t } = useLanguage();
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
-  const routeLayerRef = useRef<L.Polyline | null>(null);
+  const routeLayersRef = useRef<L.Polyline[]>([]);
   const routeMarkersRef = useRef<L.Marker[]>([]);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
   const userMarkerRef = useRef<L.Marker | null>(null);
@@ -191,23 +197,50 @@ export function MapView({
     const map = mapInstanceRef.current;
     if (!map) return;
 
-    if (routeLayerRef.current) {
-      routeLayerRef.current.remove();
-      routeLayerRef.current = null;
-    }
+    // Clear existing route layers
+    routeLayersRef.current.forEach((l) => l.remove());
+    routeLayersRef.current = [];
     routeMarkersRef.current.forEach((m) => m.remove());
     routeMarkersRef.current = [];
 
-    if (routeInfo && routeInfo.path.length >= 2) {
-      const latLngs: L.LatLngExpression[] = routeInfo.path.map((p) => [p.lat, p.lng]);
-      routeLayerRef.current = L.polyline(latLngs, {
+    const routesToRender = routes && routes.length > 0 ? routes : routeInfo ? [routeInfo] : [];
+    if (routesToRender.length === 0) return;
+
+    const activeIndex = routes && routes.length > 0 ? selectedRouteIndex : 0;
+
+    // Render non-selected routes first (so they appear behind)
+    routesToRender.forEach((route, index) => {
+      if (index === activeIndex) return;
+      if (route.path.length < 2) return;
+
+      const latLngs: L.LatLngExpression[] = route.path.map((p) => [p.lat, p.lng]);
+      const polyline = L.polyline(latLngs, {
+        color: '#9E9E9E',
+        weight: 4,
+        opacity: 0.4,
+      }).addTo(map);
+
+      polyline.on('click', () => {
+        onSelectRoute?.(index);
+      });
+
+      routeLayersRef.current.push(polyline);
+    });
+
+    // Render selected route on top
+    const selected = routesToRender[activeIndex];
+    if (selected && selected.path.length >= 2) {
+      const latLngs: L.LatLngExpression[] = selected.path.map((p) => [p.lat, p.lng]);
+      const polyline = L.polyline(latLngs, {
         color: '#4285F4',
         weight: 5,
         opacity: 0.8,
       }).addTo(map);
 
-      const start = routeInfo.path[0];
-      const end = routeInfo.path[routeInfo.path.length - 1];
+      routeLayersRef.current.push(polyline);
+
+      const start = selected.path[0];
+      const end = selected.path[selected.path.length - 1];
 
       const startMarker = L.marker([start.lat, start.lng], {
         icon: startMarkerIcon,
@@ -222,12 +255,12 @@ export function MapView({
       routeMarkersRef.current = [startMarker, endMarker];
 
       const bounds = L.latLngBounds(
-        [routeInfo.bounds.southWest.lat, routeInfo.bounds.southWest.lng],
-        [routeInfo.bounds.northEast.lat, routeInfo.bounds.northEast.lng]
+        [selected.bounds.southWest.lat, selected.bounds.southWest.lng],
+        [selected.bounds.northEast.lat, selected.bounds.northEast.lng]
       );
       map.fitBounds(bounds, { padding: [40, 40] });
     }
-  }, [routeInfo]);
+  }, [routeInfo, routes, selectedRouteIndex, onSelectRoute]);
 
   // Update user location marker
   useEffect(() => {
