@@ -69,44 +69,11 @@ function formatDistance(meters: number): string {
   return `${(meters / 1000).toFixed(1)} ק"מ`;
 }
 
-export async function computeRoutes(
-  origin: LatLng,
-  destination: LatLng,
-  travelMode: TravelMode
-): Promise<RouteOption[]> {
-  const profile = PROFILE_MAP[travelMode];
-  const apiKey = import.meta.env.VITE_ORS_API_KEY;
-
-  const response = await fetch(`${ORS_API}/${profile}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: apiKey,
-    },
-    body: JSON.stringify({
-      coordinates: [
-        [origin.lng, origin.lat],
-        [destination.lng, destination.lat],
-      ],
-      alternative_routes: {
-        target_count: 3,
-        share_factor: 0.6,
-        weight_factor: 1.4,
-      },
-    }),
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => null);
-    const message = errorData?.error?.message || 'לא נמצא מסלול';
-    throw new Error(message);
-  }
-
-  const data = await response.json();
+function parseRoutes(data: { routes?: Array<{ geometry: string; summary: { duration: number; distance: number } }> }): RouteOption[] {
   const routes = data.routes;
   if (!routes || routes.length === 0) throw new Error('לא נמצא מסלול');
 
-  return routes.map((route: { geometry: string; summary: { duration: number; distance: number } }) => {
+  return routes.map((route) => {
     const path = decodePolyline(route.geometry);
     const bounds = computeBounds(path);
     const summary = route.summary;
@@ -120,4 +87,62 @@ export async function computeRoutes(
       distanceMeters: summary.distance,
     };
   });
+}
+
+async function fetchRoutes(
+  origin: LatLng,
+  destination: LatLng,
+  profile: string,
+  apiKey: string,
+  withAlternatives: boolean
+): Promise<Response> {
+  const body: Record<string, unknown> = {
+    coordinates: [
+      [origin.lng, origin.lat],
+      [destination.lng, destination.lat],
+    ],
+  };
+
+  if (withAlternatives) {
+    body.alternative_routes = {
+      target_count: 3,
+      share_factor: 0.6,
+      weight_factor: 1.4,
+    };
+  }
+
+  return fetch(`${ORS_API}/${profile}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: apiKey,
+    },
+    body: JSON.stringify(body),
+  });
+}
+
+export async function computeRoutes(
+  origin: LatLng,
+  destination: LatLng,
+  travelMode: TravelMode
+): Promise<RouteOption[]> {
+  const profile = PROFILE_MAP[travelMode];
+  const apiKey = import.meta.env.VITE_ORS_API_KEY;
+
+  // Try with alternative routes first
+  let response = await fetchRoutes(origin, destination, profile, apiKey, true);
+
+  // If alternative routes request fails, fall back to single route
+  if (!response.ok) {
+    response = await fetchRoutes(origin, destination, profile, apiKey, false);
+  }
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null);
+    const message = errorData?.error?.message || 'לא נמצא מסלול';
+    throw new Error(message);
+  }
+
+  const data = await response.json();
+  return parseRoutes(data);
 }
