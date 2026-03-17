@@ -476,6 +476,49 @@ body {
   margin-bottom: 12px;
 }
 
+.route-options {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.route-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  font-family: inherit;
+  font-size: 13px;
+  text-align: start;
+  color: var(--color-text);
+}
+
+.route-option:hover {
+  border-color: var(--color-primary-light);
+  background: var(--color-primary-bg);
+}
+
+.route-option-selected {
+  border-color: var(--color-primary);
+  background: var(--color-primary-bg);
+}
+
+.route-option-label {
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.route-option-stats {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
 .route-stats {
   display: flex;
   gap: 24px;

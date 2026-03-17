@@ -1,4 +1,4 @@
-import type { RouteInfo, TravelMode, LatLng, LatLngBounds } from '../types';
+import type { RouteOption, TravelMode, LatLng, LatLngBounds } from '../types';
 
 const ORS_API = 'https://api.openrouteservice.org/v2/directions';
 
@@ -69,11 +69,11 @@ function formatDistance(meters: number): string {
   return `${(meters / 1000).toFixed(1)} ק"מ`;
 }
 
-export async function computeRoute(
+export async function computeRoutes(
   origin: LatLng,
   destination: LatLng,
   travelMode: TravelMode
-): Promise<RouteInfo> {
+): Promise<RouteOption[]> {
   const profile = PROFILE_MAP[travelMode];
   const apiKey = import.meta.env.VITE_ORS_API_KEY;
 
@@ -88,6 +88,11 @@ export async function computeRoute(
         [origin.lng, origin.lat],
         [destination.lng, destination.lat],
       ],
+      alternative_routes: {
+        target_count: 3,
+        share_factor: 0.6,
+        weight_factor: 1.4,
+      },
     }),
   });
 
@@ -98,17 +103,21 @@ export async function computeRoute(
   }
 
   const data = await response.json();
-  const route = data.routes?.[0];
-  if (!route) throw new Error('לא נמצא מסלול');
+  const routes = data.routes;
+  if (!routes || routes.length === 0) throw new Error('לא נמצא מסלול');
 
-  const path = decodePolyline(route.geometry);
-  const bounds = computeBounds(path);
-  const summary = route.summary;
+  return routes.map((route: { geometry: string; summary: { duration: number; distance: number } }) => {
+    const path = decodePolyline(route.geometry);
+    const bounds = computeBounds(path);
+    const summary = route.summary;
 
-  return {
-    path,
-    bounds,
-    duration: formatDuration(summary.duration),
-    distance: formatDistance(summary.distance),
-  };
+    return {
+      path,
+      bounds,
+      duration: formatDuration(summary.duration),
+      distance: formatDistance(summary.distance),
+      durationSeconds: summary.duration,
+      distanceMeters: summary.distance,
+    };
+  });
 }
