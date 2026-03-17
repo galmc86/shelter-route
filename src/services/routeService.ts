@@ -106,8 +106,8 @@ async function fetchRoutes(
   if (withAlternatives) {
     body.alternative_routes = {
       target_count: 3,
-      share_factor: 0.6,
-      weight_factor: 1.4,
+      share_factor: 0.8,
+      weight_factor: 2.0,
     };
   }
 
