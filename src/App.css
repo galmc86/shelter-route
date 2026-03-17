@@ -320,7 +320,7 @@ body {
   padding: 14px 40px 14px 14px;
   border: 1.5px solid var(--color-input-border);
   border-radius: 10px;
-  font-size: 15px;
+  font-size: 16px;
   font-family: inherit;
   direction: rtl;
   transition: border-color 0.2s, box-shadow 0.2s;
@@ -1223,7 +1223,7 @@ body {
   /* Compact inputs on mobile */
   .location-input {
     padding: 10px 36px 10px 10px;
-    font-size: 14px;
+    font-size: 16px;
     border-radius: 8px;
   }
 
