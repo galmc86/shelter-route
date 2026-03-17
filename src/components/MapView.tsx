@@ -317,6 +317,13 @@ export function MapView({
       });
 
       markersLayer.addLayer(marker);
+
+      // Programmatically open popup for the selected shelter,
+      // since the useEffect re-creates markers and interrupts
+      // Leaflet's default click-to-open popup behavior.
+      if (isSelected) {
+        setTimeout(() => marker.openPopup(), 0);
+      }
     });
   }, [shelters, selectedShelterId, onShelterClick, routeInfo, language]);
 
