@@ -38,6 +38,16 @@ const USER_LOCATION_SVG = `<svg width="24" height="24" viewBox="0 0 24 24" xmlns
   <circle cx="12" cy="12" r="5" fill="#4285F4"/>
 </svg>`;
 
+const START_MARKER_SVG = `<svg width="28" height="34" viewBox="0 0 28 34" xmlns="http://www.w3.org/2000/svg">
+  <path d="M14 0C6.3 0 0 6.3 0 14c0 10.5 14 20 14 20s14-9.5 14-20C28 6.3 21.7 0 14 0z" fill="#2E7D32"/>
+  <circle cx="14" cy="13" r="5" fill="white"/>
+</svg>`;
+
+const END_MARKER_SVG = `<svg width="28" height="34" viewBox="0 0 28 34" xmlns="http://www.w3.org/2000/svg">
+  <path d="M14 0C6.3 0 0 6.3 0 14c0 10.5 14 20 14 20s14-9.5 14-20C28 6.3 21.7 0 14 0z" fill="#C62828"/>
+  <circle cx="14" cy="13" r="5" fill="white"/>
+</svg>`;
+
 const shelterIcon = L.divIcon({
   html: SHELTER_ICON_SVG,
   className: 'shelter-marker-icon',
@@ -59,6 +69,22 @@ const userLocationIcon = L.divIcon({
   className: 'user-location-icon',
   iconSize: [24, 24],
   iconAnchor: [12, 12],
+});
+
+const startMarkerIcon = L.divIcon({
+  html: START_MARKER_SVG,
+  className: 'route-endpoint-icon',
+  iconSize: [28, 34],
+  iconAnchor: [14, 34],
+  popupAnchor: [0, -34],
+});
+
+const endMarkerIcon = L.divIcon({
+  html: END_MARKER_SVG,
+  className: 'route-endpoint-icon',
+  iconSize: [28, 34],
+  iconAnchor: [14, 34],
+  popupAnchor: [0, -34],
 });
 
 function tRaw(lang: Language, key: TranslationKey): string {
@@ -118,6 +144,7 @@ export function MapView({
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const routeLayerRef = useRef<L.Polyline | null>(null);
+  const routeMarkersRef = useRef<L.Marker[]>([]);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
   const userMarkerRef = useRef<L.Marker | null>(null);
 
@@ -168,14 +195,31 @@ export function MapView({
       routeLayerRef.current.remove();
       routeLayerRef.current = null;
     }
+    routeMarkersRef.current.forEach((m) => m.remove());
+    routeMarkersRef.current = [];
 
-    if (routeInfo) {
+    if (routeInfo && routeInfo.path.length >= 2) {
       const latLngs: L.LatLngExpression[] = routeInfo.path.map((p) => [p.lat, p.lng]);
       routeLayerRef.current = L.polyline(latLngs, {
         color: '#4285F4',
         weight: 5,
         opacity: 0.8,
       }).addTo(map);
+
+      const start = routeInfo.path[0];
+      const end = routeInfo.path[routeInfo.path.length - 1];
+
+      const startMarker = L.marker([start.lat, start.lng], {
+        icon: startMarkerIcon,
+        zIndexOffset: 900,
+      }).addTo(map);
+
+      const endMarker = L.marker([end.lat, end.lng], {
+        icon: endMarkerIcon,
+        zIndexOffset: 900,
+      }).addTo(map);
+
+      routeMarkersRef.current = [startMarker, endMarker];
 
       const bounds = L.latLngBounds(
         [routeInfo.bounds.southWest.lat, routeInfo.bounds.southWest.lng],
