@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { LocationInput } from './LocationInput';
 import { TravelModeSelector } from './TravelModeSelector';
 import { useLanguage } from '../i18n';
@@ -26,6 +26,9 @@ interface SearchPanelProps {
   onExitEmergency?: () => void;
   panelExpanded?: boolean;
   onTogglePanel?: () => void;
+  shareOrigin?: { lat: number; lng: number } | null;
+  shareDestination?: { lat: number; lng: number } | null;
+  shareTravelMode?: TravelMode;
 }
 
 export function SearchPanel({
@@ -47,14 +50,61 @@ export function SearchPanel({
   onExitEmergency,
   panelExpanded,
   onTogglePanel,
+  shareOrigin,
+  shareDestination,
+  shareTravelMode,
 }: SearchPanelProps) {
   const { t } = useLanguage();
+  const [showCopiedToast, setShowCopiedToast] = useState(false);
   const [originText, setOriginText] = useState('');
   const [destText, setDestText] = useState('');
   const [originPlace, setOriginPlace] = useState<NominatimResult | null>(null);
   const [destPlace, setDestPlace] = useState<NominatimResult | null>(null);
   const [travelMode, setTravelMode] = useState<TravelMode>('WALKING');
   const [useMyLocation, setUseMyLocation] = useState(false);
+
+  // Auto-hide copied toast after 2 seconds
+  useEffect(() => {
+    if (showCopiedToast) {
+      const timer = setTimeout(() => setShowCopiedToast(false), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [showCopiedToast]);
+
+  const handleShare = useCallback(async () => {
+    if (!shareOrigin || !shareDestination) return;
+
+    const params = new URLSearchParams({
+      from: `${shareOrigin.lat},${shareOrigin.lng}`,
+      to: `${shareDestination.lat},${shareDestination.lng}`,
+      mode: shareTravelMode || 'WALKING',
+    });
+
+    const shareUrl = `${window.location.origin}${window.location.pathname}?${params.toString()}`;
+    const shelterCount = nearbyShelters.length;
+    const shareText = t('share.text').replace('{{count}}', String(shelterCount));
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: t('share.title'),
+          text: shareText,
+          url: shareUrl,
+        });
+        return;
+      } catch {
+        // User cancelled or share failed, fall through to clipboard
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setShowCopiedToast(true);
+    } catch {
+      // Clipboard API not available, show URL in alert as last resort
+      alert(shareUrl);
+    }
+  }, [shareOrigin, shareDestination, shareTravelMode, nearbyShelters.length, t]);
 
   const handleUseCurrentLocation = useCallback(() => {
     onGetLocation();
@@ -255,8 +305,23 @@ export function SearchPanel({
               </div>
               <span className="shelter-count-text">{t('route.sheltersAlongRoute')}</span>
             </div>
+            {shareOrigin && shareDestination && (
+              <button className="share-btn" onClick={handleShare} aria-label={t('share.button')}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M18 8a3 3 0 1 0-2.12-5.12M18 8a3 3 0 0 1-2.12-.88L8.12 11.88M18 8l-.88.88M6 14a3 3 0 1 0 2.12-1.12M6 14a3 3 0 0 1 2.12-1.12M6 14l.88-.88M18 20a3 3 0 1 0-2.12-1.12M18 20a3 3 0 0 1-2.12-1.12l-7.76-4.76" stroke="#1565C0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                {t('share.button')}
+              </button>
+            )}
           </div>
         </>
+      )}
+
+      {/* Copied Toast */}
+      {showCopiedToast && (
+        <div className="copied-toast" role="status" aria-live="polite">
+          {t('share.copied')}
+        </div>
       )}
 
       {/* No shelters message */}
