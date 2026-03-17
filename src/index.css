@@ -5,5 +5,14 @@ body {
 
 #root {
   width: 100%;
-  height: 100vh;
+  height: 100dvh;
+  height: 100vh; /* fallback for older browsers */
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  box-sizing: border-box;
+}
+
+@supports (height: 100dvh) {
+  #root {
+    height: 100dvh;
+  }
 }

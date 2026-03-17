@@ -1161,13 +1161,20 @@ body {
   }
 
   .search-panel.panel-expanded {
-    max-height: 75vh;
+    max-height: 75dvh;
+    max-height: 75vh; /* fallback */
+  }
+
+  @supports (max-height: 75dvh) {
+    .search-panel.panel-expanded {
+      max-height: 75dvh;
+    }
   }
 
   .search-panel.panel-collapsed {
-    max-height: 72px;
+    max-height: calc(90px + env(safe-area-inset-bottom, 0px));
     overflow: hidden;
-    padding-bottom: 0;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
   /* Drag handle visible on mobile */
@@ -1271,7 +1278,7 @@ body {
 
   /* Emergency FAB — above the bottom sheet */
   .emergency-fab {
-    bottom: 92px;
+    bottom: calc(110px + env(safe-area-inset-bottom, 0px));
     left: 16px;
     width: 48px;
     height: 48px;
