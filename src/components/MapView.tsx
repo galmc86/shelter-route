@@ -150,6 +150,7 @@ export function MapView({
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const routeLayersRef = useRef<L.Polyline[]>([]);
+  const routeLabelsRef = useRef<L.Marker[]>([]);
   const routeMarkersRef = useRef<L.Marker[]>([]);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
   const userMarkerRef = useRef<L.Marker | null>(null);
@@ -200,6 +201,8 @@ export function MapView({
     // Clear existing route layers
     routeLayersRef.current.forEach((l) => l.remove());
     routeLayersRef.current = [];
+    routeLabelsRef.current.forEach((m) => m.remove());
+    routeLabelsRef.current = [];
     routeMarkersRef.current.forEach((m) => m.remove());
     routeMarkersRef.current = [];
 
@@ -254,13 +257,50 @@ export function MapView({
 
       routeMarkersRef.current = [startMarker, endMarker];
 
+      // Add route option labels on map when there are alternatives
+      if (routes && routes.length > 1) {
+        routes.forEach((route, index) => {
+          if (route.path.length < 2) return;
+          // Place label at ~40% of the path for the route to spread labels apart
+          const labelIndex = Math.floor(route.path.length * (index === 0 ? 0.35 : index === 1 ? 0.5 : 0.65));
+          const labelPoint = route.path[labelIndex];
+          const isActive = index === activeIndex;
+
+          const labelHtml = `<div class="route-map-label ${isActive ? 'route-map-label-active' : 'route-map-label-inactive'}">
+            <span class="route-map-label-number">${tRaw(language, 'route.optionLabel')} ${index + 1}</span>
+            <span class="route-map-label-stats">${route.duration} · ${route.distance}</span>
+          </div>`;
+
+          const labelIcon = L.divIcon({
+            html: labelHtml,
+            className: 'route-map-label-container',
+            iconSize: [0, 0],
+            iconAnchor: [0, 0],
+          });
+
+          const labelMarker = L.marker([labelPoint.lat, labelPoint.lng], {
+            icon: labelIcon,
+            interactive: !isActive,
+            zIndexOffset: isActive ? 800 : 700,
+          }).addTo(map);
+
+          if (!isActive) {
+            labelMarker.on('click', () => {
+              onSelectRoute?.(index);
+            });
+          }
+
+          routeLabelsRef.current.push(labelMarker);
+        });
+      }
+
       const bounds = L.latLngBounds(
         [selected.bounds.southWest.lat, selected.bounds.southWest.lng],
         [selected.bounds.northEast.lat, selected.bounds.northEast.lng]
       );
       map.fitBounds(bounds, { padding: [40, 40] });
     }
-  }, [routeInfo, routes, selectedRouteIndex, onSelectRoute]);
+  }, [routeInfo, routes, selectedRouteIndex, onSelectRoute, language]);
 
   // Update user location marker
   useEffect(() => {
