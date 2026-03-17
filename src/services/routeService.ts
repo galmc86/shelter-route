@@ -111,14 +111,22 @@ async function fetchRoutes(
     };
   }
 
-  return fetch(`${ORS_API}/${profile}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: apiKey,
-    },
-    body: JSON.stringify(body),
-  });
+  const doFetch = () =>
+    fetch(`${ORS_API}/${profile}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: apiKey,
+      },
+      body: JSON.stringify(body),
+    });
+
+  // Retry once on network error (handles Safari 18+ keep-alive bug)
+  try {
+    return await doFetch();
+  } catch {
+    return doFetch();
+  }
 }
 
 export async function computeRoutes(
@@ -129,12 +137,27 @@ export async function computeRoutes(
   const profile = PROFILE_MAP[travelMode];
   const apiKey = import.meta.env.VITE_ORS_API_KEY;
 
-  // Try with alternative routes first
-  let response = await fetchRoutes(origin, destination, profile, apiKey, true);
+  let response: Response;
 
-  // If alternative routes request fails, fall back to single route
+  try {
+    // Try with alternative routes first
+    response = await fetchRoutes(origin, destination, profile, apiKey, true);
+  } catch {
+    // Network error on alternatives request — try without
+    try {
+      response = await fetchRoutes(origin, destination, profile, apiKey, false);
+    } catch {
+      throw new Error('שגיאת רשת – בדוק את חיבור האינטרנט');
+    }
+  }
+
+  // If alternative routes HTTP error, fall back to single route
   if (!response.ok) {
-    response = await fetchRoutes(origin, destination, profile, apiKey, false);
+    try {
+      response = await fetchRoutes(origin, destination, profile, apiKey, false);
+    } catch {
+      throw new Error('שגיאת רשת – בדוק את חיבור האינטרנט');
+    }
   }
 
   if (!response.ok) {
