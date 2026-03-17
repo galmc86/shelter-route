@@ -1,0 +1,923 @@
+/* Reset & Base */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Arial', sans-serif;
+  background: #F5F5F5;
+  color: #212121;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Header */
+.header {
+  background: linear-gradient(135deg, #1565C0, #0D47A1);
+  color: white;
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  z-index: 10;
+  flex-shrink: 0;
+}
+
+.header-icon {
+  width: 36px;
+  height: 36px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.header-title {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.header-subtitle {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.lang-toggle-btn {
+  margin-inline-start: auto;
+  background: rgba(255,255,255,0.2);
+  color: white;
+  border: 1px solid rgba(255,255,255,0.4);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.lang-toggle-btn:hover {
+  background: rgba(255,255,255,0.35);
+}
+
+/* Main Layout */
+.main-content {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Search Panel */
+.search-panel {
+  width: 380px;
+  min-width: 380px;
+  background: white;
+  padding: 20px;
+  overflow-y: auto;
+  box-shadow: -2px 0 12px rgba(0,0,0,0.08);
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.panel-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.section-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #757575;
+}
+
+/* Inputs */
+.inputs-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.input-group-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.location-input {
+  width: 100%;
+  padding: 14px 40px 14px 14px;
+  border: 1.5px solid #E0E0E0;
+  border-radius: 10px;
+  font-size: 15px;
+  font-family: inherit;
+  direction: rtl;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  background: #FAFAFA;
+}
+
+.location-input:focus {
+  outline: none;
+  border-color: #1565C0;
+  box-shadow: 0 0 0 3px rgba(21,101,192,0.12);
+  background: white;
+}
+
+.location-input::placeholder {
+  color: #BDBDBD;
+}
+
+.input-icon {
+  position: absolute;
+  right: 14px;
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+}
+
+/* My Location Button */
+.my-location-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: 1.5px solid #1565C0;
+  color: #1565C0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: inherit;
+  transition: background 0.2s;
+  min-height: 44px;
+}
+
+.my-location-btn:hover {
+  background: #E3F2FD;
+}
+
+.my-location-btn:disabled {
+  background: #F5F5F5;
+  color: #9E9E9E;
+  border-color: #E0E0E0;
+  cursor: not-allowed;
+}
+
+/* Travel Mode */
+.travel-modes {
+  display: flex;
+  gap: 8px;
+}
+
+.mode-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 8px;
+  border: 2px solid #E0E0E0;
+  border-radius: 12px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+  color: #616161;
+  min-height: 44px;
+}
+
+.mode-btn:hover {
+  border-color: #90CAF9;
+  background: #F5F9FF;
+}
+
+.mode-btn.active {
+  border-color: #1565C0;
+  background: #E3F2FD;
+  color: #1565C0;
+}
+
+.mode-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mode-label {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* Search Button */
+.search-btn {
+  width: 100%;
+  padding: 16px;
+  background: linear-gradient(135deg, #1565C0, #1976D2);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: transform 0.1s, box-shadow 0.2s;
+  box-shadow: 0 4px 12px rgba(21,101,192,0.3);
+  min-height: 44px;
+}
+
+.search-btn:hover:not(:disabled) {
+  box-shadow: 0 6px 16px rgba(21,101,192,0.4);
+}
+
+.search-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.search-btn:disabled {
+  background: #BDBDBD;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+/* Divider */
+.divider {
+  height: 1px;
+  background: #EEEEEE;
+}
+
+/* Route Info */
+.route-info {
+  background: #F5F9FF;
+  border: 1px solid #E3F2FD;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.route-info-header {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1565C0;
+  margin-bottom: 12px;
+}
+
+.route-stats {
+  display: flex;
+  gap: 24px;
+}
+
+.stat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stat-icon {
+  display: flex;
+  align-items: center;
+}
+
+.stat-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: #212121;
+}
+
+/* Shelter Count */
+.shelter-count {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #E3F2FD;
+}
+
+.shelter-badge {
+  background: #0D47A1;
+  color: white;
+  min-width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  padding: 0 8px;
+}
+
+.shelter-count-text {
+  font-size: 14px;
+  color: #424242;
+}
+
+/* Shelter List */
+.shelter-list-header {
+  font-size: 14px;
+  font-weight: 600;
+  color: #424242;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.shelter-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.shelter-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  background: #FAFAFA;
+  border-radius: 10px;
+  border: 1px solid #EEEEEE;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+  text-align: right;
+  width: 100%;
+  font-family: inherit;
+  min-height: 48px;
+}
+
+.shelter-item:hover {
+  background: #E3F2FD;
+  border-color: #90CAF9;
+}
+
+.shelter-item.selected {
+  background: #E3F2FD;
+  border-color: #1565C0;
+}
+
+.shelter-item:focus-visible {
+  outline: 2px solid #1565C0;
+  outline-offset: 2px;
+}
+
+.shelter-item-icon {
+  width: 28px;
+  height: 28px;
+  background: #E3F2FD;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.shelter-item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.shelter-item-name {
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.shelter-item-address {
+  font-size: 12px;
+  color: #757575;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.shelter-item-distance {
+  font-size: 12px;
+  color: #1565C0;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Map */
+.map-container {
+  flex: 1;
+  min-height: 400px;
+  height: 100%;
+}
+
+.map-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: #E8E8E8;
+  color: #757575;
+  font-size: 14px;
+}
+
+/* Loading Spinner */
+.loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #E0E0E0;
+  border-top-color: #1565C0;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.loading-spinner.small {
+  width: 18px;
+  height: 18px;
+  border-width: 2px;
+  border-color: rgba(255,255,255,0.3);
+  border-top-color: white;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Error & Info Messages */
+.error-message {
+  background: #FFEBEE;
+  color: #C62828;
+  padding: 12px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  border: 1px solid #FFCDD2;
+}
+
+.info-message {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #E3F2FD;
+  color: #1565C0;
+  padding: 12px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  border: 1px solid #BBDEFB;
+}
+
+.error-screen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  text-align: center;
+  padding: 40px;
+}
+
+.error-screen h2 {
+  font-size: 20px;
+  color: #424242;
+}
+
+.error-screen p {
+  font-size: 14px;
+  color: #757575;
+}
+
+.error-screen code {
+  background: #F5F5F5;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #424242;
+}
+
+/* Autocomplete dropdown */
+.input-group-item {
+  position: relative;
+}
+
+.autocomplete-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #E0E0E0;
+  border-radius: 0 0 8px 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.autocomplete-item {
+  display: block;
+  width: 100%;
+  padding: 12px 14px;
+  border: none;
+  background: none;
+  text-align: right;
+  font-size: 13px;
+  color: #333;
+  cursor: pointer;
+  direction: rtl;
+  line-height: 1.4;
+  min-height: 44px;
+}
+
+.autocomplete-item:hover {
+  background: #F5F5F5;
+}
+
+.autocomplete-item:focus-visible {
+  background: #E3F2FD;
+  outline: none;
+}
+
+.autocomplete-item + .autocomplete-item {
+  border-top: 1px solid #F0F0F0;
+}
+
+/* Shelter marker icons */
+.shelter-marker-icon {
+  background: none;
+  border: none;
+}
+
+.shelter-marker-icon.selected {
+  filter: drop-shadow(0 0 6px rgba(255, 111, 0, 0.7));
+}
+
+.user-location-icon {
+  background: none;
+  border: none;
+}
+
+/* Marker Clusters */
+.shelter-cluster {
+  background: none;
+  border: none;
+}
+
+.cluster-icon {
+  width: 36px;
+  height: 36px;
+  background: #0D47A1;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 13px;
+  border: 3px solid white;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+/* Emergency FAB (floating action button) */
+.emergency-fab {
+  position: fixed;
+  bottom: 24px;
+  left: 24px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #D32F2F;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(211, 47, 47, 0.4);
+  transition: transform 0.2s, box-shadow 0.2s;
+  z-index: 20;
+  animation: pulse-emergency 2s infinite;
+}
+
+.emergency-fab:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 20px rgba(211, 47, 47, 0.5);
+}
+
+.emergency-fab:active {
+  transform: scale(0.95);
+}
+
+@keyframes pulse-emergency {
+  0%, 100% { box-shadow: 0 4px 16px rgba(211, 47, 47, 0.4); }
+  50% { box-shadow: 0 4px 24px rgba(211, 47, 47, 0.6); }
+}
+
+/* Emergency Quick Button (in panel) */
+.emergency-quick-btn {
+  width: 100%;
+  padding: 14px 16px;
+  background: #FFEBEE;
+  color: #C62828;
+  border: 2px solid #EF9A9A;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background 0.2s, border-color 0.2s;
+  min-height: 48px;
+}
+
+.emergency-quick-btn:hover {
+  background: #FFCDD2;
+  border-color: #E57373;
+}
+
+.emergency-quick-btn:active {
+  background: #EF9A9A;
+}
+
+/* Emergency Banner */
+.emergency-banner {
+  background: linear-gradient(135deg, #D32F2F, #B71C1C);
+  color: white;
+  padding: 16px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.emergency-banner-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.emergency-banner-title {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.emergency-banner-subtitle {
+  font-size: 13px;
+  opacity: 0.9;
+}
+
+.emergency-exit-btn {
+  background: rgba(255,255,255,0.2);
+  border: 1px solid rgba(255,255,255,0.4);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: inherit;
+  font-weight: 500;
+  transition: background 0.2s;
+  white-space: nowrap;
+  min-height: 36px;
+}
+
+.emergency-exit-btn:hover {
+  background: rgba(255,255,255,0.3);
+}
+
+/* Emergency Hotline */
+.hotline-section {
+  margin-top: auto;
+  padding-top: 12px;
+}
+
+.hotline-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  background: #FFF3E0;
+  color: #E65100;
+  border: 1px solid #FFE0B2;
+  border-radius: 10px;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+  transition: background 0.2s;
+  min-height: 44px;
+}
+
+.hotline-link:hover {
+  background: #FFE0B2;
+}
+
+/* Panel drag handle — hidden on desktop */
+.panel-handle {
+  display: none;
+}
+
+/* Responsive — Mobile Bottom Sheet */
+@media (max-width: 768px) {
+  .header {
+    padding: 8px 16px;
+    gap: 8px;
+  }
+
+  .header-icon {
+    width: 30px;
+    height: 30px;
+  }
+
+  .header-title {
+    font-size: 15px;
+  }
+
+  .header-subtitle {
+    font-size: 11px;
+  }
+
+  .main-content {
+    position: relative;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* Map fills the entire space behind the panel */
+  .map-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    min-height: unset;
+    z-index: 1;
+  }
+
+  /* Bottom sheet overlay */
+  .search-panel {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    min-width: unset;
+    z-index: 10;
+    background: white;
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.2);
+    padding: 0 16px 16px;
+    gap: 10px;
+    transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .search-panel.panel-expanded {
+    max-height: 75vh;
+  }
+
+  .search-panel.panel-collapsed {
+    max-height: 72px;
+    overflow: hidden;
+    padding-bottom: 0;
+  }
+
+  /* Drag handle visible on mobile */
+  .panel-handle {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    padding: 12px 0 8px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: white;
+    border-radius: 20px 20px 0 0;
+    font-family: inherit;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .handle-bar {
+    width: 36px;
+    height: 4px;
+    background: #D0D0D0;
+    border-radius: 2px;
+  }
+
+  .handle-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1565C0;
+  }
+
+  /* When collapsed, hide content after handle */
+  .search-panel.panel-collapsed .emergency-quick-btn,
+  .search-panel.panel-collapsed .emergency-banner,
+  .search-panel.panel-collapsed .panel-section,
+  .search-panel.panel-collapsed .search-btn,
+  .search-panel.panel-collapsed .divider,
+  .search-panel.panel-collapsed .route-info,
+  .search-panel.panel-collapsed .info-message,
+  .search-panel.panel-collapsed .shelter-list-header,
+  .search-panel.panel-collapsed .shelter-list,
+  .search-panel.panel-collapsed .hotline-section,
+  .search-panel.panel-collapsed .error-message {
+    display: none;
+  }
+
+  /* Compact inputs on mobile */
+  .location-input {
+    padding: 10px 36px 10px 10px;
+    font-size: 14px;
+    border-radius: 8px;
+  }
+
+  .mode-btn {
+    padding: 8px 4px;
+    border-radius: 8px;
+    gap: 2px;
+  }
+
+  .mode-label {
+    font-size: 11px;
+  }
+
+  .search-btn {
+    padding: 12px;
+    font-size: 14px;
+    border-radius: 10px;
+  }
+
+  .emergency-quick-btn {
+    padding: 10px 12px;
+    font-size: 14px;
+    border-radius: 10px;
+  }
+
+  .emergency-banner {
+    padding: 12px;
+    border-radius: 10px;
+  }
+
+  .route-info {
+    padding: 12px;
+    border-radius: 10px;
+  }
+
+  .shelter-item {
+    padding: 10px;
+  }
+
+  .my-location-btn {
+    padding: 8px 10px;
+    min-height: 38px;
+    font-size: 12px;
+  }
+
+  /* Emergency FAB — above the bottom sheet */
+  .emergency-fab {
+    bottom: 92px;
+    left: 16px;
+    width: 48px;
+    height: 48px;
+    z-index: 15;
+  }
+
+  /* Hotline at bottom */
+  .hotline-section {
+    padding-top: 8px;
+  }
+
+  .hotline-link {
+    padding: 10px;
+    font-size: 13px;
+    min-height: 40px;
+    border-radius: 8px;
+  }
+}
