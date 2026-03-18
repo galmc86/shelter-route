@@ -69,7 +69,13 @@ export function LocationInput({
           if (googleLoaded && isGoogleAvailable()) {
             // Use Google Places Autocomplete
             results = await googleSearch(text, language);
-            setUsingGoogle(true);
+            if (results.length > 0) {
+              setUsingGoogle(true);
+            } else {
+              // Google returned nothing (rate limited or no results) — try Nominatim
+              results = await nominatimSearch(text, controller.signal);
+              setUsingGoogle(false);
+            }
           } else {
             // Fallback to Nominatim
             results = await nominatimSearch(text, controller.signal);
