@@ -12,7 +12,7 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-const CSV_PATH = '/Users/gal.machluf/Downloads/מקלטים פתוחים בבניינים בגבעתיים - כל שכונה בלשונית נפרדת - גבעת רמב״ם.csv';
+const CSV_PATH = path.join(__dirname, 'all-tabs.csv');
 const SHELTERS_JSON = path.join(__dirname, '..', 'public', 'shelters.json');
 
 interface CsvRow {
@@ -69,9 +69,9 @@ function parseCsv(content: string): CsvRow[] {
 
     const street = fields[0] || '';
     const number = fields[1] || '';
-    const notes = fields[3] || '';
-    const contact = fields[4] || '';
-    const phone = fields[5] || '';
+    const notes = fields[2] || '';
+    const contact = fields[3] || '';
+    const phone = fields[4] || '';
 
     if (!street && !number) continue;
 
