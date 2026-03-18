@@ -141,7 +141,7 @@ function App() {
     <div className="app" dir={language === 'he' ? 'rtl' : 'ltr'} data-theme={theme}>
       <OfflineIndicator />
       <AppHeader />
-      <main className="main-content">
+      <main className="main-content" id="main-content">
         <SearchPanel
           isLoaded={isLoaded}
           onSearch={handleSearch}
