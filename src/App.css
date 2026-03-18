@@ -1682,13 +1682,12 @@ body {
   color: var(--color-text, #212121) !important;
   border-radius: 12px !important;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15) !important;
-  padding: 0 !important;
+  padding: 4px !important;
   overflow: hidden;
 }
 
 .leaflet-popup-content {
   margin: 0 !important;
-  width: auto !important;
 }
 
 .leaflet-popup-tip {

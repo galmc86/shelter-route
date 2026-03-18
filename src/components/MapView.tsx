@@ -400,7 +400,7 @@ export function MapView({
       // Create a container element for the React popup
       const popupContainer = document.createElement('div');
 
-      const popup = L.popup({ maxWidth: 280, minWidth: 200, className: 'shelter-map-popup' }).setContent(popupContainer);
+      const popup = L.popup({ maxWidth: 280, minWidth: 200 }).setContent(popupContainer);
 
       marker.bindPopup(popup);
 
