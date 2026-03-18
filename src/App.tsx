@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { AppHeader } from './components/AppHeader';
 import { SearchPanel } from './components/SearchPanel';
 import { MapView } from './components/MapView';
@@ -11,7 +11,7 @@ import { useCurrentLocation } from './hooks/useCurrentLocation';
 import { useNearestShelters } from './hooks/useNearestShelters';
 import { useLanguage } from './i18n';
 import { useTheme } from './theme';
-import type { TravelMode, LatLng } from './types';
+import type { TravelMode, LatLng, RouteWithShelters } from './types';
 import type { ShelterWithDistance } from './hooks/useShelters';
 import './App.css';
 
@@ -19,8 +19,8 @@ function App() {
   const { language, t } = useLanguage();
   const { theme } = useTheme();
   const { isLoaded, error: mapsError } = useGoogleMaps();
-  const { routeInfo, isLoading: isRouteLoading, error: routeError, searchRoute } = useRoute();
-  const { allShelters, nearbyShelters, isLoading: sheltersLoading, filterByRoute } = useShelters();
+  const { routeInfo, allRoutes, selectedRouteIndex, setSelectedRouteIndex, isLoading: isRouteLoading, error: routeError, searchRoute } = useRoute();
+  const { allShelters, nearbyShelters, isLoading: sheltersLoading, filterByRoute, getRoutesWithShelters } = useShelters();
   const { location: currentLocation, isLoading: isLoadingLocation, error: locationError, getLocation } = useCurrentLocation();
   const { nearestShelters, isSearching: isEmergencySearching, findNearest, clear: clearNearest } = useNearestShelters();
   const [selectedShelterId, setSelectedShelterId] = useState<string | null>(null);
@@ -29,6 +29,12 @@ function App() {
   const [shareOrigin, setShareOrigin] = useState<LatLng | null>(null);
   const [shareDestination, setShareDestination] = useState<LatLng | null>(null);
   const [shareTravelMode, setShareTravelMode] = useState<TravelMode>('WALKING');
+
+  // Compute routes with shelter counts
+  const routesWithShelters: RouteWithShelters[] = useMemo(() => {
+    if (allRoutes.length === 0) return [];
+    return getRoutesWithShelters(allRoutes);
+  }, [allRoutes, getRoutesWithShelters]);
 
   // Parse URL params on mount for shared routes
   useEffect(() => {
@@ -103,6 +109,11 @@ function App() {
     setSelectedShelterId(null);
   }, [clearNearest]);
 
+  const handleRouteSelect = useCallback((index: number) => {
+    setSelectedRouteIndex(index);
+    setSelectedShelterId(null);
+  }, [setSelectedRouteIndex]);
+
   const displayShelters = emergencyMode ? nearestShelters : nearbyShelters;
 
   if (mapsError) {
@@ -151,10 +162,16 @@ function App() {
           shareOrigin={shareOrigin}
           shareDestination={shareDestination}
           shareTravelMode={shareTravelMode}
+          routesWithShelters={emergencyMode ? [] : routesWithShelters}
+          selectedRouteIndex={selectedRouteIndex}
+          onRouteSelect={handleRouteSelect}
         />
         <MapView
           isLoaded={isLoaded}
           routeInfo={emergencyMode ? null : routeInfo}
+          allRoutes={emergencyMode ? [] : allRoutes}
+          selectedRouteIndex={selectedRouteIndex}
+          onRouteSelect={handleRouteSelect}
           shelters={displayShelters}
           onShelterClick={handleShelterClick}
           selectedShelterId={selectedShelterId}

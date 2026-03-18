@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useMemo } from 'react';
 import { LocationInput } from './LocationInput';
 import { TravelModeSelector } from './TravelModeSelector';
 import { useLanguage } from '../i18n';
-import type { TravelMode, RouteInfo, LatLng, ShelterSortMode } from '../types';
+import type { TravelMode, RouteInfo, LatLng, ShelterSortMode, RouteWithShelters } from '../types';
 import type { ShelterWithDistance } from '../hooks/useShelters';
 import type { LocationPoint } from '../types';
 import type { NominatimResult } from '../services/nominatimService';
@@ -29,6 +29,9 @@ interface SearchPanelProps {
   shareOrigin?: { lat: number; lng: number } | null;
   shareDestination?: { lat: number; lng: number } | null;
   shareTravelMode?: TravelMode;
+  routesWithShelters?: RouteWithShelters[];
+  selectedRouteIndex?: number;
+  onRouteSelect?: (index: number) => void;
 }
 
 export function SearchPanel({
@@ -53,6 +56,9 @@ export function SearchPanel({
   shareOrigin,
   shareDestination,
   shareTravelMode,
+  routesWithShelters = [],
+  selectedRouteIndex = 0,
+  onRouteSelect,
 }: SearchPanelProps) {
   const { t } = useLanguage();
   const [showCopiedToast, setShowCopiedToast] = useState(false);
@@ -83,6 +89,20 @@ export function SearchPanel({
 
     return shelters;
   }, [nearbyShelters, sortMode, showAccessibleOnly]);
+
+  // Find the route index with the most shelters
+  const bestRouteIndex = useMemo(() => {
+    if (routesWithShelters.length <= 1) return 0;
+    let maxCount = -1;
+    let bestIdx = 0;
+    routesWithShelters.forEach((rws, idx) => {
+      if (rws.shelterCount > maxCount) {
+        maxCount = rws.shelterCount;
+        bestIdx = idx;
+      }
+    });
+    return bestIdx;
+  }, [routesWithShelters]);
 
   // Auto-hide copied toast after 2 seconds
   useEffect(() => {
@@ -297,6 +317,49 @@ export function SearchPanel({
       )}
       {locationError && !emergencyMode && (
         <div className="error-message" role="alert">{locationError}</div>
+      )}
+
+      {/* Route Selector — show when multiple alternatives exist */}
+      {routesWithShelters.length > 1 && (
+        <>
+          <div className="divider" />
+          <div className="route-selector" role="radiogroup" aria-label={t('routes.selectRoute')}>
+            <div className="route-selector-header">{t('routes.alternativeRoutes')}</div>
+            {routesWithShelters.map((rws, idx) => {
+              const isSelected = idx === selectedRouteIndex;
+              const isBest = idx === bestRouteIndex;
+              return (
+                <button
+                  key={idx}
+                  className={`route-option ${isSelected ? 'route-option-selected' : ''} ${isBest ? 'route-option-best' : ''}`}
+                  role="radio"
+                  aria-checked={isSelected}
+                  onClick={() => onRouteSelect?.(idx)}
+                  aria-label={`${t('routes.route')} ${idx + 1}, ${rws.route.distance}, ${rws.route.duration}, ${rws.shelterCount} ${t('route.sheltersLabel')}`}
+                >
+                  <div className="route-option-header">
+                    <span className="route-option-number">{t('routes.route')} {idx + 1}</span>
+                    {isBest && (
+                      <span className="route-option-best-badge">{t('routes.mostShelters')}</span>
+                    )}
+                  </div>
+                  <div className="route-option-details">
+                    <span className="route-option-stat">{rws.route.distance}</span>
+                    <span className="route-option-separator">|</span>
+                    <span className="route-option-stat">{rws.route.duration}</span>
+                    <span className="route-option-separator">|</span>
+                    <span className="route-option-shelters">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <path d="M12 2L3 7v10l9 5 9-5V7l-9-5z" />
+                      </svg>
+                      {rws.shelterCount} {t('route.sheltersLabel')}
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </>
       )}
 
       {/* Route Info */}

@@ -73,7 +73,7 @@ export async function computeRoute(
   origin: LatLng,
   destination: LatLng,
   travelMode: TravelMode
-): Promise<RouteInfo> {
+): Promise<RouteInfo[]> {
   const profile = PROFILE_MAP[travelMode];
   const apiKey = import.meta.env.VITE_ORS_API_KEY;
 
@@ -88,6 +88,11 @@ export async function computeRoute(
         [origin.lng, origin.lat],
         [destination.lng, destination.lat],
       ],
+      alternative_routes: {
+        target_count: 3,
+        share_factor: 0.6,
+        weight_factor: 1.4,
+      },
     }),
   });
 
@@ -98,17 +103,19 @@ export async function computeRoute(
   }
 
   const data = await response.json();
-  const route = data.routes?.[0];
-  if (!route) throw new Error('לא נמצא מסלול');
+  const routes = data.routes;
+  if (!routes || routes.length === 0) throw new Error('לא נמצא מסלול');
 
-  const path = decodePolyline(route.geometry);
-  const bounds = computeBounds(path);
-  const summary = route.summary;
+  return routes.map((route: { geometry: string; summary: { duration: number; distance: number } }) => {
+    const path = decodePolyline(route.geometry);
+    const bounds = computeBounds(path);
+    const summary = route.summary;
 
-  return {
-    path,
-    bounds,
-    duration: formatDuration(summary.duration),
-    distance: formatDistance(summary.distance),
-  };
+    return {
+      path,
+      bounds,
+      duration: formatDuration(summary.duration),
+      distance: formatDistance(summary.distance),
+    };
+  });
 }

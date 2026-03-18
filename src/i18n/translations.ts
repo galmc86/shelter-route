@@ -102,6 +102,12 @@ export const translations = {
     'accessibility.floor': 'קומה {{level}}',
     'accessibility.groundFloor': 'קומת קרקע',
 
+    // Routes (alternatives)
+    'routes.alternativeRoutes': 'מסלולים חלופיים',
+    'routes.selectRoute': 'בחר מסלול',
+    'routes.route': 'מסלול',
+    'routes.mostShelters': 'הכי הרבה מקלטים',
+
     // Errors
     'error.mapLoad': 'שגיאה בטעינת המפה',
     'error.mapLoadDesc': 'ודא שמפתח OpenRouteService מוגדר בקובץ .env',
@@ -206,6 +212,12 @@ export const translations = {
     'accessibility.hasElevator': 'Elevator',
     'accessibility.floor': 'Floor {{level}}',
     'accessibility.groundFloor': 'Ground floor',
+
+    // Routes (alternatives)
+    'routes.alternativeRoutes': 'Alternative Routes',
+    'routes.selectRoute': 'Select route',
+    'routes.route': 'Route',
+    'routes.mostShelters': 'Most shelters',
 
     // Errors
     'error.mapLoad': 'Error loading map',

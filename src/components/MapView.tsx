@@ -12,6 +12,9 @@ import type { ShelterWithDistance } from '../hooks/useShelters';
 interface MapViewProps {
   isLoaded: boolean;
   routeInfo: RouteInfo | null;
+  allRoutes: RouteInfo[];
+  selectedRouteIndex: number;
+  onRouteSelect?: (index: number) => void;
   shelters: ShelterWithDistance[];
   onShelterClick?: (shelter: ShelterWithDistance) => void;
   selectedShelterId?: string | null;
@@ -137,6 +140,9 @@ function buildUserLocationPopupHtml(lang: Language): string {
 export function MapView({
   isLoaded,
   routeInfo,
+  allRoutes,
+  selectedRouteIndex,
+  onRouteSelect,
   shelters,
   onShelterClick,
   selectedShelterId,
@@ -146,6 +152,7 @@ export function MapView({
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const routeLayerRef = useRef<L.Polyline | null>(null);
+  const altRouteLayersRef = useRef<L.Polyline[]>([]);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
   const userMarkerRef = useRef<L.Marker | null>(null);
 
@@ -187,16 +194,48 @@ export function MapView({
     };
   }, [isLoaded]);
 
-  // Update route
+  // Update routes (selected + alternatives)
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map) return;
 
+    // Remove old routes
     if (routeLayerRef.current) {
       routeLayerRef.current.remove();
       routeLayerRef.current = null;
     }
+    altRouteLayersRef.current.forEach((layer) => layer.remove());
+    altRouteLayersRef.current = [];
 
+    if (allRoutes.length === 0 && !routeInfo) return;
+
+    // Draw alternative routes first (behind the selected one)
+    allRoutes.forEach((route, idx) => {
+      if (idx === selectedRouteIndex) return; // skip selected, we draw it on top
+      const latLngs: L.LatLngExpression[] = route.path.map((p) => [p.lat, p.lng]);
+      const altLine = L.polyline(latLngs, {
+        color: '#9E9E9E',
+        weight: 4,
+        opacity: 0.5,
+        dashArray: '8, 8',
+        className: 'alt-route-line',
+      }).addTo(map);
+
+      // Clicking an alternative route selects it
+      altLine.on('click', () => {
+        onRouteSelect?.(idx);
+      });
+
+      // Add tooltip showing route number
+      altLine.bindTooltip(
+        `${tRaw(language, 'routes.route')} ${idx + 1}`,
+        { sticky: true, className: 'alt-route-tooltip' }
+      );
+
+      altRouteLayersRef.current.push(altLine);
+    });
+
+    // Draw selected route on top
     if (routeInfo) {
       const latLngs: L.LatLngExpression[] = routeInfo.path.map((p) => [p.lat, p.lng]);
       routeLayerRef.current = L.polyline(latLngs, {
@@ -211,7 +250,7 @@ export function MapView({
       );
       map.fitBounds(bounds, { padding: [40, 40] });
     }
-  }, [routeInfo]);
+  }, [allRoutes, routeInfo, selectedRouteIndex, onRouteSelect, language]);
 
   // Update user location marker
   useEffect(() => {

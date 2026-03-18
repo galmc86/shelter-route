@@ -37,3 +37,8 @@ export interface LocationPoint {
   lng: number;
   address?: string;
 }
+
+export interface RouteWithShelters {
+  route: RouteInfo;
+  shelterCount: number;
+}
