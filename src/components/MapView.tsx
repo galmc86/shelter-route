@@ -23,6 +23,9 @@ interface MapViewProps {
 
 const ISRAEL_CENTER: L.LatLngExpression = [31.5, 34.8];
 
+// Distinct colors for each route alternative
+const ROUTE_COLORS = ['#4285F4', '#00897B', '#F57C00'];
+
 const SHELTER_ICON_SVG = `<svg width="28" height="34" viewBox="0 0 28 34" xmlns="http://www.w3.org/2000/svg">
   <path d="M14 0C6.3 0 0 6.3 0 14c0 10.5 14 20 14 20s14-9.5 14-20C28 6.3 21.7 0 14 0z" fill="#0D47A1"/>
   <path d="M14 6L8 10v7h4v-4h4v4h4v-7L14 6z" fill="white"/>
@@ -150,8 +153,8 @@ export function MapView({
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const routeLayersRef = useRef<L.Polyline[]>([]);
-  const routeLabelsRef = useRef<L.Marker[]>([]);
   const routeMarkersRef = useRef<L.Marker[]>([]);
+  const routePickerRef = useRef<L.Control | null>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
   const userMarkerRef = useRef<L.Marker | null>(null);
 
@@ -201,26 +204,31 @@ export function MapView({
     // Clear existing route layers
     routeLayersRef.current.forEach((l) => l.remove());
     routeLayersRef.current = [];
-    routeLabelsRef.current.forEach((m) => m.remove());
-    routeLabelsRef.current = [];
     routeMarkersRef.current.forEach((m) => m.remove());
     routeMarkersRef.current = [];
+    if (routePickerRef.current) {
+      map.removeControl(routePickerRef.current);
+      routePickerRef.current = null;
+    }
 
     const routesToRender = routes && routes.length > 0 ? routes : routeInfo ? [routeInfo] : [];
     if (routesToRender.length === 0) return;
 
     const activeIndex = routes && routes.length > 0 ? selectedRouteIndex : 0;
+    const hasAlternatives = routes && routes.length > 1;
 
     // Render non-selected routes first (so they appear behind)
     routesToRender.forEach((route, index) => {
       if (index === activeIndex) return;
       if (route.path.length < 2) return;
 
+      const color = hasAlternatives ? (ROUTE_COLORS[index] || '#9E9E9E') : '#9E9E9E';
       const latLngs: L.LatLngExpression[] = route.path.map((p) => [p.lat, p.lng]);
       const polyline = L.polyline(latLngs, {
-        color: '#9E9E9E',
-        weight: 4,
-        opacity: 0.4,
+        color,
+        weight: 5,
+        opacity: 0.5,
+        dashArray: '8 6',
       }).addTo(map);
 
       polyline.on('click', () => {
@@ -233,11 +241,12 @@ export function MapView({
     // Render selected route on top
     const selected = routesToRender[activeIndex];
     if (selected && selected.path.length >= 2) {
+      const selectedColor = hasAlternatives ? (ROUTE_COLORS[activeIndex] || '#4285F4') : '#4285F4';
       const latLngs: L.LatLngExpression[] = selected.path.map((p) => [p.lat, p.lng]);
       const polyline = L.polyline(latLngs, {
-        color: '#4285F4',
-        weight: 5,
-        opacity: 0.8,
+        color: selectedColor,
+        weight: 6,
+        opacity: 0.9,
       }).addTo(map);
 
       routeLayersRef.current.push(polyline);
@@ -257,41 +266,43 @@ export function MapView({
 
       routeMarkersRef.current = [startMarker, endMarker];
 
-      // Add route option labels on map when there are alternatives
-      if (routes && routes.length > 1) {
-        routes.forEach((route, index) => {
-          if (route.path.length < 2) return;
-          // Place label at ~40% of the path for the route to spread labels apart
-          const labelIndex = Math.floor(route.path.length * (index === 0 ? 0.35 : index === 1 ? 0.5 : 0.65));
-          const labelPoint = route.path[labelIndex];
-          const isActive = index === activeIndex;
+      // Add floating route picker overlay when alternatives exist
+      if (hasAlternatives) {
+        const dir = language === 'he' ? 'rtl' : 'ltr';
+        const RoutePicker = L.Control.extend({
+          onAdd() {
+            const container = L.DomUtil.create('div', 'route-picker-overlay');
+            container.setAttribute('dir', dir);
+            L.DomEvent.disableClickPropagation(container);
+            L.DomEvent.disableScrollPropagation(container);
 
-          const labelHtml = `<div class="route-map-label ${isActive ? 'route-map-label-active' : 'route-map-label-inactive'}">
-            <span class="route-map-label-number">${tRaw(language, 'route.optionLabel')} ${index + 1}</span>
-            <span class="route-map-label-stats">${route.duration} · ${route.distance}</span>
-          </div>`;
-
-          const labelIcon = L.divIcon({
-            html: labelHtml,
-            className: 'route-map-label-container',
-            iconSize: [0, 0],
-            iconAnchor: [0, 0],
-          });
-
-          const labelMarker = L.marker([labelPoint.lat, labelPoint.lng], {
-            icon: labelIcon,
-            interactive: !isActive,
-            zIndexOffset: isActive ? 800 : 700,
-          }).addTo(map);
-
-          if (!isActive) {
-            labelMarker.on('click', () => {
-              onSelectRoute?.(index);
+            const items = routes!.map((route, index) => {
+              const isActive = index === activeIndex;
+              const color = ROUTE_COLORS[index] || '#9E9E9E';
+              return `<button class="route-picker-item ${isActive ? 'route-picker-item-active' : ''}" data-route-index="${index}">
+                <span class="route-picker-color" style="background: ${color};"></span>
+                <span class="route-picker-info">
+                  <span class="route-picker-duration">${route.duration}</span>
+                  <span class="route-picker-distance">${route.distance}</span>
+                </span>
+              </button>`;
             });
-          }
 
-          routeLabelsRef.current.push(labelMarker);
+            container.innerHTML = items.join('');
+
+            container.querySelectorAll('.route-picker-item').forEach((btn) => {
+              btn.addEventListener('click', () => {
+                const idx = parseInt((btn as HTMLElement).dataset.routeIndex || '0', 10);
+                onSelectRoute?.(idx);
+              });
+            });
+
+            return container;
+          },
         });
+
+        routePickerRef.current = new RoutePicker({ position: 'topright' });
+        routePickerRef.current.addTo(map);
       }
 
       const bounds = L.latLngBounds(
