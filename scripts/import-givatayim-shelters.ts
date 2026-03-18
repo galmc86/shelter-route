@@ -3,17 +3,27 @@
  *
  * Usage: npx tsx scripts/import-givatayim-shelters.ts
  *
- * Reads the CSV, geocodes addresses via Nominatim, and merges into public/shelters.json
+ * Reads the CSV, geocodes addresses via Nominatim (with Google fallback),
+ * and merges into public/shelters.json
  */
 
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// Read .env manually (no dotenv dependency)
+const envPath = path.join(__dirname, '..', '.env');
+if (fs.existsSync(envPath)) {
+  for (const line of fs.readFileSync(envPath, 'utf-8').split('\n')) {
+    const match = line.match(/^([^#=]+)=(.*)$/);
+    if (match) process.env[match[1].trim()] = match[2].trim();
+  }
+}
 
 const CSV_PATH = path.join(__dirname, 'all-tabs.csv');
 const SHELTERS_JSON = path.join(__dirname, '..', 'public', 'shelters.json');
+const GOOGLE_API_KEY = process.env.VITE_GOOGLE_PLACES_API_KEY || '';
 
 interface CsvRow {
   street: string;
@@ -136,6 +146,52 @@ async function geocode(
   }
 }
 
+async function geocodeGoogle(
+  street: string,
+  number: string
+): Promise<{ lat: number; lng: number } | null> {
+  if (!GOOGLE_API_KEY) return null;
+
+  const address = `${street} ${number}, גבעתיים, ישראל`;
+  const params = new URLSearchParams({
+    address,
+    key: GOOGLE_API_KEY,
+    language: 'he',
+    region: 'il',
+  });
+
+  try {
+    const res = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?${params}`);
+    const data = await res.json();
+
+    if (data.status === 'OK' && data.results.length > 0) {
+      const loc = data.results[0].geometry.location;
+      return { lat: loc.lat, lng: loc.lng };
+    }
+
+    // Retry without number
+    if (number) {
+      const retryParams = new URLSearchParams({
+        address: `${street}, גבעתיים, ישראל`,
+        key: GOOGLE_API_KEY,
+        language: 'he',
+        region: 'il',
+      });
+      const retryRes = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?${retryParams}`);
+      const retryData = await retryRes.json();
+      if (retryData.status === 'OK' && retryData.results.length > 0) {
+        const loc = retryData.results[0].geometry.location;
+        return { lat: loc.lat, lng: loc.lng };
+      }
+    }
+
+    return null;
+  } catch (err) {
+    console.warn(`  Google geocode error for "${address}":`, err);
+    return null;
+  }
+}
+
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -192,7 +248,12 @@ async function main() {
     const address = `${row.street} ${row.number}`.trim();
     process.stdout.write(`  ${address}... `);
 
-    const coords = await geocode(row.street, row.number);
+    let coords = await geocode(row.street, row.number);
+
+    if (!coords && GOOGLE_API_KEY) {
+      process.stdout.write('(trying Google) ');
+      coords = await geocodeGoogle(row.street, row.number);
+    }
 
     if (!coords) {
       console.log('FAILED (no coords)');
