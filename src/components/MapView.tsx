@@ -11,8 +11,6 @@ import type { RouteInfo, RouteOption, LocationPoint } from '../types';
 import type { ShelterWithDistance } from '../hooks/useShelters';
 import type { CapacityData } from '../services/capacityService';
 import { ShelterPopup } from './ShelterPopup';
-import type { GeocodedAlert } from '../services/alertHistoryService';
-
 interface MapViewProps {
   isLoaded: boolean;
   routeInfo: RouteInfo | null;
@@ -24,7 +22,6 @@ interface MapViewProps {
   selectedShelterId?: string | null;
   userLocation?: LocationPoint | null;
   capacityMap?: Map<string, CapacityData>;
-  alertHistory?: GeocodedAlert[];
 }
 
 const ISRAEL_CENTER: L.LatLngExpression = [31.5, 34.8];
@@ -160,7 +157,6 @@ export function MapView({
   selectedShelterId,
   userLocation,
   capacityMap,
-  alertHistory,
 }: MapViewProps) {
   const { language, t } = useLanguage();
   const mapRef = useRef<HTMLDivElement>(null);
@@ -171,7 +167,6 @@ export function MapView({
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
   const userMarkerRef = useRef<L.Marker | null>(null);
   const popupRootsRef = useRef<Map<string, Root>>(new Map());
-  const alertCirclesRef = useRef<L.Circle[]>([]);
 
   // Initialize map
   useEffect(() => {
@@ -377,61 +372,6 @@ export function MapView({
     }
   }, [userLocation, shelters, routeInfo]);
 
-  // Alert history circles
-  useEffect(() => {
-    const map = mapInstanceRef.current;
-    if (!map) return;
-
-    // Clear existing circles
-    alertCirclesRef.current.forEach((c) => c.remove());
-    alertCirclesRef.current = [];
-
-    if (!alertHistory || alertHistory.length === 0) return;
-
-    const now = Date.now();
-    const oneHour = 60 * 60 * 1000;
-
-    alertHistory.forEach((alert) => {
-      const age = now - new Date(alert.alertDate).getTime();
-      // Time-based opacity: newer = more visible
-      let fillOpacity: number;
-      if (age < oneHour) {
-        fillOpacity = 0.25;
-      } else if (age < 6 * oneHour) {
-        fillOpacity = 0.15;
-      } else {
-        fillOpacity = 0.08;
-      }
-
-      // Format relative time for tooltip
-      const hoursAgo = Math.floor(age / oneHour);
-      const minutesAgo = Math.floor(age / (60 * 1000));
-      const timeText = hoursAgo >= 1
-        ? tRaw(language, 'history.hoursAgo').replace('{{count}}', String(hoursAgo))
-        : tRaw(language, 'history.minutesAgo').replace('{{count}}', String(minutesAgo));
-      const regionName = language === 'he' ? alert.regionName : alert.regionNameEn;
-
-      const circle = L.circle([alert.lat, alert.lng], {
-        radius: 5000, // 5km display radius
-        color: '#D32F2F',
-        weight: 1.5,
-        opacity: 0.4,
-        fillColor: '#D32F2F',
-        fillOpacity,
-        interactive: true,
-      }).addTo(map);
-
-      circle.bindTooltip(`${regionName} — ${timeText}`, {
-        className: 'alert-history-tooltip',
-        direction: 'top',
-      });
-
-      // Bring to back so they don't obscure routes/markers
-      circle.bringToBack();
-
-      alertCirclesRef.current.push(circle);
-    });
-  }, [alertHistory, language]);
 
   // Update shelter markers
   useEffect(() => {

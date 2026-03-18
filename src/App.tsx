@@ -38,7 +38,6 @@ function App() {
     currentLocation?.lng ?? null
   );
   const {
-    alerts: alertHistory,
     routeRisk,
     timeFilter,
     setTimeFilter,
@@ -229,7 +228,6 @@ function App() {
           selectedShelterId={selectedShelterId}
           userLocation={emergencyMode ? currentLocation : null}
           capacityMap={capacityMap}
-          alertHistory={alertHistory}
         />
       </main>
       <EmergencyButton onClick={handleEmergencyClick} />
