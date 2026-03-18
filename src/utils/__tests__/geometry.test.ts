@@ -10,8 +10,6 @@ function makeShelter(overrides: Partial<Shelter> & { lat: number; lon: number })
   return {
     id: '1',
     name: 'Test Shelter',
-    lat: overrides.lat,
-    lon: overrides.lon,
     city: '',
     ...overrides,
   };

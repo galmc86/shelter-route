@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { fetchAllShelters } from '../shelterApi';
+// fetchAllShelters is imported dynamically in each test via import('../shelterApi')
 
 // Mock localStorage
 const localStorageMock = (() => {

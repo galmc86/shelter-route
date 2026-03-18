@@ -149,7 +149,7 @@ describe('computeRoutes', () => {
   });
 
   it('falls back to single route when alternatives request throws network error', async () => {
-    const fetchSpy = vi.spyOn(globalThis, 'fetch')
+    vi.spyOn(globalThis, 'fetch')
       .mockRejectedValueOnce(new Error('Network error')) // first attempt (with retry inside)
       .mockRejectedValueOnce(new Error('Network error')) // retry inside fetchRoutes
       .mockResolvedValueOnce(
