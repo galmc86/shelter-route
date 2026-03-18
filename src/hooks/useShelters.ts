@@ -16,7 +16,11 @@ export function useShelters() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchAllShelters()
+    fetchAllShelters(() => {
+      // Reverse-geocoding completed in the background — trigger re-render
+      // with updated shelter names by spreading the same array reference
+      setAllShelters((prev) => [...prev]);
+    })
       .then((shelters) => {
         setAllShelters(shelters);
         setIsLoading(false);
