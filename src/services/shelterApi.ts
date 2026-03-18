@@ -10,8 +10,11 @@ interface MiklatShelter {
 
 const STORAGE_KEY = 'shelter-route:shelters';
 const STORAGE_VERSION = 1;
+const GEOCODE_CACHE_KEY = 'shelter-route:geocode-cache';
+const NOMINATIM_USER_AGENT = 'ShelterRoute/1.0 (https://github.com/shelter-route)';
 
 let cachedShelters: Shelter[] | null = null;
+let reverseGeocodeInProgress = false;
 
 function loadFromLocalStorage(): Shelter[] | null {
   try {
@@ -33,6 +36,153 @@ function saveToLocalStorage(shelters: Shelter[]) {
     );
   } catch {
     // Storage full or unavailable — ignore
+  }
+}
+
+// --- Reverse-geocoding cache (localStorage) ---
+
+interface GeocodeCache {
+  [coordKey: string]: string; // coordKey "lat,lon" -> street/neighborhood name
+}
+
+function loadGeocodeCache(): GeocodeCache {
+  try {
+    const raw = localStorage.getItem(GEOCODE_CACHE_KEY);
+    if (!raw) return {};
+    return JSON.parse(raw) as GeocodeCache;
+  } catch {
+    return {};
+  }
+}
+
+function saveGeocodeCache(cache: GeocodeCache) {
+  try {
+    localStorage.setItem(GEOCODE_CACHE_KEY, JSON.stringify(cache));
+  } catch {
+    // Storage full or unavailable — ignore
+  }
+}
+
+function coordKey(lat: number, lon: number): string {
+  return `${lat.toFixed(6)},${lon.toFixed(6)}`;
+}
+
+/**
+ * Delay helper — resolves after `ms` milliseconds.
+ */
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+interface NominatimAddress {
+  road?: string;
+  neighbourhood?: string;
+  suburb?: string;
+  city_district?: string;
+  hamlet?: string;
+  village?: string;
+}
+
+interface NominatimResponse {
+  address?: NominatimAddress;
+}
+
+/**
+ * Extract a meaningful Hebrew location name from a Nominatim response.
+ * Prefers road (street) name, then neighbourhood, then suburb/district.
+ */
+function extractNameFromNominatim(data: NominatimResponse): string | null {
+  const addr = data.address;
+  if (!addr) return null;
+
+  if (addr.road) return addr.road;
+  if (addr.neighbourhood) return addr.neighbourhood;
+  if (addr.suburb) return addr.suburb;
+  if (addr.city_district) return addr.city_district;
+  if (addr.hamlet) return addr.hamlet;
+  if (addr.village) return addr.village;
+
+  return null;
+}
+
+/**
+ * Perform a single reverse-geocode request against Nominatim.
+ * Returns a street/neighborhood name or null on failure.
+ */
+async function reverseGeocodeSingle(
+  lat: number,
+  lon: number
+): Promise<string | null> {
+  try {
+    const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=he&zoom=18`;
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': NOMINATIM_USER_AGENT,
+      },
+    });
+    if (!response.ok) return null;
+    const data: NominatimResponse = await response.json();
+    return extractNameFromNominatim(data);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Reverse-geocode shelters that still have a generic "מקלט ציבורי" name.
+ * Batches requests with a 1.1 second delay between each to respect
+ * Nominatim's rate limit (max 1 req/sec).
+ *
+ * Updates shelters in-place and persists to localStorage.
+ * Called as a background task — does not block shelter loading.
+ */
+async function reverseGeocodeGenericShelters(
+  shelters: Shelter[],
+  onUpdate?: () => void
+): Promise<void> {
+  if (reverseGeocodeInProgress) return;
+  reverseGeocodeInProgress = true;
+
+  try {
+    const cache = loadGeocodeCache();
+    const generic = shelters.filter((s) => s.name === 'מקלט ציבורי');
+
+    if (generic.length === 0) return;
+
+    let cacheUpdated = false;
+    let sheltersUpdated = false;
+
+    for (const shelter of generic) {
+      const key = coordKey(shelter.lat, shelter.lon);
+
+      // Check cache first
+      if (cache[key]) {
+        shelter.name = `מקלט — ${cache[key]}`;
+        sheltersUpdated = true;
+        continue;
+      }
+
+      // Rate-limit: wait before making a network request
+      await delay(1100);
+
+      const locationName = await reverseGeocodeSingle(shelter.lat, shelter.lon);
+      if (locationName) {
+        cache[key] = locationName;
+        cacheUpdated = true;
+        shelter.name = `מקלט — ${locationName}`;
+        sheltersUpdated = true;
+      }
+    }
+
+    if (cacheUpdated) {
+      saveGeocodeCache(cache);
+    }
+    if (sheltersUpdated) {
+      saveToLocalStorage(shelters);
+      onUpdate?.();
+    }
+  } finally {
+    reverseGeocodeInProgress = false;
   }
 }
 
@@ -92,8 +242,23 @@ function parseShelters(data: MiklatShelter[]): Shelter[] {
     }));
 }
 
-export async function fetchAllShelters(): Promise<Shelter[]> {
-  if (cachedShelters) return cachedShelters;
+/**
+ * Fetch all shelters. Returns immediately with locally enriched names.
+ *
+ * If `onReverseGeocodeUpdate` is provided, shelters with generic names
+ * ("מקלט ציבורי") will be reverse-geocoded in the background via Nominatim.
+ * The callback fires once all reverse-geocoding is done so the UI can
+ * re-render with improved names.
+ */
+export async function fetchAllShelters(
+  onReverseGeocodeUpdate?: () => void
+): Promise<Shelter[]> {
+  if (cachedShelters) {
+    // Kick off background reverse-geocoding even for cached shelters
+    // (in case previous run was interrupted or new generic shelters exist)
+    reverseGeocodeGenericShelters(cachedShelters, onReverseGeocodeUpdate);
+    return cachedShelters;
+  }
 
   try {
     const response = await fetch('/shelters.json');
@@ -105,6 +270,10 @@ export async function fetchAllShelters(): Promise<Shelter[]> {
     const json: { shelters: MiklatShelter[] } = await response.json();
     cachedShelters = parseShelters(json.shelters);
     saveToLocalStorage(cachedShelters);
+
+    // Start background reverse-geocoding for generic names
+    reverseGeocodeGenericShelters(cachedShelters, onReverseGeocodeUpdate);
+
     return cachedShelters;
   } catch (err) {
     // Fallback to localStorage cache
