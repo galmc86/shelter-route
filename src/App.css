@@ -1949,17 +1949,23 @@ body {
   display: block;
   text-align: center;
   margin-top: 8px;
-  padding: 8px;
-  background: var(--color-primary, #1565C0);
-  color: white;
+  padding: 10px 8px;
+  background: #0D47A1;
+  color: #FFFFFF;
   text-decoration: none;
   border-radius: 6px;
-  font-size: 13px;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+}
+
+.shelter-popup-nav:visited {
+  color: #FFFFFF;
 }
 
 .shelter-popup-nav:hover {
-  opacity: 0.9;
+  background: #1565C0;
 }
 
 /* Shelter Distance Label (on map markers) */
