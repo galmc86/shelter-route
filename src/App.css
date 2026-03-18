@@ -770,6 +770,156 @@ body {
   color: var(--color-shelter-count-text);
 }
 
+/* Route Risk Badge */
+.route-risk-section {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  animation: fadeIn 0.3s ease;
+}
+
+.route-risk--none {
+  background: #E8F5E9;
+  border: 1px solid #C8E6C9;
+}
+
+.route-risk--low {
+  background: #FFF8E1;
+  border: 1px solid #FFECB3;
+}
+
+.route-risk--moderate {
+  background: #FBE9E7;
+  border: 1px solid #FFCCBC;
+}
+
+.route-risk--high {
+  background: #FFEBEE;
+  border: 1px solid #FFCDD2;
+  animation: fadeIn 0.3s ease, alert-pulse 1.5s infinite;
+}
+
+.route-risk-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.route-risk-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: white;
+}
+
+.route-risk-badge--none {
+  background: #4CAF50;
+}
+
+.route-risk-badge--low {
+  background: #FF9800;
+}
+
+.route-risk-badge--moderate {
+  background: #F44336;
+}
+
+.route-risk-badge--high {
+  background: #D32F2F;
+}
+
+.route-risk-details {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+  gap: 8px;
+}
+
+.route-risk-text {
+  font-size: 12px;
+  color: var(--color-subtle-text);
+}
+
+.time-filter-toggle {
+  display: flex;
+  gap: 2px;
+  background: var(--color-divider);
+  border-radius: 6px;
+  padding: 2px;
+}
+
+.time-filter-btn {
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: inherit;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-subtle-text);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.time-filter-btn:hover {
+  background: var(--color-panel-bg);
+  color: var(--color-text);
+}
+
+.time-filter-btn.active {
+  background: var(--color-panel-bg);
+  color: var(--color-primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Alert History Tooltip */
+.alert-history-tooltip {
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Dark theme overrides */
+[data-theme="dark"] .route-risk--none {
+  background: #1b3a1b;
+  border-color: #2e5a2e;
+}
+
+[data-theme="dark"] .route-risk--low {
+  background: #3a3520;
+  border-color: #5a5030;
+}
+
+[data-theme="dark"] .route-risk--moderate {
+  background: #3a2020;
+  border-color: #5a3030;
+}
+
+[data-theme="dark"] .route-risk--high {
+  background: #3a1515;
+  border-color: #5a2525;
+}
+
+/* High-contrast theme overrides */
+[data-theme="high-contrast"] .route-risk-badge {
+  outline: 2px solid white;
+  outline-offset: 1px;
+}
+
+[data-theme="high-contrast"] .route-risk-section {
+  border-width: 2px;
+}
+
 /* Share Button */
 .share-btn {
   display: flex;

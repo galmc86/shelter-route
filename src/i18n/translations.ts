@@ -153,6 +153,22 @@ export const translations = {
     'alert.expired': 'הכנס למקלט מיד!',
     'alert.settings': 'התראות',
 
+    // Route Risk
+    'risk.none': 'אין התרעות אחרונות',
+    'risk.low': 'התרעות ישנות במסלול',
+    'risk.moderate': 'התרעות אחרונות במסלול',
+    'risk.high': 'התרעות פעילות במסלול!',
+    'risk.alertCount': '{{count}} התרעות ב-{{hours}} שעות',
+    'risk.lastAlert': 'אחרונה: {{time}}',
+    'risk.alerts': 'התרעות',
+    'history.1h': 'שעה',
+    'history.6h': '6 שעות',
+    'history.24h': '24 שעות',
+    'history.timeRange': 'טווח זמן',
+    'history.ago': 'לפני {{time}}',
+    'history.hoursAgo': 'לפני {{count}} שעות',
+    'history.minutesAgo': 'לפני {{count}} דקות',
+
     // Errors
     'error.mapLoad': 'שגיאה בטעינת המפה',
     'error.mapLoadDesc': 'ודא שמפתח OpenRouteService מוגדר בקובץ .env',
@@ -308,6 +324,22 @@ export const translations = {
     'alert.seconds': 'seconds',
     'alert.expired': 'Get to shelter immediately!',
     'alert.settings': 'Alert notifications',
+
+    // Route Risk
+    'risk.none': 'No recent alerts',
+    'risk.low': 'Older alerts on route',
+    'risk.moderate': 'Recent alerts on route',
+    'risk.high': 'Active alerts on route!',
+    'risk.alertCount': '{{count}} alerts in {{hours}} hours',
+    'risk.lastAlert': 'Last: {{time}}',
+    'risk.alerts': 'alerts',
+    'history.1h': '1h',
+    'history.6h': '6h',
+    'history.24h': '24h',
+    'history.timeRange': 'Time range',
+    'history.ago': '{{time}} ago',
+    'history.hoursAgo': '{{count}} hours ago',
+    'history.minutesAgo': '{{count}} min ago',
 
     // Errors
     'error.mapLoad': 'Error loading map',

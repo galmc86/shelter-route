@@ -21,7 +21,7 @@ export interface AlertRegion {
 
 // Region mapping - major Israeli cities/areas with their time-to-shelter
 // Time-to-shelter varies: 15s near Gaza, 30s in south, 60s center, 90s north
-const ALERT_REGIONS: AlertRegion[] = [
+export const ALERT_REGIONS: AlertRegion[] = [
   // South - Gaza envelope (15 seconds)
   { name: 'עוטף עזה', nameEn: 'Gaza Envelope', lat: 31.374, lng: 34.393, radius: 15, timeToShelter: 15 },
   { name: 'שדרות, אשקלון', nameEn: 'Sderot, Ashkelon', lat: 31.525, lng: 34.596, radius: 10, timeToShelter: 15 },
@@ -76,7 +76,7 @@ export function matchUserToAlertRegion(
 }
 
 // Simple haversine for km distance
-function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+export function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 6371;
   const dLat = (lat2 - lat1) * Math.PI / 180;
   const dLng = (lng2 - lng1) * Math.PI / 180;

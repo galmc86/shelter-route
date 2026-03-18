@@ -11,6 +11,7 @@ import { useCurrentLocation } from './hooks/useCurrentLocation';
 import { useNearestShelters } from './hooks/useNearestShelters';
 import { useCapacity } from './hooks/useCapacity';
 import { useOrefAlerts } from './hooks/useOrefAlerts';
+import { useAlertHistory } from './hooks/useAlertHistory';
 import { AlertBanner } from './components/AlertBanner';
 import { useLanguage } from './i18n';
 import { useTheme } from './theme';
@@ -36,6 +37,12 @@ function App() {
     currentLocation?.lat ?? null,
     currentLocation?.lng ?? null
   );
+  const {
+    alerts: alertHistory,
+    routeRisk,
+    timeFilter,
+    setTimeFilter,
+  } = useAlertHistory(selectedRoute);
   const prevAlertActive = useRef(false);
   const [selectedShelterId, setSelectedShelterId] = useState<string | null>(null);
   const [emergencyMode, setEmergencyMode] = useState(false);
@@ -207,6 +214,9 @@ function App() {
           routesWithShelters={emergencyMode ? [] : routesWithShelters}
           onRouteSelect={handleRouteSelect}
           capacityMap={capacityMap}
+          routeRisk={routeRisk}
+          timeFilter={timeFilter}
+          onTimeFilterChange={setTimeFilter}
         />
         <MapView
           isLoaded={isLoaded}
@@ -219,6 +229,7 @@ function App() {
           selectedShelterId={selectedShelterId}
           userLocation={emergencyMode ? currentLocation : null}
           capacityMap={capacityMap}
+          alertHistory={alertHistory}
         />
       </main>
       <EmergencyButton onClick={handleEmergencyClick} />
