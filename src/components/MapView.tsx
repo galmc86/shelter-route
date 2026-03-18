@@ -133,10 +133,18 @@ function ShelterPopupWithLanguage({
   );
 }
 
-function buildUserLocationPopupHtml(lang: Language): string {
+function buildUserLocationPopupElement(lang: Language): HTMLElement {
   const dir = lang === 'he' ? 'rtl' : 'ltr';
   const label = tRaw(lang, 'map.yourLocation');
-  return `<div style="direction: ${dir}; font-family: -apple-system, sans-serif; text-align: center; padding: 4px;"><strong>${label}</strong></div>`;
+  const wrapper = document.createElement('div');
+  wrapper.style.direction = dir;
+  wrapper.style.fontFamily = '-apple-system, sans-serif';
+  wrapper.style.textAlign = 'center';
+  wrapper.style.padding = '4px';
+  const strong = document.createElement('strong');
+  strong.textContent = label;
+  wrapper.appendChild(strong);
+  return wrapper;
 }
 
 export function MapView({
@@ -279,25 +287,38 @@ export function MapView({
             L.DomEvent.disableClickPropagation(container);
             L.DomEvent.disableScrollPropagation(container);
 
-            const items = routes!.map((route, index) => {
+            routes!.forEach((route, index) => {
               const isActive = index === activeIndex;
               const color = ROUTE_COLORS[index] || '#9E9E9E';
-              return `<button class="route-picker-item ${isActive ? 'route-picker-item-active' : ''}" data-route-index="${index}">
-                <span class="route-picker-color" style="background: ${color};"></span>
-                <span class="route-picker-info">
-                  <span class="route-picker-duration">${route.duration}</span>
-                  <span class="route-picker-distance">${route.distance}</span>
-                </span>
-              </button>`;
-            });
 
-            container.innerHTML = items.join('');
+              const btn = document.createElement('button');
+              btn.className = 'route-picker-item' + (isActive ? ' route-picker-item-active' : '');
 
-            container.querySelectorAll('.route-picker-item').forEach((btn) => {
+              const colorSpan = document.createElement('span');
+              colorSpan.className = 'route-picker-color';
+              colorSpan.style.background = color;
+
+              const infoSpan = document.createElement('span');
+              infoSpan.className = 'route-picker-info';
+
+              const durationSpan = document.createElement('span');
+              durationSpan.className = 'route-picker-duration';
+              durationSpan.textContent = route.duration;
+
+              const distanceSpan = document.createElement('span');
+              distanceSpan.className = 'route-picker-distance';
+              distanceSpan.textContent = route.distance;
+
+              infoSpan.appendChild(durationSpan);
+              infoSpan.appendChild(distanceSpan);
+              btn.appendChild(colorSpan);
+              btn.appendChild(infoSpan);
+
               btn.addEventListener('click', () => {
-                const idx = parseInt((btn as HTMLElement).dataset.routeIndex || '0', 10);
-                onSelectRoute?.(idx);
+                onSelectRoute?.(index);
               });
+
+              container.appendChild(btn);
             });
 
             return container;
@@ -333,7 +354,7 @@ export function MapView({
         zIndexOffset: 1000,
       }).addTo(map);
 
-      userMarkerRef.current.bindPopup(buildUserLocationPopupHtml(language));
+      userMarkerRef.current.bindPopup(buildUserLocationPopupElement(language));
     }
   }, [userLocation, language]);
 
