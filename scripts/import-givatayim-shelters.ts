@@ -3,7 +3,7 @@
  *
  * Usage: npx tsx scripts/import-givatayim-shelters.ts
  *
- * Reads the CSV, geocodes addresses via Nominatim (with Google fallback),
+ * Reads the CSV, geocodes addresses via Google (with Nominatim fallback),
  * and merges into public/shelters.json
  */
 
@@ -242,23 +242,28 @@ async function main() {
   let skippedDuplicate = 0;
   const source = 'givatayim-open-shelters-2026.csv';
 
-  console.log('\nGeocoding addresses (1.2s delay between requests)...\n');
+  const geocodeProvider = GOOGLE_API_KEY ? 'Google (Nominatim fallback)' : 'Nominatim only';
+  console.log(`\nGeocoding addresses via ${geocodeProvider} (1.2s delay between requests)...\n`);
 
   for (const row of rows) {
     const address = `${row.street} ${row.number}`.trim();
     process.stdout.write(`  ${address}... `);
 
-    let coords = await geocode(row.street, row.number);
+    let coords: { lat: number; lng: number } | null = null;
 
-    if (!coords && GOOGLE_API_KEY) {
-      process.stdout.write('(trying Google) ');
+    if (GOOGLE_API_KEY) {
       coords = await geocodeGoogle(row.street, row.number);
+    }
+
+    if (!coords) {
+      process.stdout.write('(trying Nominatim) ');
+      coords = await geocode(row.street, row.number);
     }
 
     if (!coords) {
       console.log('FAILED (no coords)');
       skippedNoCoords++;
-      await sleep(1200);
+      await sleep(GOOGLE_API_KEY ? 200 : 1200);
       continue;
     }
 
@@ -267,7 +272,7 @@ async function main() {
     if (isDuplicate(coords.lat, coords.lng, allShelters)) {
       console.log(`DUPLICATE (${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)})`);
       skippedDuplicate++;
-      await sleep(1200);
+      await sleep(GOOGLE_API_KEY ? 200 : 1200);
       continue;
     }
 
@@ -293,8 +298,8 @@ async function main() {
     geocoded++;
     console.log(`OK (${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)})`);
 
-    // Respect Nominatim rate limit (1 req/sec)
-    await sleep(1200);
+    // Respect rate limits (Nominatim: 1 req/sec, Google: 50 req/sec)
+    await sleep(GOOGLE_API_KEY ? 200 : 1200);
   }
 
   console.log(`\n--- Summary ---`);
