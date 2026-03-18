@@ -1,27 +1,44 @@
+// Google Places API (New) — Autocomplete with session tokens
+// Uses the new promise-based API with field-level billing optimization
+
 import type { PlaceResult } from '../types';
 
-let autocompleteService: google.maps.places.AutocompleteService | null = null;
-let placesService: google.maps.places.PlacesService | null = null;
+// Client-side daily rate limit to prevent runaway API costs
+const DAILY_LIMIT = 500; // max autocomplete requests per day per client
+const RATE_LIMIT_KEY = 'shelter-route:places-usage';
+
+interface UsageData {
+  date: string; // YYYY-MM-DD
+  count: number;
+}
+
+function getUsage(): UsageData {
+  try {
+    const raw = localStorage.getItem(RATE_LIMIT_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch { /* ignore */ }
+  return { date: '', count: 0 };
+}
+
+function incrementUsage(): boolean {
+  const today = new Date().toISOString().slice(0, 10);
+  const usage = getUsage();
+
+  if (usage.date !== today) {
+    localStorage.setItem(RATE_LIMIT_KEY, JSON.stringify({ date: today, count: 1 }));
+    return true;
+  }
+
+  if (usage.count >= DAILY_LIMIT) {
+    return false; // Rate limited
+  }
+
+  usage.count++;
+  localStorage.setItem(RATE_LIMIT_KEY, JSON.stringify(usage));
+  return true;
+}
+
 let sessionToken: google.maps.places.AutocompleteSessionToken | null = null;
-let placesDiv: HTMLDivElement | null = null;
-
-function getAutocompleteService(): google.maps.places.AutocompleteService {
-  if (!autocompleteService) {
-    autocompleteService = new google.maps.places.AutocompleteService();
-  }
-  return autocompleteService;
-}
-
-function getPlacesService(): google.maps.places.PlacesService {
-  if (!placesService) {
-    // PlacesService requires a DOM element or map — use a hidden div
-    if (!placesDiv) {
-      placesDiv = document.createElement('div');
-    }
-    placesService = new google.maps.places.PlacesService(placesDiv);
-  }
-  return placesService;
-}
 
 function getSessionToken(): google.maps.places.AutocompleteSessionToken {
   if (!sessionToken) {
@@ -35,15 +52,15 @@ export function resetSession(): void {
   sessionToken = null;
 }
 
-/** Check if Google Places API is available in the window */
+/** Check if Google Places API (New) is available */
 export function isAvailable(): boolean {
-  return typeof google !== 'undefined' && !!google.maps?.places;
+  return typeof google !== 'undefined' && !!google.maps?.places?.AutocompleteService;
 }
 
 /**
  * Search for places using Google Places Autocomplete.
- * Returns results in the same PlaceResult format as Nominatim.
- * Note: Results include placeId but lat/lng are 0,0 until getPlaceDetails is called.
+ * Uses the legacy AutocompleteService for predictions (new Autocomplete widget not yet GA),
+ * but uses new Place.fetchFields() for details to get field-level billing.
  */
 export async function searchPlaces(
   query: string,
@@ -51,8 +68,9 @@ export async function searchPlaces(
 ): Promise<PlaceResult[]> {
   if (!query || query.length < 2) return [];
   if (!isAvailable()) return [];
+  if (!incrementUsage()) return []; // Daily rate limit exceeded — fall through to Nominatim
 
-  const service = getAutocompleteService();
+  const service = new google.maps.places.AutocompleteService();
   const token = getSessionToken();
 
   return new Promise((resolve) => {
@@ -88,40 +106,30 @@ export async function searchPlaces(
 
 /**
  * Get lat/lng details for a place by its placeId.
- * Uses the same session token as the autocomplete request for billing efficiency.
+ * Uses the new Place class with fetchFields() for field-level billing —
+ * only pays for the 'location' field (Essentials tier, cheapest).
  */
 export async function getPlaceDetails(
   placeId: string
 ): Promise<{ lat: number; lng: number } | null> {
   if (!isAvailable()) return null;
 
-  const service = getPlacesService();
-  const token = getSessionToken();
+  try {
+    const place = new google.maps.places.Place({ id: placeId });
+    await place.fetchFields({ fields: ['location'] });
 
-  return new Promise((resolve) => {
-    service.getDetails(
-      {
-        placeId,
-        fields: ['geometry'],
-        sessionToken: token,
-      },
-      (place, status) => {
-        // Reset session after details fetch (completes the billing session)
-        resetSession();
+    // Reset session after details fetch (completes the billing session)
+    resetSession();
 
-        if (
-          status !== google.maps.places.PlacesServiceStatus.OK ||
-          !place?.geometry?.location
-        ) {
-          resolve(null);
-          return;
-        }
+    const loc = place.location;
+    if (!loc) return null;
 
-        resolve({
-          lat: place.geometry.location.lat(),
-          lng: place.geometry.location.lng(),
-        });
-      }
-    );
-  });
+    return {
+      lat: loc.lat(),
+      lng: loc.lng(),
+    };
+  } catch {
+    resetSession();
+    return null;
+  }
 }
