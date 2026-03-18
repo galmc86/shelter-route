@@ -189,8 +189,11 @@ async function fetchAndCache(request, cache) {
     }
     return response;
   } catch (error) {
-    // If fetch fails and we have nothing cached, return a basic offline response
-    return new Response('Offline', { status: 503, statusText: 'Service Unavailable' });
+    // If fetch fails and we have nothing cached, re-throw so the caller
+    // (browser or networkFirst) can handle it properly.
+    // Previously we returned a 503 here, which the SW then cached — causing
+    // stale error responses to persist.
+    throw error;
   }
 }
 

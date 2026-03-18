@@ -106,28 +106,39 @@ export function getTimeToShelter(lat: number, lng: number): number {
 
 export type AlertCallback = (alerts: OrefAlert[], matchedRegion: AlertRegion | null) => void;
 
+// The OREF alerts API URL. Set VITE_OREF_PROXY_URL env var to a CORS proxy
+// (e.g., a Cloudflare Worker) for production use.
+// Direct access to oref.org.il is blocked by CORS in browsers.
+const OREF_ALERTS_URL = import.meta.env.VITE_OREF_PROXY_URL as string | undefined;
+
 // Poll OREF alerts - returns cleanup function
-// Note: Direct access to oref.org.il may be blocked by CORS from browsers.
-// In production, use a proxy or the community oref-alerts WebSocket API.
+// Requires VITE_OREF_PROXY_URL to be set. Without a proxy, OREF blocks CORS
+// and every request fails — flooding the console with 503 errors from the SW.
 export function subscribeToAlerts(
   userLat: number | null,
   userLng: number | null,
   callback: AlertCallback,
-  intervalMs: number = 3000
+  intervalMs: number = 5000
 ): () => void {
+  // No proxy configured — don't poll at all to avoid CORS error spam
+  if (!OREF_ALERTS_URL) {
+    return () => {};
+  }
+
   let active = true;
+  let consecutiveFailures = 0;
+  const MAX_CONSECUTIVE_FAILURES = 3;
 
   const checkAlerts = async () => {
     try {
-      // Try fetching from OREF API
-      // Note: Direct browser access is blocked by CORS in production.
-      // For production use, set up a CORS proxy (e.g., Cloudflare Worker)
-      // and update this URL to point to the proxy.
-      const response = await fetch('https://www.oref.org.il/WarningMessages/alert/alerts.json', {
-        mode: 'cors',
-      });
+      const response = await fetch(OREF_ALERTS_URL);
 
-      if (!response.ok) return;
+      if (!response.ok) {
+        consecutiveFailures++;
+        return;
+      }
+
+      consecutiveFailures = 0;
 
       const text = await response.text();
       if (!text || text.trim() === '') {
@@ -151,13 +162,18 @@ export function subscribeToAlerts(
 
       callback(alerts, matchedRegion);
     } catch {
-      // Silent fail - alerts API may be unavailable
+      consecutiveFailures++;
     }
   };
 
   checkAlerts();
   const interval = setInterval(() => {
-    if (active) checkAlerts();
+    // Stop polling after too many consecutive failures
+    if (!active || consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
+      clearInterval(interval);
+      return;
+    }
+    checkAlerts();
   }, intervalMs);
 
   return () => {

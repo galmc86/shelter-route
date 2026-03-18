@@ -123,10 +123,17 @@ async function reverseGeocodeSingle(
   }
 }
 
+/** Max network reverse-geocode requests per session to avoid Nominatim rate limits */
+const MAX_GEOCODE_REQUESTS_PER_SESSION = 10;
+let geocodeRequestCount = 0;
+
 /**
  * Reverse-geocode shelters that still have a generic "מקלט ציבורי" name.
- * Batches requests with a 1.1 second delay between each to respect
+ * Batches requests with a 1.5 second delay between each to respect
  * Nominatim's rate limit (max 1 req/sec).
+ *
+ * Limits to MAX_GEOCODE_REQUESTS_PER_SESSION network requests per page load
+ * to avoid 429 errors. Cached results are applied immediately without limits.
  *
  * Updates shelters in-place and persists to localStorage.
  * Called as a background task — does not block shelter loading.
@@ -150,22 +157,31 @@ async function reverseGeocodeGenericShelters(
     for (const shelter of generic) {
       const key = coordKey(shelter.lat, shelter.lon);
 
-      // Check cache first
+      // Check cache first — no rate limit needed
       if (cache[key]) {
         shelter.name = `מקלט — ${cache[key]}`;
         sheltersUpdated = true;
         continue;
       }
 
-      // Rate-limit: wait before making a network request
-      await delay(1100);
+      // Stop making network requests if we've hit the per-session limit
+      if (geocodeRequestCount >= MAX_GEOCODE_REQUESTS_PER_SESSION) {
+        continue;
+      }
 
+      // Rate-limit: wait before making a network request
+      await delay(1500);
+
+      geocodeRequestCount++;
       const locationName = await reverseGeocodeSingle(shelter.lat, shelter.lon);
       if (locationName) {
         cache[key] = locationName;
         cacheUpdated = true;
         shelter.name = `מקלט — ${locationName}`;
         sheltersUpdated = true;
+      } else {
+        // Got null — likely 429 or network error. Stop requesting.
+        break;
       }
     }
 
