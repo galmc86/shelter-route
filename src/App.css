@@ -1266,6 +1266,15 @@ body {
   border-top: 1px solid var(--color-divider-light);
 }
 
+/* Google attribution */
+.autocomplete-attribution {
+  padding: 4px 12px 6px;
+  font-size: 11px;
+  color: var(--color-text-subtle, #888);
+  text-align: end;
+  opacity: 0.7;
+}
+
 /* Shelter marker icons */
 .shelter-marker-icon {
   background: none;

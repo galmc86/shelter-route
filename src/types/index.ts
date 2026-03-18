@@ -40,6 +40,16 @@ export interface RouteOption extends RouteInfo {
   distanceMeters: number;
 }
 
+export interface PlaceResult {
+  lat: number;
+  lng: number;
+  displayName: string;
+  placeId?: string; // Google Places ID (for deferred detail fetch)
+}
+
+// Backward compatibility alias
+export type NominatimResult = PlaceResult;
+
 export interface LocationPoint {
   lat: number;
   lng: number;

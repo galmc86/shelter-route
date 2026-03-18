@@ -129,6 +129,9 @@ export const translations = {
     'capacity.walkingTime': 'הליכה',
     'capacity.minutes': 'דק׳',
 
+    // Search attribution
+    'search.poweredByGoogle': 'מופעל ע"י Google',
+
     // Units (duration & distance)
     'units.lessThanMinute': 'פחות מדקה',
     'units.minute': 'דקה {{n}}',
@@ -281,6 +284,9 @@ export const translations = {
     'capacity.legendUnknown': 'Unknown',
     'capacity.walkingTime': 'Walking',
     'capacity.minutes': 'min',
+
+    // Search attribution
+    'search.poweredByGoogle': 'Powered by Google',
 
     // Units (duration & distance)
     'units.lessThanMinute': 'Less than a minute',

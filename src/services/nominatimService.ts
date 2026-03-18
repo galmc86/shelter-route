@@ -1,8 +1,7 @@
-export interface NominatimResult {
-  lat: number;
-  lng: number;
-  displayName: string;
-}
+import type { PlaceResult } from '../types';
+
+// Re-export for backward compatibility
+export type NominatimResult = PlaceResult;
 
 interface NominatimResponse {
   lat: string;
@@ -13,7 +12,7 @@ interface NominatimResponse {
 export async function searchPlaces(
   query: string,
   signal?: AbortSignal
-): Promise<NominatimResult[]> {
+): Promise<PlaceResult[]> {
   if (!query || query.length < 2) return [];
 
   const params = new URLSearchParams({

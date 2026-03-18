@@ -5,7 +5,7 @@ import { useLanguage } from '../i18n';
 import type { TravelMode, RouteInfo, RouteOption, LatLng, ShelterSortMode, RouteWithShelters } from '../types';
 import type { ShelterWithDistance } from '../hooks/useShelters';
 import type { LocationPoint } from '../types';
-import type { NominatimResult } from '../services/nominatimService';
+import type { PlaceResult } from '../types';
 import type { CapacityData } from '../services/capacityService';
 import { getCapacityColor, getCapacityStatusKey } from '../services/capacityService';
 
@@ -72,8 +72,8 @@ export function SearchPanel({
   const [showCopiedToast, setShowCopiedToast] = useState(false);
   const [originText, setOriginText] = useState('');
   const [destText, setDestText] = useState('');
-  const [originPlace, setOriginPlace] = useState<NominatimResult | null>(null);
-  const [destPlace, setDestPlace] = useState<NominatimResult | null>(null);
+  const [originPlace, setOriginPlace] = useState<PlaceResult | null>(null);
+  const [destPlace, setDestPlace] = useState<PlaceResult | null>(null);
   const [travelMode, setTravelMode] = useState<TravelMode>('WALKING');
   const [useMyLocation, setUseMyLocation] = useState(false);
   const [sortMode, setSortMode] = useState<ShelterSortMode>('distance');

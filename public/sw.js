@@ -102,7 +102,9 @@ function isTileRequest(url) {
 function isAPIRequest(url) {
   return (
     url.hostname === 'api.openrouteservice.org' ||
-    url.hostname === 'nominatim.openstreetmap.org'
+    url.hostname === 'nominatim.openstreetmap.org' ||
+    url.hostname === 'maps.googleapis.com' ||
+    url.hostname === 'places.googleapis.com'
   );
 }
 

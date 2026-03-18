@@ -1,13 +1,19 @@
 import { useState, useRef, useCallback, useEffect, useId } from 'react';
-import { searchPlaces, type NominatimResult } from '../services/nominatimService';
+import { searchPlaces as nominatimSearch } from '../services/nominatimService';
+import {
+  searchPlaces as googleSearch,
+  getPlaceDetails,
+  isAvailable as isGoogleAvailable,
+} from '../services/googlePlacesService';
+import { useGoogleMaps } from '../hooks/useGoogleMaps';
 import { useLanguage } from '../i18n';
-import type { LocationPoint } from '../types';
+import type { PlaceResult, LocationPoint } from '../types';
 
 interface LocationInputProps {
   placeholder: string;
   value: string;
   onChange: (value: string) => void;
-  onPlaceSelect: (result: NominatimResult) => void;
+  onPlaceSelect: (result: PlaceResult) => void;
   isLoaded: boolean;
   icon: 'origin' | 'dest';
   currentLocation?: LocationPoint | null;
@@ -26,10 +32,12 @@ export function LocationInput({
   showMyLocation,
   isLoadingLocation,
 }: LocationInputProps) {
-  const { t } = useLanguage();
-  const [suggestions, setSuggestions] = useState<NominatimResult[]>([]);
+  const { t, language } = useLanguage();
+  const { isLoaded: googleLoaded } = useGoogleMaps();
+  const [suggestions, setSuggestions] = useState<PlaceResult[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  const [usingGoogle, setUsingGoogle] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -56,7 +64,18 @@ export function LocationInput({
         const controller = new AbortController();
         abortRef.current = controller;
         try {
-          const results = await searchPlaces(text, controller.signal);
+          let results: PlaceResult[];
+
+          if (googleLoaded && isGoogleAvailable()) {
+            // Use Google Places Autocomplete
+            results = await googleSearch(text, language);
+            setUsingGoogle(true);
+          } else {
+            // Fallback to Nominatim
+            results = await nominatimSearch(text, controller.signal);
+            setUsingGoogle(false);
+          }
+
           if (!controller.signal.aborted) {
             setSuggestions(results);
             setShowDropdown(results.length > 0);
@@ -66,16 +85,26 @@ export function LocationInput({
         }
       }, 300);
     },
-    [onChange]
+    [onChange, googleLoaded, language]
   );
 
   const handleSelect = useCallback(
-    (result: NominatimResult) => {
-      onPlaceSelect(result);
+    async (result: PlaceResult) => {
       onChange(result.displayName);
       setSuggestions([]);
       setShowDropdown(false);
       setHighlightedIndex(-1);
+
+      if (result.placeId && (result.lat === 0 && result.lng === 0)) {
+        // Google result — need to fetch lat/lng from placeId
+        const details = await getPlaceDetails(result.placeId);
+        if (details) {
+          onPlaceSelect({ ...result, lat: details.lat, lng: details.lng });
+        }
+      } else {
+        // Nominatim result — lat/lng already available
+        onPlaceSelect(result);
+      }
     },
     [onPlaceSelect, onChange]
   );
@@ -159,7 +188,7 @@ export function LocationInput({
         <div className="autocomplete-dropdown" role="listbox" id={listboxId}>
           {suggestions.map((result, i) => (
             <button
-              key={i}
+              key={result.placeId || i}
               id={`${listboxId}-option-${i}`}
               className={`autocomplete-item ${highlightedIndex === i ? 'highlighted' : ''}`}
               role="option"
@@ -170,6 +199,11 @@ export function LocationInput({
               {result.displayName}
             </button>
           ))}
+          {usingGoogle && (
+            <div className="autocomplete-attribution">
+              {t('search.poweredByGoogle')}
+            </div>
+          )}
         </div>
       )}
       {showMyLocation && onUseCurrentLocation && (
