@@ -129,6 +129,16 @@ export const translations = {
     'capacity.walkingTime': 'הליכה',
     'capacity.minutes': 'דק׳',
 
+    // Units (duration & distance)
+    'units.lessThanMinute': 'פחות מדקה',
+    'units.minute': 'דקה {{n}}',
+    'units.minutes': '{{n}} דקות',
+    'units.hour': 'שעה {{n}}',
+    'units.hourMinutes': 'שעה ו-{{m}} דק\'',
+    'units.hours': '{{n}} שעות',
+    'units.meters': '{{n}} מ\'',
+    'units.km': '{{n}} ק"מ',
+
     // Errors
     'error.mapLoad': 'שגיאה בטעינת המפה',
     'error.mapLoadDesc': 'ודא שמפתח OpenRouteService מוגדר בקובץ .env',
@@ -260,6 +270,16 @@ export const translations = {
     'capacity.legendUnknown': 'Unknown',
     'capacity.walkingTime': 'Walking',
     'capacity.minutes': 'min',
+
+    // Units (duration & distance)
+    'units.lessThanMinute': 'Less than a minute',
+    'units.minute': '{{n}} min',
+    'units.minutes': '{{n}} min',
+    'units.hour': '{{n}} hr',
+    'units.hourMinutes': '{{n}} hr {{m}} min',
+    'units.hours': '{{n}} hrs',
+    'units.meters': '{{n}} m',
+    'units.km': '{{n}} km',
 
     // Errors
     'error.mapLoad': 'Error loading map',

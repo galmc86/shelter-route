@@ -2,26 +2,7 @@ import { useState, useCallback } from 'react';
 import type { Shelter } from '../types';
 import type { ShelterWithDistance } from './useShelters';
 import { calculateWalkingTime } from './useShelters';
-
-function haversineDistance(
-  lat1: number,
-  lng1: number,
-  lat2: number,
-  lng2: number
-): number {
-  const R = 6371000;
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLng = ((lng2 - lng1) * Math.PI) / 180;
-  const sinLat = Math.sin(dLat / 2);
-  const sinLng = Math.sin(dLng / 2);
-  const h =
-    sinLat * sinLat +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      sinLng *
-      sinLng;
-  return R * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
-}
+import { haversineDistance } from '../utils/geometry';
 
 export function useNearestShelters() {
   const [nearestShelters, setNearestShelters] = useState<ShelterWithDistance[]>([]);
@@ -42,7 +23,7 @@ export function useNearestShelters() {
       const withDistance: ShelterWithDistance[] = allShelters
         .map((shelter) => {
           const distance = Math.round(
-            haversineDistance(lat, lng, shelter.lat, shelter.lon)
+            haversineDistance({ lat, lng }, { lat: shelter.lat, lng: shelter.lon })
           );
           return {
             ...shelter,
