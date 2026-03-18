@@ -1678,26 +1678,41 @@ body {
 
 /* Leaflet Popup — theme-aware */
 .leaflet-popup-content-wrapper {
-  background: var(--color-panel-bg, white);
-  color: var(--color-text, #212121);
-  border-radius: 12px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  background: var(--color-panel-bg, white) !important;
+  color: var(--color-text, #212121) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15) !important;
+  padding: 0 !important;
+  overflow: hidden;
+}
+
+.leaflet-popup-content {
+  margin: 0 !important;
+  width: auto !important;
 }
 
 .leaflet-popup-tip {
-  background: var(--color-panel-bg, white);
+  background: var(--color-panel-bg, white) !important;
+}
+
+.leaflet-popup-close-button {
+  color: var(--color-text-secondary, #757575) !important;
+  z-index: 1;
 }
 
 [data-theme="dark"] .leaflet-popup-content-wrapper {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5) !important;
 }
 
 /* Shelter Popup Component */
 .shelter-popup {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  padding: 4px;
+  padding: 12px 14px;
   min-width: 200px;
-  max-width: 280px;
+  max-width: 260px;
+  box-sizing: border-box;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .shelter-popup-name {
@@ -1724,9 +1739,10 @@ body {
 }
 
 .shelter-popup-walking {
-  margin-inline-start: 8px;
+  display: block;
   color: var(--color-text-secondary, #757575);
   font-weight: 400;
+  margin-top: 2px;
 }
 
 .shelter-popup-capacity {
