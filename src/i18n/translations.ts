@@ -63,7 +63,7 @@ export const translations = {
 
     // Hotline
     'hotline.label': 'פיקוד העורף: 104',
-    'hotline.ariaLabel': 'התקשר לפיקוד העורף 100',
+    'hotline.ariaLabel': 'התקשר לפיקוד העורף 104',
 
     // Map
     'map.loading': 'טוען מפה...',
@@ -195,7 +195,7 @@ export const translations = {
 
     // Hotline
     'hotline.label': 'Home Front Command: 104',
-    'hotline.ariaLabel': 'Call Home Front Command 100',
+    'hotline.ariaLabel': 'Call Home Front Command 104',
 
     // Map
     'map.loading': 'Loading map...',
