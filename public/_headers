@@ -5,7 +5,7 @@
   Permissions-Policy: geolocation=(self)
   X-XSS-Protection: 1; mode=block
   Strict-Transport-Security: max-age=31536000; includeSubDomains
-  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https://*.tile.openstreetmap.org data: blob:; connect-src 'self' https://*.tile.openstreetmap.org https://api.openrouteservice.org https://nominatim.openstreetmap.org; worker-src 'self'; font-src 'self'; frame-src 'none'; object-src 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https://*.tile.openstreetmap.org data: blob:; connect-src 'self' https://*.tile.openstreetmap.org https://api.openrouteservice.org https://nominatim.openstreetmap.org https://www.oref.org.il; worker-src 'self'; font-src 'self'; frame-src 'none'; object-src 'none'
 
 /assets/*
   Cache-Control: public, max-age=31536000, immutable

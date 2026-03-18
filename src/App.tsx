@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { AppHeader } from './components/AppHeader';
 import { SearchPanel } from './components/SearchPanel';
 import { MapView } from './components/MapView';
@@ -10,6 +10,8 @@ import { useShelters } from './hooks/useShelters';
 import { useCurrentLocation } from './hooks/useCurrentLocation';
 import { useNearestShelters } from './hooks/useNearestShelters';
 import { useCapacity } from './hooks/useCapacity';
+import { useOrefAlerts } from './hooks/useOrefAlerts';
+import { AlertBanner } from './components/AlertBanner';
 import { useLanguage } from './i18n';
 import { useTheme } from './theme';
 import type { TravelMode, LatLng, RouteWithShelters } from './types';
@@ -25,6 +27,16 @@ function App() {
   const { location: currentLocation, isLoading: isLoadingLocation, error: locationError, getLocation } = useCurrentLocation();
   const { nearestShelters, isSearching: isEmergencySearching, findNearest, clear: clearNearest } = useNearestShelters();
   const capacityMap = useCapacity(allShelters);
+  const {
+    isAlertActive,
+    matchedRegion,
+    countdown,
+    dismissAlert,
+  } = useOrefAlerts(
+    currentLocation?.lat ?? null,
+    currentLocation?.lng ?? null
+  );
+  const prevAlertActive = useRef(false);
   const [selectedShelterId, setSelectedShelterId] = useState<string | null>(null);
   const [emergencyMode, setEmergencyMode] = useState(false);
   const [panelExpanded, setPanelExpanded] = useState(true);
@@ -79,6 +91,23 @@ function App() {
       findNearest(allShelters, currentLocation.lat, currentLocation.lng);
     }
   }, [emergencyMode, currentLocation, allShelters, findNearest]);
+
+  // Auto-trigger emergency mode when OREF alert activates in user's area
+  useEffect(() => {
+    if (isAlertActive && !prevAlertActive.current) {
+      // Alert just became active - trigger emergency mode
+      setEmergencyMode(true);
+      setSelectedShelterId(null);
+      setPanelExpanded(false);
+      getLocation();
+
+      // Vibrate device if supported (long pattern for urgency)
+      if (navigator.vibrate) {
+        navigator.vibrate([200, 100, 200, 100, 400]);
+      }
+    }
+    prevAlertActive.current = isAlertActive;
+  }, [isAlertActive, getLocation]);
 
   const handleSearch = useCallback(
     (origin: LatLng, destination: LatLng, travelMode: TravelMode) => {
@@ -138,7 +167,15 @@ function App() {
   }
 
   return (
-    <div className="app" dir={language === 'he' ? 'rtl' : 'ltr'} data-theme={theme}>
+    <div className={`app${isAlertActive ? ' app-with-alert' : ''}`} dir={language === 'he' ? 'rtl' : 'ltr'} data-theme={theme}>
+      {isAlertActive && (
+        <AlertBanner
+          matchedRegion={matchedRegion}
+          countdown={countdown}
+          onFindShelter={handleEmergencyClick}
+          onDismiss={dismissAlert}
+        />
+      )}
       <OfflineIndicator />
       <AppHeader />
       <main className="main-content">
