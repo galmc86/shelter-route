@@ -119,12 +119,12 @@ export function subscribeToAlerts(
 
   const checkAlerts = async () => {
     try {
-      // Try fetching from OREF API (may need CORS proxy in production)
+      // Try fetching from OREF API
+      // Note: Direct browser access is blocked by CORS in production.
+      // For production use, set up a CORS proxy (e.g., Cloudflare Worker)
+      // and update this URL to point to the proxy.
       const response = await fetch('https://www.oref.org.il/WarningMessages/alert/alerts.json', {
-        headers: {
-          'X-Requested-With': 'XMLHttpRequest',
-          'Referer': 'https://www.oref.org.il/',
-        },
+        mode: 'cors',
       });
 
       if (!response.ok) return;

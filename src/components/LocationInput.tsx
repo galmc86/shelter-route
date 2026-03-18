@@ -33,7 +33,7 @@ export function LocationInput({
   isLoadingLocation,
 }: LocationInputProps) {
   const { t, language } = useLanguage();
-  const { isLoaded: googleLoaded } = useGoogleMaps();
+  const { isPlacesLoaded: googleLoaded } = useGoogleMaps();
   const [suggestions, setSuggestions] = useState<PlaceResult[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);

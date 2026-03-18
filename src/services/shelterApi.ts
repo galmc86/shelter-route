@@ -11,7 +11,6 @@ interface MiklatShelter {
 const STORAGE_KEY = 'shelter-route:shelters';
 const STORAGE_VERSION = 1;
 const GEOCODE_CACHE_KEY = 'shelter-route:geocode-cache';
-const NOMINATIM_USER_AGENT = 'ShelterRoute/1.0 (https://github.com/shelter-route)';
 
 let cachedShelters: Shelter[] | null = null;
 let reverseGeocodeInProgress = false;
@@ -115,11 +114,7 @@ async function reverseGeocodeSingle(
 ): Promise<string | null> {
   try {
     const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=he&zoom=18`;
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': NOMINATIM_USER_AGENT,
-      },
-    });
+    const response = await fetch(url);
     if (!response.ok) return null;
     const data: NominatimResponse = await response.json();
     return extractNameFromNominatim(data);

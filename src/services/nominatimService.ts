@@ -25,10 +25,7 @@ export async function searchPlaces(
 
   const response = await fetch(
     `https://nominatim.openstreetmap.org/search?${params}`,
-    {
-      headers: { 'User-Agent': 'ShelterRoute/1.0' },
-      signal,
-    }
+    { signal }
   );
 
   if (!response.ok) return [];

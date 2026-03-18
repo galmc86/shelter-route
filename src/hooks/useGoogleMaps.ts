@@ -4,8 +4,13 @@ import { setOptions, importLibrary } from '@googlemaps/js-api-loader';
 let initStarted = false;
 let loadPromise: Promise<void> | null = null;
 
+/**
+ * Hook to load Google Places API.
+ * Returns { isLoaded } for Places autocomplete availability.
+ * This is SEPARATE from the Leaflet map — the map always works.
+ */
 export function useGoogleMaps() {
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [isPlacesLoaded, setIsPlacesLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -13,7 +18,7 @@ export function useGoogleMaps() {
 
     if (!apiKey) {
       // No API key configured — fall back to Nominatim
-      setIsLoaded(false);
+      setIsPlacesLoaded(false);
       return;
     }
 
@@ -31,14 +36,16 @@ export function useGoogleMaps() {
 
     if (loadPromise) {
       loadPromise
-        .then(() => setIsLoaded(true))
+        .then(() => setIsPlacesLoaded(true))
         .catch((err: Error) => {
           console.warn('Google Places API failed to load, using Nominatim fallback:', err);
           setError(err.message || 'Failed to load Google Places');
-          setIsLoaded(false);
+          setIsPlacesLoaded(false);
         });
     }
   }, []);
 
-  return { isLoaded, error };
+  // isLoaded: always true (Leaflet map doesn't depend on Google)
+  // isPlacesLoaded: whether Google Places API is ready for autocomplete
+  return { isLoaded: true, isPlacesLoaded, error };
 }
