@@ -80,6 +80,22 @@ export const translations = {
     'share.text': 'מסלול עם {{count}} מקלטים',
     'share.sharedLocation': 'מיקום משותף',
 
+    // Sorting
+    'sort.label': 'מיון לפי',
+    'sort.distance': 'מרחק',
+    'sort.walkingTime': 'זמן הליכה',
+
+    // Walking time
+    'shelters.walkingTime': '~{{minutes}} דק׳ הליכה',
+
+    // Accessibility
+    'accessibility.filterLabel': 'נגישים בלבד',
+    'accessibility.accessible': 'נגיש לכיסא גלגלים',
+    'accessibility.notAccessible': 'לא נגיש',
+    'accessibility.hasElevator': 'מעלית',
+    'accessibility.floor': 'קומה {{level}}',
+    'accessibility.groundFloor': 'קומת קרקע',
+
     // Errors
     'error.mapLoad': 'שגיאה בטעינת המפה',
     'error.mapLoadDesc': 'ודא שמפתח OpenRouteService מוגדר בקובץ .env',
@@ -162,6 +178,22 @@ export const translations = {
     'share.title': 'Shelter Route',
     'share.text': 'Route with {{count}} shelters',
     'share.sharedLocation': 'Shared location',
+
+    // Sorting
+    'sort.label': 'Sort by',
+    'sort.distance': 'Distance',
+    'sort.walkingTime': 'Walking time',
+
+    // Walking time
+    'shelters.walkingTime': '~{{minutes}} min walk',
+
+    // Accessibility
+    'accessibility.filterLabel': 'Accessible only',
+    'accessibility.accessible': 'Wheelchair accessible',
+    'accessibility.notAccessible': 'Not accessible',
+    'accessibility.hasElevator': 'Elevator',
+    'accessibility.floor': 'Floor {{level}}',
+    'accessibility.groundFloor': 'Ground floor',
 
     // Errors
     'error.mapLoad': 'Error loading map',

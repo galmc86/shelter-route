@@ -83,6 +83,33 @@ function buildShelterPopupHtml(
   const metersLabel = tRaw(lang, 'shelters.meters');
   const navLabel = tRaw(lang, 'shelters.navigateToShelter');
 
+  // Walking time
+  const walkingTimeText = tRaw(lang, 'shelters.walkingTime').replace(
+    '{{minutes}}',
+    String(shelter.walkingTimeMinutes ?? '?')
+  );
+
+  // Accessibility info
+  const accessibleIcon = shelter.isAccessible
+    ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="#1B5E20" style="vertical-align:middle;margin-inline-end:3px;"><circle cx="12" cy="4" r="2"/><path d="M19 13v-2c-1.54.02-3.09-.75-4.07-1.83l-1.29-1.43c-.17-.19-.38-.34-.61-.45-.01 0-.01-.01-.02-.01H13c-.35-.2-.75-.3-1.19-.26C10.76 7.11 10 8.04 10 9.09V15c0 1.1.9 2 2 2h5v5h2v-5.5c0-1.1-.9-2-2-2h-3v-3.45c1.29 1.07 3.25 1.94 5 1.95zM12.83 18H10c-1.1 0-2-.9-2-2v-1l-3.07 3.07c-.39.39-.39 1.02 0 1.41L8 22.55c.39.39 1.02.39 1.41 0L12.83 18z"/></svg>'
+    : '';
+  const accessibleLabel = shelter.isAccessible
+    ? tRaw(lang, 'accessibility.accessible')
+    : '';
+  const floorText = shelter.floorLevel === 0
+    ? tRaw(lang, 'accessibility.groundFloor')
+    : shelter.floorLevel !== undefined
+      ? tRaw(lang, 'accessibility.floor').replace('{{level}}', String(shelter.floorLevel))
+      : '';
+
+  const metaHtml = `
+    <div style="font-size: 11px; color: #555; margin-top: 4px; display: flex; gap: 8px; flex-wrap: wrap;">
+      <span style="color: #1565C0; font-weight: 500;">${walkingTimeText}</span>
+      ${floorText ? `<span>${floorText}</span>` : ''}
+      ${accessibleIcon ? `<span>${accessibleIcon}${accessibleLabel}</span>` : ''}
+    </div>
+  `;
+
   return `
     <div style="direction: ${dir}; font-family: -apple-system, sans-serif; padding: 4px; min-width: 200px; max-width: 280px;">
       <div style="font-weight: 600; color: #0D47A1; font-size: 14px; margin-bottom: 6px;">
@@ -92,6 +119,7 @@ function buildShelterPopupHtml(
       <div style="font-size: 12px; color: #1565C0; font-weight: 600; margin-top: 8px; padding-top: 8px; border-top: 1px solid #eee;">
         ${distanceText} ${metersLabel} ${distanceLabel}
       </div>
+      ${metaHtml}
       <a href="${navUrl}" target="_blank" rel="noopener noreferrer"
         style="display: block; text-align: center; margin-top: 8px; padding: 8px; background: #1565C0; color: white; text-decoration: none; border-radius: 6px; font-size: 13px; font-weight: 500;">
         ${navLabel}
