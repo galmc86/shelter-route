@@ -1,4 +1,4 @@
-import type { RouteInfo, TravelMode, LatLng, LatLngBounds } from '../types';
+import type { RouteOption, TravelMode, LatLng, LatLngBounds } from '../types';
 
 const ORS_API = 'https://api.openrouteservice.org/v2/directions';
 
@@ -69,44 +69,11 @@ function formatDistance(meters: number): string {
   return `${(meters / 1000).toFixed(1)} ק"מ`;
 }
 
-export async function computeRoute(
-  origin: LatLng,
-  destination: LatLng,
-  travelMode: TravelMode
-): Promise<RouteInfo[]> {
-  const profile = PROFILE_MAP[travelMode];
-  const apiKey = import.meta.env.VITE_ORS_API_KEY;
-
-  const response = await fetch(`${ORS_API}/${profile}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: apiKey,
-    },
-    body: JSON.stringify({
-      coordinates: [
-        [origin.lng, origin.lat],
-        [destination.lng, destination.lat],
-      ],
-      alternative_routes: {
-        target_count: 3,
-        share_factor: 0.6,
-        weight_factor: 1.4,
-      },
-    }),
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => null);
-    const message = errorData?.error?.message || 'לא נמצא מסלול';
-    throw new Error(message);
-  }
-
-  const data = await response.json();
+function parseRoutes(data: { routes?: Array<{ geometry: string; summary: { duration: number; distance: number } }> }): RouteOption[] {
   const routes = data.routes;
   if (!routes || routes.length === 0) throw new Error('לא נמצא מסלול');
 
-  return routes.map((route: { geometry: string; summary: { duration: number; distance: number } }) => {
+  return routes.map((route) => {
     const path = decodePolyline(route.geometry);
     const bounds = computeBounds(path);
     const summary = route.summary;
@@ -116,6 +83,89 @@ export async function computeRoute(
       bounds,
       duration: formatDuration(summary.duration),
       distance: formatDistance(summary.distance),
+      durationSeconds: summary.duration,
+      distanceMeters: summary.distance,
     };
   });
+}
+
+async function fetchRoutes(
+  origin: LatLng,
+  destination: LatLng,
+  profile: string,
+  apiKey: string,
+  withAlternatives: boolean
+): Promise<Response> {
+  const body: Record<string, unknown> = {
+    coordinates: [
+      [origin.lng, origin.lat],
+      [destination.lng, destination.lat],
+    ],
+  };
+
+  if (withAlternatives) {
+    body.alternative_routes = {
+      target_count: 3,
+      share_factor: 0.8,
+      weight_factor: 2.0,
+    };
+  }
+
+  const doFetch = () =>
+    fetch(`${ORS_API}/${profile}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: apiKey,
+      },
+      body: JSON.stringify(body),
+    });
+
+  // Retry once on network error (handles Safari 18+ keep-alive bug)
+  try {
+    return await doFetch();
+  } catch {
+    return doFetch();
+  }
+}
+
+export async function computeRoutes(
+  origin: LatLng,
+  destination: LatLng,
+  travelMode: TravelMode
+): Promise<RouteOption[]> {
+  const profile = PROFILE_MAP[travelMode];
+  const apiKey = import.meta.env.VITE_ORS_API_KEY;
+
+  let response: Response;
+
+  try {
+    // Try with alternative routes first
+    response = await fetchRoutes(origin, destination, profile, apiKey, true);
+  } catch {
+    // Network error on alternatives request — try without
+    try {
+      response = await fetchRoutes(origin, destination, profile, apiKey, false);
+    } catch {
+      throw new Error('שגיאת רשת – בדוק את חיבור האינטרנט');
+    }
+  }
+
+  // If alternative routes HTTP error, fall back to single route
+  if (!response.ok) {
+    try {
+      response = await fetchRoutes(origin, destination, profile, apiKey, false);
+    } catch {
+      throw new Error('שגיאת רשת – בדוק את חיבור האינטרנט');
+    }
+  }
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null);
+    const message = errorData?.error?.message || 'לא נמצא מסלול';
+    throw new Error(message);
+  }
+
+  const data = await response.json();
+  return parseRoutes(data);
 }

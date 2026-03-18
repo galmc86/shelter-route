@@ -20,7 +20,7 @@ function App() {
   const { language, t } = useLanguage();
   const { theme } = useTheme();
   const { isLoaded, error: mapsError } = useGoogleMaps();
-  const { routeInfo, allRoutes, selectedRouteIndex, setSelectedRouteIndex, isLoading: isRouteLoading, error: routeError, searchRoute } = useRoute();
+  const { routes, selectedRouteIndex, selectedRoute, selectRoute, isLoading: isRouteLoading, error: routeError, searchRoute } = useRoute();
   const { allShelters, nearbyShelters, isLoading: sheltersLoading, filterByRoute, getRoutesWithShelters } = useShelters();
   const { location: currentLocation, isLoading: isLoadingLocation, error: locationError, getLocation } = useCurrentLocation();
   const { nearestShelters, isSearching: isEmergencySearching, findNearest, clear: clearNearest } = useNearestShelters();
@@ -34,9 +34,9 @@ function App() {
 
   // Compute routes with shelter counts
   const routesWithShelters: RouteWithShelters[] = useMemo(() => {
-    if (allRoutes.length === 0) return [];
-    return getRoutesWithShelters(allRoutes);
-  }, [allRoutes, getRoutesWithShelters]);
+    if (routes.length === 0) return [];
+    return getRoutesWithShelters(routes);
+  }, [routes, getRoutesWithShelters]);
 
   // Parse URL params on mount for shared routes
   useEffect(() => {
@@ -70,8 +70,8 @@ function App() {
 
   // Filter shelters whenever route changes
   useEffect(() => {
-    filterByRoute(routeInfo);
-  }, [routeInfo, filterByRoute]);
+    filterByRoute(selectedRoute);
+  }, [selectedRoute, filterByRoute]);
 
   // When emergency mode activates and we get location, find nearest shelters
   useEffect(() => {
@@ -112,9 +112,9 @@ function App() {
   }, [clearNearest]);
 
   const handleRouteSelect = useCallback((index: number) => {
-    setSelectedRouteIndex(index);
+    selectRoute(index);
     setSelectedShelterId(null);
-  }, [setSelectedRouteIndex]);
+  }, [selectRoute]);
 
   const displayShelters = emergencyMode ? nearestShelters : nearbyShelters;
 
@@ -146,7 +146,10 @@ function App() {
           isLoaded={isLoaded}
           onSearch={handleSearch}
           isSearching={isRouteLoading}
-          routeInfo={emergencyMode ? null : routeInfo}
+          routeInfo={emergencyMode ? null : selectedRoute}
+          routes={emergencyMode ? [] : routes}
+          selectedRouteIndex={selectedRouteIndex}
+          onSelectRoute={selectRoute}
           nearbyShelters={displayShelters}
           sheltersLoading={sheltersLoading || isEmergencySearching}
           currentLocation={currentLocation}
@@ -165,16 +168,15 @@ function App() {
           shareDestination={shareDestination}
           shareTravelMode={shareTravelMode}
           routesWithShelters={emergencyMode ? [] : routesWithShelters}
-          selectedRouteIndex={selectedRouteIndex}
           onRouteSelect={handleRouteSelect}
           capacityMap={capacityMap}
         />
         <MapView
           isLoaded={isLoaded}
-          routeInfo={emergencyMode ? null : routeInfo}
-          allRoutes={emergencyMode ? [] : allRoutes}
+          routeInfo={emergencyMode ? null : selectedRoute}
+          routes={emergencyMode ? [] : routes}
           selectedRouteIndex={selectedRouteIndex}
-          onRouteSelect={handleRouteSelect}
+          onSelectRoute={selectRoute}
           shelters={displayShelters}
           onShelterClick={handleShelterClick}
           selectedShelterId={selectedShelterId}

@@ -35,6 +35,11 @@ export interface RouteInfo {
   distance: string;
 }
 
+export interface RouteOption extends RouteInfo {
+  durationSeconds: number;
+  distanceMeters: number;
+}
+
 export interface LocationPoint {
   lat: number;
   lng: number;

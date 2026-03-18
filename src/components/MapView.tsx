@@ -7,7 +7,7 @@ import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import { useLanguage, LanguageProvider } from '../i18n';
 import type { Language, TranslationKey } from '../i18n';
 import { translations } from '../i18n/translations';
-import type { RouteInfo, LocationPoint } from '../types';
+import type { RouteInfo, RouteOption, LocationPoint } from '../types';
 import type { ShelterWithDistance } from '../hooks/useShelters';
 import type { CapacityData } from '../services/capacityService';
 import { ShelterPopup } from './ShelterPopup';
@@ -15,9 +15,9 @@ import { ShelterPopup } from './ShelterPopup';
 interface MapViewProps {
   isLoaded: boolean;
   routeInfo: RouteInfo | null;
-  allRoutes: RouteInfo[];
-  selectedRouteIndex: number;
-  onRouteSelect?: (index: number) => void;
+  routes?: RouteOption[];
+  selectedRouteIndex?: number;
+  onSelectRoute?: (index: number) => void;
   shelters: ShelterWithDistance[];
   onShelterClick?: (shelter: ShelterWithDistance) => void;
   selectedShelterId?: string | null;
@@ -26,6 +26,9 @@ interface MapViewProps {
 }
 
 const ISRAEL_CENTER: L.LatLngExpression = [31.5, 34.8];
+
+// Distinct colors for each route alternative
+const ROUTE_COLORS = ['#4285F4', '#00897B', '#F57C00'];
 
 const SHELTER_ICON_SVG = `<svg width="28" height="34" viewBox="0 0 28 34" xmlns="http://www.w3.org/2000/svg">
   <path d="M14 0C6.3 0 0 6.3 0 14c0 10.5 14 20 14 20s14-9.5 14-20C28 6.3 21.7 0 14 0z" fill="#0D47A1"/>
@@ -43,6 +46,16 @@ const SELECTED_SHELTER_SVG = `<svg width="36" height="44" viewBox="0 0 36 44" xm
 const USER_LOCATION_SVG = `<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
   <circle cx="12" cy="12" r="10" fill="#4285F4" opacity="0.2" stroke="#4285F4" stroke-width="2"/>
   <circle cx="12" cy="12" r="5" fill="#4285F4"/>
+</svg>`;
+
+const START_MARKER_SVG = `<svg width="28" height="34" viewBox="0 0 28 34" xmlns="http://www.w3.org/2000/svg">
+  <path d="M14 0C6.3 0 0 6.3 0 14c0 10.5 14 20 14 20s14-9.5 14-20C28 6.3 21.7 0 14 0z" fill="#2E7D32"/>
+  <circle cx="14" cy="13" r="5" fill="white"/>
+</svg>`;
+
+const END_MARKER_SVG = `<svg width="28" height="34" viewBox="0 0 28 34" xmlns="http://www.w3.org/2000/svg">
+  <path d="M14 0C6.3 0 0 6.3 0 14c0 10.5 14 20 14 20s14-9.5 14-20C28 6.3 21.7 0 14 0z" fill="#C62828"/>
+  <circle cx="14" cy="13" r="5" fill="white"/>
 </svg>`;
 
 const shelterIcon = L.divIcon({
@@ -66,6 +79,22 @@ const userLocationIcon = L.divIcon({
   className: 'user-location-icon',
   iconSize: [24, 24],
   iconAnchor: [12, 12],
+});
+
+const startMarkerIcon = L.divIcon({
+  html: START_MARKER_SVG,
+  className: 'route-endpoint-icon',
+  iconSize: [28, 34],
+  iconAnchor: [14, 34],
+  popupAnchor: [0, -34],
+});
+
+const endMarkerIcon = L.divIcon({
+  html: END_MARKER_SVG,
+  className: 'route-endpoint-icon',
+  iconSize: [28, 34],
+  iconAnchor: [14, 34],
+  popupAnchor: [0, -34],
 });
 
 function tRaw(lang: Language, key: TranslationKey): string {
@@ -113,9 +142,9 @@ function buildUserLocationPopupHtml(lang: Language): string {
 export function MapView({
   isLoaded,
   routeInfo,
-  allRoutes,
-  selectedRouteIndex,
-  onRouteSelect,
+  routes,
+  selectedRouteIndex = 0,
+  onSelectRoute,
   shelters,
   onShelterClick,
   selectedShelterId,
@@ -125,8 +154,9 @@ export function MapView({
   const { language, t } = useLanguage();
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
-  const routeLayerRef = useRef<L.Polyline | null>(null);
-  const altRouteLayersRef = useRef<L.Polyline[]>([]);
+  const routeLayersRef = useRef<L.Polyline[]>([]);
+  const routeMarkersRef = useRef<L.Marker[]>([]);
+  const routePickerRef = useRef<L.Control | null>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
   const userMarkerRef = useRef<L.Marker | null>(null);
   const popupRootsRef = useRef<Map<string, Root>>(new Map());
@@ -174,58 +204,117 @@ export function MapView({
     const map = mapInstanceRef.current;
     if (!map) return;
 
-    // Remove old routes
-    if (routeLayerRef.current) {
-      routeLayerRef.current.remove();
-      routeLayerRef.current = null;
+    // Clear existing route layers
+    routeLayersRef.current.forEach((l) => l.remove());
+    routeLayersRef.current = [];
+    routeMarkersRef.current.forEach((m) => m.remove());
+    routeMarkersRef.current = [];
+    if (routePickerRef.current) {
+      map.removeControl(routePickerRef.current);
+      routePickerRef.current = null;
     }
-    altRouteLayersRef.current.forEach((layer) => layer.remove());
-    altRouteLayersRef.current = [];
 
-    if (allRoutes.length === 0 && !routeInfo) return;
+    const routesToRender = routes && routes.length > 0 ? routes : routeInfo ? [routeInfo] : [];
+    if (routesToRender.length === 0) return;
 
-    // Draw alternative routes first (behind the selected one)
-    allRoutes.forEach((route, idx) => {
-      if (idx === selectedRouteIndex) return; // skip selected, we draw it on top
+    const activeIndex = routes && routes.length > 0 ? selectedRouteIndex : 0;
+    const hasAlternatives = routes && routes.length > 1;
+
+    // Render non-selected routes first (so they appear behind)
+    routesToRender.forEach((route, index) => {
+      if (index === activeIndex) return;
+      if (route.path.length < 2) return;
+
+      const color = hasAlternatives ? (ROUTE_COLORS[index] || '#9E9E9E') : '#9E9E9E';
       const latLngs: L.LatLngExpression[] = route.path.map((p) => [p.lat, p.lng]);
-      const altLine = L.polyline(latLngs, {
-        color: '#9E9E9E',
-        weight: 4,
+      const polyline = L.polyline(latLngs, {
+        color,
+        weight: 5,
         opacity: 0.5,
-        dashArray: '8, 8',
-        className: 'alt-route-line',
+        dashArray: '8 6',
       }).addTo(map);
 
-      // Clicking an alternative route selects it
-      altLine.on('click', () => {
-        onRouteSelect?.(idx);
+      polyline.on('click', () => {
+        onSelectRoute?.(index);
       });
 
-      // Add tooltip showing route number
-      altLine.bindTooltip(
-        `${tRaw(language, 'routes.route')} ${idx + 1}`,
-        { sticky: true, className: 'alt-route-tooltip' }
-      );
-
-      altRouteLayersRef.current.push(altLine);
+      routeLayersRef.current.push(polyline);
     });
 
-    // Draw selected route on top
-    if (routeInfo) {
-      const latLngs: L.LatLngExpression[] = routeInfo.path.map((p) => [p.lat, p.lng]);
-      routeLayerRef.current = L.polyline(latLngs, {
-        color: '#4285F4',
-        weight: 5,
-        opacity: 0.8,
+    // Render selected route on top
+    const selected = routesToRender[activeIndex];
+    if (selected && selected.path.length >= 2) {
+      const selectedColor = hasAlternatives ? (ROUTE_COLORS[activeIndex] || '#4285F4') : '#4285F4';
+      const latLngs: L.LatLngExpression[] = selected.path.map((p) => [p.lat, p.lng]);
+      const polyline = L.polyline(latLngs, {
+        color: selectedColor,
+        weight: 6,
+        opacity: 0.9,
       }).addTo(map);
 
+      routeLayersRef.current.push(polyline);
+
+      const start = selected.path[0];
+      const end = selected.path[selected.path.length - 1];
+
+      const startMarker = L.marker([start.lat, start.lng], {
+        icon: startMarkerIcon,
+        zIndexOffset: 900,
+      }).addTo(map);
+
+      const endMarker = L.marker([end.lat, end.lng], {
+        icon: endMarkerIcon,
+        zIndexOffset: 900,
+      }).addTo(map);
+
+      routeMarkersRef.current = [startMarker, endMarker];
+
+      // Add floating route picker overlay when alternatives exist
+      if (hasAlternatives) {
+        const dir = language === 'he' ? 'rtl' : 'ltr';
+        const RoutePicker = L.Control.extend({
+          onAdd() {
+            const container = L.DomUtil.create('div', 'route-picker-overlay');
+            container.setAttribute('dir', dir);
+            L.DomEvent.disableClickPropagation(container);
+            L.DomEvent.disableScrollPropagation(container);
+
+            const items = routes!.map((route, index) => {
+              const isActive = index === activeIndex;
+              const color = ROUTE_COLORS[index] || '#9E9E9E';
+              return `<button class="route-picker-item ${isActive ? 'route-picker-item-active' : ''}" data-route-index="${index}">
+                <span class="route-picker-color" style="background: ${color};"></span>
+                <span class="route-picker-info">
+                  <span class="route-picker-duration">${route.duration}</span>
+                  <span class="route-picker-distance">${route.distance}</span>
+                </span>
+              </button>`;
+            });
+
+            container.innerHTML = items.join('');
+
+            container.querySelectorAll('.route-picker-item').forEach((btn) => {
+              btn.addEventListener('click', () => {
+                const idx = parseInt((btn as HTMLElement).dataset.routeIndex || '0', 10);
+                onSelectRoute?.(idx);
+              });
+            });
+
+            return container;
+          },
+        });
+
+        routePickerRef.current = new RoutePicker({ position: 'topright' });
+        routePickerRef.current.addTo(map);
+      }
+
       const bounds = L.latLngBounds(
-        [routeInfo.bounds.southWest.lat, routeInfo.bounds.southWest.lng],
-        [routeInfo.bounds.northEast.lat, routeInfo.bounds.northEast.lng]
+        [selected.bounds.southWest.lat, selected.bounds.southWest.lng],
+        [selected.bounds.northEast.lat, selected.bounds.northEast.lng]
       );
       map.fitBounds(bounds, { padding: [40, 40] });
     }
-  }, [allRoutes, routeInfo, selectedRouteIndex, onRouteSelect, language]);
+  }, [routeInfo, routes, selectedRouteIndex, onSelectRoute, language]);
 
   // Update user location marker
   useEffect(() => {
@@ -353,6 +442,13 @@ export function MapView({
       });
 
       markersLayer.addLayer(marker);
+
+      // Programmatically open popup for the selected shelter,
+      // since the useEffect re-creates markers and interrupts
+      // Leaflet's default click-to-open popup behavior.
+      if (isSelected) {
+        setTimeout(() => marker.openPopup(), 0);
+      }
     });
 
     // Cleanup on unmount

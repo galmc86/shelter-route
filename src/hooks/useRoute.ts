@@ -1,25 +1,28 @@
-import { useState, useCallback } from 'react';
-import type { RouteInfo, TravelMode, LatLng } from '../types';
-import { computeRoute } from '../services/routeService';
+import { useState, useCallback, useMemo } from 'react';
+import type { RouteOption, RouteInfo, TravelMode, LatLng } from '../types';
+import { computeRoutes } from '../services/routeService';
 
 export function useRoute() {
-  const [allRoutes, setAllRoutes] = useState<RouteInfo[]>([]);
+  const [routes, setRoutes] = useState<RouteOption[]>([]);
   const [selectedRouteIndex, setSelectedRouteIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const routeInfo = allRoutes.length > 0 ? allRoutes[selectedRouteIndex] ?? null : null;
+  const selectedRoute: RouteInfo | null = useMemo(
+    () => (routes.length > 0 ? routes[selectedRouteIndex] ?? null : null),
+    [routes, selectedRouteIndex]
+  );
 
   const searchRoute = useCallback(
     async (origin: LatLng, destination: LatLng, travelMode: TravelMode) => {
       setIsLoading(true);
       setError(null);
-      setAllRoutes([]);
+      setRoutes([]);
       setSelectedRouteIndex(0);
 
       try {
-        const routes = await computeRoute(origin, destination, travelMode);
-        setAllRoutes(routes);
+        const result = await computeRoutes(origin, destination, travelMode);
+        setRoutes(result);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'שגיאה בחיפוש מסלול');
       } finally {
@@ -30,16 +33,16 @@ export function useRoute() {
   );
 
   const clearRoute = useCallback(() => {
-    setAllRoutes([]);
+    setRoutes([]);
     setSelectedRouteIndex(0);
     setError(null);
   }, []);
 
   return {
-    routeInfo,
-    allRoutes,
+    routes,
     selectedRouteIndex,
-    setSelectedRouteIndex,
+    selectedRoute,
+    selectRoute: setSelectedRouteIndex,
     isLoading,
     error,
     searchRoute,

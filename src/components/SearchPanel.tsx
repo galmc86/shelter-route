@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useMemo } from 'react';
 import { LocationInput } from './LocationInput';
 import { TravelModeSelector } from './TravelModeSelector';
 import { useLanguage } from '../i18n';
-import type { TravelMode, RouteInfo, LatLng, ShelterSortMode, RouteWithShelters } from '../types';
+import type { TravelMode, RouteInfo, RouteOption, LatLng, ShelterSortMode, RouteWithShelters } from '../types';
 import type { ShelterWithDistance } from '../hooks/useShelters';
 import type { LocationPoint } from '../types';
 import type { NominatimResult } from '../services/nominatimService';
@@ -14,6 +14,9 @@ interface SearchPanelProps {
   onSearch: (origin: LatLng, destination: LatLng, travelMode: TravelMode) => void;
   isSearching: boolean;
   routeInfo: RouteInfo | null;
+  routes?: RouteOption[];
+  selectedRouteIndex?: number;
+  onSelectRoute?: (index: number) => void;
   nearbyShelters: ShelterWithDistance[];
   sheltersLoading: boolean;
   currentLocation: LocationPoint | null;
@@ -32,7 +35,6 @@ interface SearchPanelProps {
   shareDestination?: { lat: number; lng: number } | null;
   shareTravelMode?: TravelMode;
   routesWithShelters?: RouteWithShelters[];
-  selectedRouteIndex?: number;
   onRouteSelect?: (index: number) => void;
   capacityMap?: Map<string, CapacityData>;
 }
@@ -42,6 +44,9 @@ export function SearchPanel({
   onSearch,
   isSearching,
   routeInfo,
+  routes,
+  selectedRouteIndex = 0,
+  onSelectRoute,
   nearbyShelters,
   sheltersLoading,
   currentLocation,
@@ -60,7 +65,6 @@ export function SearchPanel({
   shareDestination,
   shareTravelMode,
   routesWithShelters = [],
-  selectedRouteIndex = 0,
   onRouteSelect,
   capacityMap,
 }: SearchPanelProps) {
@@ -323,7 +327,7 @@ export function SearchPanel({
         <div className="error-message" role="alert">{locationError}</div>
       )}
 
-      {/* Route Selector — show when multiple alternatives exist */}
+      {/* Route Selector — show when multiple alternatives exist (our shelter-count version) */}
       {routesWithShelters.length > 1 && (
         <>
           <div className="divider" />
@@ -372,6 +376,24 @@ export function SearchPanel({
           <div className="divider" />
           <div className="route-info" aria-label={t('route.details')}>
             <div className="route-info-header">{t('route.details')}</div>
+            {routes && routes.length > 1 && (
+              <div className="route-options" role="radiogroup" aria-label={t('route.alternatives')}>
+                {routes.map((route, index) => (
+                  <button
+                    key={index}
+                    className={`route-option ${selectedRouteIndex === index ? 'route-option-selected' : ''}`}
+                    onClick={() => onSelectRoute?.(index)}
+                    role="radio"
+                    aria-checked={selectedRouteIndex === index}
+                  >
+                    <span className="route-option-label">{t('route.optionLabel')} {index + 1}</span>
+                    <span className="route-option-stats">
+                      {route.duration} · {route.distance}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
             <div className="route-stats">
               <div className="stat">
                 <span className="stat-icon" aria-hidden="true">

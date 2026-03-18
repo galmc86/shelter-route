@@ -33,6 +33,8 @@ export const translations = {
 
     // Route Info
     'route.details': 'פרטי מסלול',
+    'route.alternatives': 'מסלולים חלופיים',
+    'route.optionLabel': 'מסלול',
     'route.sheltersAlongRoute': 'מקלטים ציבוריים לאורך המסלול',
     'route.sheltersLabel': 'מקלטים',
 
@@ -163,6 +165,8 @@ export const translations = {
 
     // Route Info
     'route.details': 'Route Details',
+    'route.alternatives': 'Alternative routes',
+    'route.optionLabel': 'Route',
     'route.sheltersAlongRoute': 'Public shelters along the route',
     'route.sheltersLabel': 'shelters',
 
