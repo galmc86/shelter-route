@@ -139,6 +139,17 @@ export const translations = {
     'units.meters': '{{n}} מ\'',
     'units.km': '{{n}} ק"מ',
 
+    // OREF Alerts
+    'alert.active': 'התרעה פעילה!',
+    'alert.title': 'התרעת צבע אדום',
+    'alert.countdown': ':זמן להגיע למקלט',
+    'alert.findShelter': 'מצא מקלט עכשיו',
+    'alert.dismiss': 'סגור',
+    'alert.region': ':התרעה באזור',
+    'alert.seconds': 'שניות',
+    'alert.expired': 'הכנס למקלט מיד!',
+    'alert.settings': 'התראות',
+
     // Errors
     'error.mapLoad': 'שגיאה בטעינת המפה',
     'error.mapLoadDesc': 'ודא שמפתח OpenRouteService מוגדר בקובץ .env',
@@ -280,6 +291,17 @@ export const translations = {
     'units.hours': '{{n}} hrs',
     'units.meters': '{{n}} m',
     'units.km': '{{n}} km',
+
+    // OREF Alerts
+    'alert.active': 'Active alert!',
+    'alert.title': 'Rocket Alert',
+    'alert.countdown': 'Time to shelter:',
+    'alert.findShelter': 'Find shelter now',
+    'alert.dismiss': 'Dismiss',
+    'alert.region': 'Alert in:',
+    'alert.seconds': 'seconds',
+    'alert.expired': 'Get to shelter immediately!',
+    'alert.settings': 'Alert notifications',
 
     // Errors
     'error.mapLoad': 'Error loading map',
