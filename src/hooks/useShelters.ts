@@ -14,10 +14,10 @@ export function calculateWalkingTime(distanceMeters: number): number {
   return Math.max(1, Math.round(adjustedDistance / WALKING_SPEED_M_PER_MIN));
 }
 
-/** Derive reasonable accessibility defaults: ground floor (0) shelters are accessible */
+/** Derive reasonable accessibility defaults: only mark accessible if floor data is explicitly known */
 export function deriveAccessibilityDefaults(shelter: Shelter): Shelter {
-  const floorLevel = shelter.floorLevel ?? 0;
-  const isAccessible = shelter.isAccessible ?? (floorLevel === 0);
+  const floorLevel = shelter.floorLevel ?? undefined;
+  const isAccessible = shelter.isAccessible ?? (floorLevel !== undefined ? floorLevel === 0 : undefined);
   const hasElevator = shelter.hasElevator ?? false;
   return { ...shelter, floorLevel, isAccessible, hasElevator };
 }

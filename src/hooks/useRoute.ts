@@ -1,8 +1,10 @@
 import { useState, useCallback, useMemo } from 'react';
 import type { RouteOption, RouteInfo, TravelMode, LatLng } from '../types';
 import { computeRoutes } from '../services/routeService';
+import { useLanguage } from '../i18n';
 
 export function useRoute() {
+  const { t } = useLanguage();
   const [routes, setRoutes] = useState<RouteOption[]>([]);
   const [selectedRouteIndex, setSelectedRouteIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -21,7 +23,7 @@ export function useRoute() {
       setSelectedRouteIndex(0);
 
       try {
-        const result = await computeRoutes(origin, destination, travelMode);
+        const result = await computeRoutes(origin, destination, travelMode, t);
         setRoutes(result);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'שגיאה בחיפוש מסלול');
@@ -29,7 +31,7 @@ export function useRoute() {
         setIsLoading(false);
       }
     },
-    []
+    [t]
   );
 
   const clearRoute = useCallback(() => {

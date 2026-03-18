@@ -1,6 +1,6 @@
 import type { Shelter, LatLng } from '../types';
 
-function haversineDistance(a: LatLng, b: LatLng): number {
+export function haversineDistance(a: LatLng, b: LatLng): number {
   const R = 6371000;
   const dLat = ((b.lat - a.lat) * Math.PI) / 180;
   const dLng = ((b.lng - a.lng) * Math.PI) / 180;

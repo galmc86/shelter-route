@@ -1,4 +1,10 @@
 import type { RouteOption, TravelMode, LatLng, LatLngBounds } from '../types';
+import { translations } from '../i18n/translations';
+import type { TranslationKey } from '../i18n/translations';
+
+type TranslateFn = (key: TranslationKey) => string;
+
+const defaultT: TranslateFn = (key) => translations.he[key] ?? key;
 
 const ORS_API = 'https://api.openrouteservice.org/v2/directions';
 
@@ -54,22 +60,32 @@ function computeBounds(path: LatLng[]): LatLngBounds {
   };
 }
 
-function formatDuration(seconds: number): string {
-  if (seconds < 60) return 'פחות מדקה';
+function formatDuration(seconds: number, t: TranslateFn = defaultT): string {
+  if (seconds < 60) return t('units.lessThanMinute');
   const minutes = Math.round(seconds / 60);
-  if (minutes < 60) return `${minutes} דקות`;
+  if (minutes < 60) {
+    const template = minutes === 1 ? t('units.minute') : t('units.minutes');
+    return template.replace('{{n}}', String(minutes));
+  }
   const hours = Math.floor(minutes / 60);
   const remaining = minutes % 60;
-  if (remaining === 0) return `${hours} שעות`;
-  return `${hours} שעות ו-${remaining} דקות`;
+  if (remaining === 0) {
+    const template = hours === 1 ? t('units.hour') : t('units.hours');
+    return template.replace('{{n}}', String(hours));
+  }
+  if (hours === 1) {
+    return t('units.hourMinutes').replace('{{n}}', String(hours)).replace('{{m}}', String(remaining));
+  }
+  // For multiple hours with remaining minutes, use hours template + minutes
+  return t('units.hourMinutes').replace('{{n}}', String(hours)).replace('{{m}}', String(remaining));
 }
 
-function formatDistance(meters: number): string {
-  if (meters < 1000) return `${Math.round(meters)} מטר`;
-  return `${(meters / 1000).toFixed(1)} ק"מ`;
+function formatDistance(meters: number, t: TranslateFn = defaultT): string {
+  if (meters < 1000) return t('units.meters').replace('{{n}}', String(Math.round(meters)));
+  return t('units.km').replace('{{n}}', (meters / 1000).toFixed(1));
 }
 
-function parseRoutes(data: { routes?: Array<{ geometry: string; summary: { duration: number; distance: number } }> }): RouteOption[] {
+function parseRoutes(data: { routes?: Array<{ geometry: string; summary: { duration: number; distance: number } }> }, t: TranslateFn = defaultT): RouteOption[] {
   const routes = data.routes;
   if (!routes || routes.length === 0) throw new Error('לא נמצא מסלול');
 
@@ -81,8 +97,8 @@ function parseRoutes(data: { routes?: Array<{ geometry: string; summary: { durat
     return {
       path,
       bounds,
-      duration: formatDuration(summary.duration),
-      distance: formatDistance(summary.distance),
+      duration: formatDuration(summary.duration, t),
+      distance: formatDistance(summary.distance, t),
       durationSeconds: summary.duration,
       distanceMeters: summary.distance,
     };
@@ -132,7 +148,8 @@ async function fetchRoutes(
 export async function computeRoutes(
   origin: LatLng,
   destination: LatLng,
-  travelMode: TravelMode
+  travelMode: TravelMode,
+  t: TranslateFn = defaultT
 ): Promise<RouteOption[]> {
   const profile = PROFILE_MAP[travelMode];
   const apiKey = import.meta.env.VITE_ORS_API_KEY;
@@ -167,5 +184,5 @@ export async function computeRoutes(
   }
 
   const data = await response.json();
-  return parseRoutes(data);
+  return parseRoutes(data, t);
 }
