@@ -620,7 +620,7 @@ export function SearchPanel({
       {/* Emergency Hotline */}
       <div className="hotline-section">
         <a
-          href="tel:100"
+          href="tel:104"
           className="hotline-link"
           aria-label={t('hotline.ariaLabel')}
         >

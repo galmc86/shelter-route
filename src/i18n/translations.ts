@@ -62,7 +62,7 @@ export const translations = {
     'travel.driving': 'רכב',
 
     // Hotline
-    'hotline.label': 'פיקוד העורף: 100',
+    'hotline.label': 'פיקוד העורף: 104',
     'hotline.ariaLabel': 'התקשר לפיקוד העורף 100',
 
     // Map
@@ -194,7 +194,7 @@ export const translations = {
     'travel.driving': 'Driving',
 
     // Hotline
-    'hotline.label': 'Home Front Command: 100',
+    'hotline.label': 'Home Front Command: 104',
     'hotline.ariaLabel': 'Call Home Front Command 100',
 
     // Map
