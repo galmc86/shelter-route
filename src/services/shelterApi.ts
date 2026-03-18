@@ -9,7 +9,7 @@ interface MiklatShelter {
 }
 
 const STORAGE_KEY = 'shelter-route:shelters';
-const STORAGE_VERSION = 1;
+const STORAGE_VERSION = 2;
 const GEOCODE_CACHE_KEY = 'shelter-route:geocode-cache';
 
 let cachedShelters: Shelter[] | null = null;
@@ -272,7 +272,7 @@ export async function fetchAllShelters(
   }
 
   try {
-    const response = await fetch('/shelters.json');
+    const response = await fetch(`/shelters.json?v=${__SHELTER_DATA_VERSION__}`);
 
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
