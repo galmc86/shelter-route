@@ -72,6 +72,7 @@ export const translations = {
     // Theme
     'theme.toggleDark': 'מצב כהה',
     'theme.toggleLight': 'מצב בהיר',
+    'theme.toggleHighContrast': 'ניגודיות גבוהה',
 
     // Share
     'share.button': 'שתף מסלול',
@@ -79,6 +80,11 @@ export const translations = {
     'share.title': 'מסלול מקלטים',
     'share.text': 'מסלול עם {{count}} מקלטים',
     'share.sharedLocation': 'מיקום משותף',
+
+    // Offline / SW
+    'offline.indicator': 'אין חיבור לאינטרנט — מצב לא מקוון',
+    'sw.updateAvailable': 'גרסה חדשה זמינה',
+    'sw.updateButton': 'עדכן',
 
     // Errors
     'error.mapLoad': 'שגיאה בטעינת המפה',
@@ -155,6 +161,7 @@ export const translations = {
     // Theme
     'theme.toggleDark': 'Dark mode',
     'theme.toggleLight': 'Light mode',
+    'theme.toggleHighContrast': 'High contrast',
 
     // Share
     'share.button': 'Share route',
@@ -162,6 +169,11 @@ export const translations = {
     'share.title': 'Shelter Route',
     'share.text': 'Route with {{count}} shelters',
     'share.sharedLocation': 'Shared location',
+
+    // Offline / SW
+    'offline.indicator': 'No internet connection — offline mode',
+    'sw.updateAvailable': 'New version available',
+    'sw.updateButton': 'Update',
 
     // Errors
     'error.mapLoad': 'Error loading map',

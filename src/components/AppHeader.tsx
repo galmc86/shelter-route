@@ -9,6 +9,13 @@ export function AppHeader() {
     setLanguage(language === 'he' ? 'en' : 'he');
   };
 
+  const themeAriaLabel =
+    theme === 'light'
+      ? t('theme.toggleDark')
+      : theme === 'dark'
+        ? t('theme.toggleHighContrast')
+        : t('theme.toggleLight');
+
   return (
     <header className="header">
       <div className="header-icon">
@@ -25,13 +32,22 @@ export function AppHeader() {
         <button
           className="theme-toggle-btn"
           onClick={toggleTheme}
-          aria-label={theme === 'light' ? t('theme.toggleDark') : t('theme.toggleLight')}
+          aria-label={themeAriaLabel}
+          title={themeAriaLabel}
         >
           {theme === 'light' ? (
+            /* Moon icon — click to go to dark */
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z" fill="white"/>
             </svg>
+          ) : theme === 'dark' ? (
+            /* Eye/contrast icon — click to go to high-contrast */
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="12" r="9" stroke="white" strokeWidth="2"/>
+              <path d="M12 3a9 9 0 0 1 0 18V3z" fill="white"/>
+            </svg>
           ) : (
+            /* Sun icon — click to go to light */
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <circle cx="12" cy="12" r="5" fill="white"/>
               <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="white" strokeWidth="2" strokeLinecap="round"/>

@@ -155,6 +155,206 @@
   filter: brightness(0.8) contrast(1.1);
 }
 
+/* High-Contrast Theme — WCAG AAA (7:1 minimum contrast) */
+[data-theme="high-contrast"] {
+  --color-bg: #000000;
+  --color-text: #FFFFFF;
+  --color-panel-bg: #000000;
+  --color-subtle-text: #FFD700;
+  --color-primary: #FFD700;
+  --color-primary-dark: #FFD700;
+  --color-primary-light: #1a1a00;
+  --color-primary-border: #FFD700;
+  --color-primary-hover: #FFF176;
+  --color-primary-bg: #1a1a00;
+  --color-input-bg: #000000;
+  --color-input-bg-focus: #1a1a1a;
+  --color-input-border: #FFD700;
+  --color-input-placeholder: #999999;
+  --color-divider: #FFD700;
+  --color-divider-light: #333300;
+  --color-autocomplete-hover: #1a1a00;
+  --color-autocomplete-text: #FFFFFF;
+  --color-mode-btn-bg: #000000;
+  --color-mode-btn-text: #FFD700;
+  --color-mode-btn-hover-bg: #1a1a00;
+  --color-mode-btn-hover-border: #FFD700;
+  --color-shelter-bg: #000000;
+  --color-shelter-border: #FFD700;
+  --color-shelter-hover-bg: #1a1a00;
+  --color-shelter-hover-border: #FFF176;
+  --color-shelter-icon-bg: #1a1a00;
+  --color-shelter-address: #FFD700;
+  --color-shelter-count-text: #FFFFFF;
+  --color-stat-value: #FFFFFF;
+  --color-error-bg: #330000;
+  --color-error-text: #FF6666;
+  --color-error-border: #FF0000;
+  --color-info-bg: #1a1a00;
+  --color-info-border: #FFD700;
+  --color-map-loading-bg: #000000;
+  --color-map-loading-text: #FFD700;
+  --color-spinner-border: #FFD700;
+  --color-handle-bar: #FFD700;
+  --color-handle-bg: #000000;
+  --color-error-screen-title: #FFFFFF;
+  --color-error-screen-text: #FFD700;
+  --color-error-screen-code-bg: #1a1a1a;
+  --color-error-screen-code-text: #FFFFFF;
+  --color-hotline-bg: #1a1a00;
+  --color-hotline-text: #FFD700;
+  --color-hotline-border: #FFD700;
+  --color-hotline-hover-bg: #333300;
+  --color-emergency-quick-bg: #330000;
+  --color-emergency-quick-text: #FF6666;
+  --color-emergency-quick-border: #FF0000;
+  --color-emergency-quick-hover-bg: #4d0000;
+  --color-emergency-quick-hover-border: #FF3333;
+  --color-emergency-quick-active-bg: #660000;
+  --color-my-location-hover-bg: #1a1a00;
+  --color-my-location-disabled-bg: #1a1a1a;
+  --color-my-location-disabled-text: #666666;
+  --color-my-location-disabled-border: #444444;
+  --color-search-btn-disabled: #444444;
+  --color-cluster-border: #FFD700;
+  --color-header-gradient-from: #000000;
+  --color-header-gradient-to: #000000;
+  --color-header-icon-bg: rgba(255,215,0,0.2);
+  --color-header-btn-bg: #000000;
+  --color-header-btn-border: #FFD700;
+  --color-header-btn-hover-bg: #1a1a00;
+  --shadow-header: 0 2px 0 #FFD700;
+  --shadow-panel: -2px 0 0 #FFD700;
+  --shadow-autocomplete: 0 2px 0 #FFD700;
+  --shadow-search-btn: 0 0 0 2px #FFD700;
+  --shadow-search-btn-hover: 0 0 0 3px #FFF176;
+  --shadow-mobile-panel: 0 -2px 0 #FFD700;
+}
+
+/* High-contrast: thicker borders and outlines for all interactive elements */
+[data-theme="high-contrast"] .location-input {
+  border-width: 3px;
+}
+
+[data-theme="high-contrast"] .mode-btn {
+  border-width: 3px;
+}
+
+[data-theme="high-contrast"] .search-btn {
+  background: #FFD700;
+  color: #000000;
+  border: 3px solid #FFFFFF;
+  font-weight: 800;
+}
+
+[data-theme="high-contrast"] .shelter-item {
+  border-width: 3px;
+}
+
+[data-theme="high-contrast"] .emergency-quick-btn {
+  border-width: 3px;
+}
+
+[data-theme="high-contrast"] .my-location-btn {
+  border-width: 3px;
+}
+
+[data-theme="high-contrast"] .header {
+  border-bottom: 3px solid #FFD700;
+}
+
+[data-theme="high-contrast"] .map-container {
+  filter: contrast(1.3) brightness(1.1);
+}
+
+[data-theme="high-contrast"] a,
+[data-theme="high-contrast"] button {
+  outline-offset: 2px;
+}
+
+[data-theme="high-contrast"] a:focus-visible,
+[data-theme="high-contrast"] button:focus-visible {
+  outline: 3px solid #FFD700;
+}
+
+/* Auto-apply high-contrast when OS prefers it */
+@media (prefers-contrast: more) {
+  :root:not([data-theme="light"]):not([data-theme="dark"]) {
+    --color-bg: #000000;
+    --color-text: #FFFFFF;
+    --color-panel-bg: #000000;
+    --color-subtle-text: #FFD700;
+    --color-primary: #FFD700;
+    --color-primary-dark: #FFD700;
+    --color-primary-light: #1a1a00;
+    --color-primary-border: #FFD700;
+    --color-primary-hover: #FFF176;
+    --color-primary-bg: #1a1a00;
+    --color-input-bg: #000000;
+    --color-input-bg-focus: #1a1a1a;
+    --color-input-border: #FFD700;
+    --color-input-placeholder: #999999;
+    --color-divider: #FFD700;
+    --color-divider-light: #333300;
+    --color-autocomplete-hover: #1a1a00;
+    --color-autocomplete-text: #FFFFFF;
+    --color-mode-btn-bg: #000000;
+    --color-mode-btn-text: #FFD700;
+    --color-mode-btn-hover-bg: #1a1a00;
+    --color-mode-btn-hover-border: #FFD700;
+    --color-shelter-bg: #000000;
+    --color-shelter-border: #FFD700;
+    --color-shelter-hover-bg: #1a1a00;
+    --color-shelter-hover-border: #FFF176;
+    --color-shelter-icon-bg: #1a1a00;
+    --color-shelter-address: #FFD700;
+    --color-shelter-count-text: #FFFFFF;
+    --color-stat-value: #FFFFFF;
+    --color-error-bg: #330000;
+    --color-error-text: #FF6666;
+    --color-error-border: #FF0000;
+    --color-info-bg: #1a1a00;
+    --color-info-border: #FFD700;
+    --color-map-loading-bg: #000000;
+    --color-map-loading-text: #FFD700;
+    --color-spinner-border: #FFD700;
+    --color-handle-bar: #FFD700;
+    --color-handle-bg: #000000;
+    --color-error-screen-title: #FFFFFF;
+    --color-error-screen-text: #FFD700;
+    --color-error-screen-code-bg: #1a1a1a;
+    --color-error-screen-code-text: #FFFFFF;
+    --color-hotline-bg: #1a1a00;
+    --color-hotline-text: #FFD700;
+    --color-hotline-border: #FFD700;
+    --color-hotline-hover-bg: #333300;
+    --color-emergency-quick-bg: #330000;
+    --color-emergency-quick-text: #FF6666;
+    --color-emergency-quick-border: #FF0000;
+    --color-emergency-quick-hover-bg: #4d0000;
+    --color-emergency-quick-hover-border: #FF3333;
+    --color-emergency-quick-active-bg: #660000;
+    --color-my-location-hover-bg: #1a1a00;
+    --color-my-location-disabled-bg: #1a1a1a;
+    --color-my-location-disabled-text: #666666;
+    --color-my-location-disabled-border: #444444;
+    --color-search-btn-disabled: #444444;
+    --color-cluster-border: #FFD700;
+    --color-header-gradient-from: #000000;
+    --color-header-gradient-to: #000000;
+    --color-header-icon-bg: rgba(255,215,0,0.2);
+    --color-header-btn-bg: #000000;
+    --color-header-btn-border: #FFD700;
+    --color-header-btn-hover-bg: #1a1a00;
+    --shadow-header: 0 2px 0 #FFD700;
+    --shadow-panel: -2px 0 0 #FFD700;
+    --shadow-autocomplete: 0 2px 0 #FFD700;
+    --shadow-search-btn: 0 0 0 2px #FFD700;
+    --shadow-search-btn-hover: 0 0 0 3px #FFF176;
+    --shadow-mobile-panel: 0 -2px 0 #FFD700;
+  }
+}
+
 /* Reset & Base */
 * {
   margin: 0;
@@ -1289,4 +1489,74 @@ body {
     min-height: 40px;
     border-radius: 8px;
   }
+}
+
+/* Offline Indicator */
+.offline-indicator {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: #E65100;
+  color: white;
+  text-align: center;
+  padding: 6px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  animation: slide-down 0.3s ease-out;
+}
+
+[data-theme="high-contrast"] .offline-indicator {
+  background: #FF0000;
+  border-bottom: 3px solid #FFD700;
+}
+
+@keyframes slide-down {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* SW update notification */
+.sw-update-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--color-panel-bg, #323232);
+  color: var(--color-text, white);
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  z-index: 9999;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid var(--color-divider, #444);
+  animation: toast-in 0.25s ease-out;
+}
+
+.sw-update-toast button {
+  background: var(--color-primary, #1565C0);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.sw-update-toast button:hover {
+  opacity: 0.9;
 }

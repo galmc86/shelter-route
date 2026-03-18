@@ -3,6 +3,7 @@ import { AppHeader } from './components/AppHeader';
 import { SearchPanel } from './components/SearchPanel';
 import { MapView } from './components/MapView';
 import { EmergencyButton } from './components/EmergencyButton';
+import { OfflineIndicator } from './components/OfflineIndicator';
 import { useGoogleMaps } from './hooks/useGoogleMaps';
 import { useRoute } from './hooks/useRoute';
 import { useShelters } from './hooks/useShelters';
@@ -107,6 +108,7 @@ function App() {
   if (mapsError) {
     return (
       <div className="app" dir={language === 'he' ? 'rtl' : 'ltr'} data-theme={theme}>
+        <OfflineIndicator />
         <AppHeader />
         <div className="error-screen">
           <div className="error-icon">
@@ -124,6 +126,7 @@ function App() {
 
   return (
     <div className="app" dir={language === 'he' ? 'rtl' : 'ltr'} data-theme={theme}>
+      <OfflineIndicator />
       <AppHeader />
       <main className="main-content">
         <SearchPanel

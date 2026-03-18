@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
 
-export type Theme = 'light' | 'dark';
+export type Theme = 'light' | 'dark' | 'high-contrast';
 
 interface ThemeContextValue {
   theme: Theme;
@@ -11,10 +11,19 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 const STORAGE_KEY = 'shelter-route-theme';
 
+const THEME_CYCLE: Theme[] = ['light', 'dark', 'high-contrast'];
+
+function isValidTheme(value: string | null): value is Theme {
+  return value === 'light' || value === 'dark' || value === 'high-contrast';
+}
+
 function getInitialTheme(): Theme {
   const stored = localStorage.getItem(STORAGE_KEY);
-  if (stored === 'light' || stored === 'dark') {
+  if (isValidTheme(stored)) {
     return stored;
+  }
+  if (window.matchMedia('(prefers-contrast: more)').matches) {
+    return 'high-contrast';
   }
   if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
     return 'dark';
@@ -30,7 +39,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, [theme]);
 
   const toggleTheme = useCallback(() => {
-    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
+    setTheme((prev) => {
+      const currentIndex = THEME_CYCLE.indexOf(prev);
+      return THEME_CYCLE[(currentIndex + 1) % THEME_CYCLE.length];
+    });
   }, []);
 
   return (
