@@ -6,6 +6,8 @@ import type { TravelMode, RouteInfo, LatLng } from '../types';
 import type { ShelterWithDistance } from '../hooks/useShelters';
 import type { LocationPoint } from '../types';
 import type { NominatimResult } from '../services/nominatimService';
+import type { CapacityData } from '../services/capacityService';
+import { getCapacityColor } from '../services/capacityService';
 
 interface SearchPanelProps {
   isLoaded: boolean;
@@ -29,6 +31,7 @@ interface SearchPanelProps {
   shareOrigin?: { lat: number; lng: number } | null;
   shareDestination?: { lat: number; lng: number } | null;
   shareTravelMode?: TravelMode;
+  capacityMap?: Map<string, CapacityData>;
 }
 
 export function SearchPanel({
@@ -53,6 +56,7 @@ export function SearchPanel({
   shareOrigin,
   shareDestination,
   shareTravelMode,
+  capacityMap,
 }: SearchPanelProps) {
   const { t } = useLanguage();
   const [showCopiedToast, setShowCopiedToast] = useState(false);
@@ -373,32 +377,77 @@ export function SearchPanel({
             {emergencyMode ? t('shelters.nearYou') : `${t('shelters.alongRoute')} (${nearbyShelters.length})`}
           </div>
           <div className="shelter-list" role="list" aria-labelledby="shelter-list-label">
-            {nearbyShelters.map((shelter) => (
-              <button
-                key={shelter.id}
-                className={`shelter-item ${selectedShelterId === shelter.id ? 'selected' : ''}`}
-                onClick={() => onShelterClick?.(shelter)}
-                role="listitem"
-                aria-label={`${shelter.name}, ${shelter.distanceFromRoute} ${t('shelters.meters')}`}
-                aria-pressed={selectedShelterId === shelter.id}
-              >
-                <div className="shelter-item-icon" aria-hidden="true">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="#1565C0">
-                    <path d="M12 2L3 7v10l9 5 9-5V7l-9-5z" />
-                    <path d="M12 7v6M9 10h6" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
-                  </svg>
-                </div>
-                <div className="shelter-item-info">
-                  <div className="shelter-item-name">{shelter.name}</div>
-                  {shelter.address && (
-                    <div className="shelter-item-address">{shelter.address}</div>
-                  )}
-                </div>
-                <div className="shelter-item-distance">
-                  {shelter.distanceFromRoute} {t('shelters.meter')}
-                </div>
-              </button>
-            ))}
+            {nearbyShelters.map((shelter) => {
+              const capData = capacityMap?.get(shelter.id);
+              const occupancyPct = capData && capData.capacity > 0
+                ? Math.round((capData.currentOccupancy / capData.capacity) * 100)
+                : undefined;
+              const capColor = getCapacityColor(occupancyPct);
+
+              return (
+                <button
+                  key={shelter.id}
+                  className={`shelter-item ${selectedShelterId === shelter.id ? 'selected' : ''}`}
+                  onClick={() => onShelterClick?.(shelter)}
+                  role="listitem"
+                  aria-label={`${shelter.name}, ${shelter.distanceFromRoute} ${t('shelters.meters')}`}
+                  aria-pressed={selectedShelterId === shelter.id}
+                >
+                  <div className="shelter-item-icon" aria-hidden="true">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="#1565C0">
+                      <path d="M12 2L3 7v10l9 5 9-5V7l-9-5z" />
+                      <path d="M12 7v6M9 10h6" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
+                    </svg>
+                  </div>
+                  <div className="shelter-item-info">
+                    <div className="shelter-item-name">{shelter.name}</div>
+                    {shelter.address && (
+                      <div className="shelter-item-address">{shelter.address}</div>
+                    )}
+                    <div className="capacity-bar-container" aria-label={occupancyPct !== undefined ? `${t('capacity.occupancy')}: ${occupancyPct}%` : t('capacity.unknown')}>
+                      <div className="capacity-bar-track">
+                        <div
+                          className="capacity-bar-fill"
+                          style={{
+                            width: occupancyPct !== undefined ? `${occupancyPct}%` : '0%',
+                            backgroundColor: capColor,
+                          }}
+                        />
+                      </div>
+                      <span className="capacity-bar-label" style={{ color: capColor }}>
+                        {occupancyPct !== undefined ? `${occupancyPct}%` : t('capacity.unknown')}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="shelter-item-distance">
+                    {shelter.distanceFromRoute} {t('shelters.meter')}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Capacity Legend */}
+          <div className="capacity-legend">
+            <div className="capacity-legend-title">{t('capacity.legend')}</div>
+            <div className="capacity-legend-items">
+              <div className="capacity-legend-item">
+                <span className="capacity-legend-dot" style={{ backgroundColor: '#4CAF50' }} />
+                <span>{t('capacity.legendLow')}</span>
+              </div>
+              <div className="capacity-legend-item">
+                <span className="capacity-legend-dot" style={{ backgroundColor: '#FF9800' }} />
+                <span>{t('capacity.legendMedium')}</span>
+              </div>
+              <div className="capacity-legend-item">
+                <span className="capacity-legend-dot" style={{ backgroundColor: '#F44336' }} />
+                <span>{t('capacity.legendHigh')}</span>
+              </div>
+              <div className="capacity-legend-item">
+                <span className="capacity-legend-dot" style={{ backgroundColor: '#9E9E9E' }} />
+                <span>{t('capacity.legendUnknown')}</span>
+              </div>
+            </div>
           </div>
         </>
       )}

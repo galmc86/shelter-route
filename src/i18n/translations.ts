@@ -80,6 +80,25 @@ export const translations = {
     'share.text': 'מסלול עם {{count}} מקלטים',
     'share.sharedLocation': 'מיקום משותף',
 
+    // Capacity
+    'capacity.title': 'תפוסה',
+    'capacity.occupancy': 'תפוסה',
+    'capacity.available': 'פנוי',
+    'capacity.full': 'מלא',
+    'capacity.low': 'תפוסה נמוכה',
+    'capacity.medium': 'תפוסה בינונית',
+    'capacity.high': 'תפוסה גבוהה',
+    'capacity.unknown': 'תפוסה לא ידועה',
+    'capacity.of': 'מתוך',
+    'capacity.lastUpdated': 'עודכן לאחרונה',
+    'capacity.legend': 'מקרא תפוסה',
+    'capacity.legendLow': 'פנוי (מתחת ל-50%)',
+    'capacity.legendMedium': 'תפוסה בינונית (50%-80%)',
+    'capacity.legendHigh': 'תפוסה גבוהה (מעל 80%)',
+    'capacity.legendUnknown': 'לא ידוע',
+    'capacity.walkingTime': 'הליכה',
+    'capacity.minutes': 'דק׳',
+
     // Errors
     'error.mapLoad': 'שגיאה בטעינת המפה',
     'error.mapLoadDesc': 'ודא שמפתח OpenRouteService מוגדר בקובץ .env',
@@ -162,6 +181,25 @@ export const translations = {
     'share.title': 'Shelter Route',
     'share.text': 'Route with {{count}} shelters',
     'share.sharedLocation': 'Shared location',
+
+    // Capacity
+    'capacity.title': 'Capacity',
+    'capacity.occupancy': 'Occupancy',
+    'capacity.available': 'Available',
+    'capacity.full': 'Full',
+    'capacity.low': 'Low occupancy',
+    'capacity.medium': 'Medium occupancy',
+    'capacity.high': 'High occupancy',
+    'capacity.unknown': 'Capacity unknown',
+    'capacity.of': 'of',
+    'capacity.lastUpdated': 'Last updated',
+    'capacity.legend': 'Capacity Legend',
+    'capacity.legendLow': 'Available (under 50%)',
+    'capacity.legendMedium': 'Medium occupancy (50%-80%)',
+    'capacity.legendHigh': 'High occupancy (over 80%)',
+    'capacity.legendUnknown': 'Unknown',
+    'capacity.walkingTime': 'Walking',
+    'capacity.minutes': 'min',
 
     // Errors
     'error.mapLoad': 'Error loading map',

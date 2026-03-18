@@ -5,6 +5,9 @@ export interface Shelter {
   lat: number;
   lon: number;
   city: string;
+  capacity?: number;
+  currentOccupancy?: number;
+  lastUpdated?: string;
 }
 
 export type TravelMode = 'WALKING' | 'BICYCLING' | 'DRIVING';

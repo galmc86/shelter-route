@@ -1,13 +1,16 @@
 import { useEffect, useRef } from 'react';
+import { createRoot, type Root } from 'react-dom/client';
 import L from 'leaflet';
 import 'leaflet.markercluster';
 import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
-import { useLanguage } from '../i18n';
+import { useLanguage, LanguageProvider } from '../i18n';
 import type { Language, TranslationKey } from '../i18n';
 import { translations } from '../i18n/translations';
 import type { RouteInfo, LocationPoint } from '../types';
 import type { ShelterWithDistance } from '../hooks/useShelters';
+import type { CapacityData } from '../services/capacityService';
+import { ShelterPopup } from './ShelterPopup';
 
 interface MapViewProps {
   isLoaded: boolean;
@@ -16,6 +19,7 @@ interface MapViewProps {
   onShelterClick?: (shelter: ShelterWithDistance) => void;
   selectedShelterId?: string | null;
   userLocation?: LocationPoint | null;
+  capacityMap?: Map<string, CapacityData>;
 }
 
 const ISRAEL_CENTER: L.LatLngExpression = [31.5, 34.8];
@@ -65,39 +69,36 @@ function tRaw(lang: Language, key: TranslationKey): string {
   return translations[lang][key] ?? key;
 }
 
-function buildShelterPopupHtml(
-  shelter: ShelterWithDistance,
-  distanceText: number,
-  hasRoute: boolean,
-  navUrl: string,
-  lang: Language
-): string {
-  const dir = lang === 'he' ? 'rtl' : 'ltr';
-  const name = shelter.name || tRaw(lang, 'shelters.publicShelter');
-  const addressHtml = shelter.address
-    ? `<div style="font-size: 12px; color: #424242; margin-bottom: 6px; line-height: 1.4;">${shelter.address}</div>`
-    : '';
-  const distanceLabel = hasRoute
-    ? tRaw(lang, 'shelters.fromRoute')
-    : tRaw(lang, 'shelters.fromYou');
-  const metersLabel = tRaw(lang, 'shelters.meters');
-  const navLabel = tRaw(lang, 'shelters.navigateToShelter');
+// Removed: buildShelterPopupHtml — replaced by ShelterPopup React component
 
-  return `
-    <div style="direction: ${dir}; font-family: -apple-system, sans-serif; padding: 4px; min-width: 200px; max-width: 280px;">
-      <div style="font-weight: 600; color: #0D47A1; font-size: 14px; margin-bottom: 6px;">
-        ${name}
-      </div>
-      ${addressHtml}
-      <div style="font-size: 12px; color: #1565C0; font-weight: 600; margin-top: 8px; padding-top: 8px; border-top: 1px solid #eee;">
-        ${distanceText} ${metersLabel} ${distanceLabel}
-      </div>
-      <a href="${navUrl}" target="_blank" rel="noopener noreferrer"
-        style="display: block; text-align: center; margin-top: 8px; padding: 8px; background: #1565C0; color: white; text-decoration: none; border-radius: 6px; font-size: 13px; font-weight: 500;">
-        ${navLabel}
-      </a>
-    </div>
-  `;
+/**
+ * Wrapper that syncs the language inside the isolated LanguageProvider
+ * used for popup React roots.
+ */
+function ShelterPopupWithLanguage({
+  shelter,
+  hasRoute,
+  capacityData,
+  lang,
+}: {
+  shelter: ShelterWithDistance;
+  hasRoute: boolean;
+  capacityData?: CapacityData;
+  lang: Language;
+}) {
+  const { setLanguage } = useLanguage();
+  // Sync language on mount (LanguageProvider defaults to 'he')
+  useEffect(() => {
+    setLanguage(lang);
+  }, [lang, setLanguage]);
+
+  return (
+    <ShelterPopup
+      shelter={shelter}
+      hasRoute={hasRoute}
+      capacityData={capacityData}
+    />
+  );
 }
 
 function buildUserLocationPopupHtml(lang: Language): string {
@@ -113,6 +114,7 @@ export function MapView({
   onShelterClick,
   selectedShelterId,
   userLocation,
+  capacityMap,
 }: MapViewProps) {
   const { language, t } = useLanguage();
   const mapRef = useRef<HTMLDivElement>(null);
@@ -120,6 +122,7 @@ export function MapView({
   const routeLayerRef = useRef<L.Polyline | null>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
   const userMarkerRef = useRef<L.Marker | null>(null);
+  const popupRootsRef = useRef<Map<string, Root>>(new Map());
 
   // Initialize map
   useEffect(() => {
@@ -227,6 +230,12 @@ export function MapView({
     const markersLayer = markersLayerRef.current;
     if (!map || !markersLayer) return;
 
+    // Clean up existing popup roots
+    popupRootsRef.current.forEach((root) => {
+      root.unmount();
+    });
+    popupRootsRef.current.clear();
+
     markersLayer.clearLayers();
 
     const showDistanceLabels = shelters.length < 20;
@@ -260,13 +269,45 @@ export function MapView({
         title: shelter.name,
       });
 
-      const navUrl = `https://www.google.com/maps/dir/?api=1&destination=${shelter.lat},${shelter.lon}&travelmode=walking`;
-      const distanceText = Math.round(shelter.distanceFromRoute);
+      // Create a container element for the React popup
+      const popupContainer = document.createElement('div');
 
-      marker.bindPopup(
-        buildShelterPopupHtml(shelter, distanceText, !!routeInfo, navUrl, language),
-        { maxWidth: 300 }
-      );
+      const popup = L.popup({ maxWidth: 300 }).setContent(popupContainer);
+
+      marker.bindPopup(popup);
+
+      // Render React component when popup opens
+      marker.on('popupopen', () => {
+        // Unmount previous root if it exists
+        const existingRoot = popupRootsRef.current.get(shelter.id);
+        if (existingRoot) {
+          existingRoot.unmount();
+        }
+
+        const root = createRoot(popupContainer);
+        popupRootsRef.current.set(shelter.id, root);
+
+        const currentCapData = capacityMap?.get(shelter.id);
+        root.render(
+          <LanguageProvider>
+            <ShelterPopupWithLanguage
+              shelter={shelter}
+              hasRoute={!!routeInfo}
+              capacityData={currentCapData}
+              lang={language}
+            />
+          </LanguageProvider>
+        );
+      });
+
+      // Clean up React root when popup closes
+      marker.on('popupclose', () => {
+        const root = popupRootsRef.current.get(shelter.id);
+        if (root) {
+          root.unmount();
+          popupRootsRef.current.delete(shelter.id);
+        }
+      });
 
       marker.on('click', () => {
         onShelterClick?.(shelter);
@@ -274,7 +315,15 @@ export function MapView({
 
       markersLayer.addLayer(marker);
     });
-  }, [shelters, selectedShelterId, onShelterClick, routeInfo, language]);
+
+    // Cleanup on unmount
+    return () => {
+      popupRootsRef.current.forEach((root) => {
+        root.unmount();
+      });
+      popupRootsRef.current.clear();
+    };
+  }, [shelters, selectedShelterId, onShelterClick, routeInfo, language, capacityMap]);
 
   if (!isLoaded) {
     return (
