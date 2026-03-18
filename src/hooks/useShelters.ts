@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { Shelter, RouteInfo } from '../types';
+import type { Shelter, RouteInfo, RouteWithShelters } from '../types';
 import { fetchAllShelters } from '../services/shelterApi';
 import { filterSheltersByProximity, getDistanceToRoute } from '../utils/geometry';
 
@@ -52,5 +52,27 @@ export function useShelters() {
     [allShelters]
   );
 
-  return { allShelters, nearbyShelters, isLoading, error, filterByRoute };
+  const countSheltersForRoute = useCallback(
+    (routeInfo: RouteInfo): number => {
+      if (!allShelters.length) return 0;
+      return filterSheltersByProximity(
+        allShelters,
+        routeInfo.path,
+        SHELTER_BUFFER_METERS
+      ).length;
+    },
+    [allShelters]
+  );
+
+  const getRoutesWithShelters = useCallback(
+    (routes: RouteInfo[]): RouteWithShelters[] => {
+      return routes.map((route) => ({
+        route,
+        shelterCount: countSheltersForRoute(route),
+      }));
+    },
+    [countSheltersForRoute]
+  );
+
+  return { allShelters, nearbyShelters, isLoading, error, filterByRoute, countSheltersForRoute, getRoutesWithShelters };
 }

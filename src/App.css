@@ -584,6 +584,126 @@ body {
   }
 }
 
+/* Route Selector */
+.route-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.route-selector-header {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-shelter-count-text);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.route-option {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+  background: var(--color-shelter-bg);
+  border-radius: 10px;
+  border: 2px solid var(--color-shelter-border);
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+  text-align: inherit;
+  width: 100%;
+  font-family: inherit;
+  color: var(--color-text);
+}
+
+.route-option:hover {
+  background: var(--color-shelter-hover-bg);
+  border-color: var(--color-shelter-hover-border);
+}
+
+.route-option-selected {
+  background: var(--color-primary-light);
+  border-color: var(--color-primary);
+}
+
+.route-option-selected:hover {
+  background: var(--color-primary-light);
+  border-color: var(--color-primary);
+}
+
+.route-option-best {
+  position: relative;
+}
+
+.route-option-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.route-option-number {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.route-option-best-badge {
+  font-size: 11px;
+  font-weight: 600;
+  color: white;
+  background: #2E7D32;
+  padding: 2px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+.route-option-details {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.route-option-stat {
+  font-size: 13px;
+  color: var(--color-subtle-text);
+  font-weight: 500;
+}
+
+.route-option-separator {
+  color: var(--color-divider);
+  font-size: 12px;
+}
+
+.route-option-shelters {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+/* Alternative route line styles (on map) */
+.alt-route-line {
+  cursor: pointer;
+}
+
+.alt-route-tooltip {
+  background: #424242;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 500;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+.alt-route-tooltip::before {
+  border-top-color: #424242;
+}
+
 /* Shelter List */
 .shelter-list-header {
   font-size: 14px;
@@ -1216,7 +1336,8 @@ body {
   .search-panel.panel-collapsed .shelter-list,
   .search-panel.panel-collapsed .hotline-section,
   .search-panel.panel-collapsed .error-message,
-  .search-panel.panel-collapsed .copied-toast {
+  .search-panel.panel-collapsed .copied-toast,
+  .search-panel.panel-collapsed .route-selector {
     display: none;
   }
 

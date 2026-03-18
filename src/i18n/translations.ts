@@ -80,6 +80,12 @@ export const translations = {
     'share.text': 'מסלול עם {{count}} מקלטים',
     'share.sharedLocation': 'מיקום משותף',
 
+    // Routes (alternatives)
+    'routes.alternativeRoutes': 'מסלולים חלופיים',
+    'routes.selectRoute': 'בחר מסלול',
+    'routes.route': 'מסלול',
+    'routes.mostShelters': 'הכי הרבה מקלטים',
+
     // Errors
     'error.mapLoad': 'שגיאה בטעינת המפה',
     'error.mapLoadDesc': 'ודא שמפתח OpenRouteService מוגדר בקובץ .env',
@@ -162,6 +168,12 @@ export const translations = {
     'share.title': 'Shelter Route',
     'share.text': 'Route with {{count}} shelters',
     'share.sharedLocation': 'Shared location',
+
+    // Routes (alternatives)
+    'routes.alternativeRoutes': 'Alternative Routes',
+    'routes.selectRoute': 'Select route',
+    'routes.route': 'Route',
+    'routes.mostShelters': 'Most shelters',
 
     // Errors
     'error.mapLoad': 'Error loading map',

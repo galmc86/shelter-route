@@ -3,19 +3,23 @@ import type { RouteInfo, TravelMode, LatLng } from '../types';
 import { computeRoute } from '../services/routeService';
 
 export function useRoute() {
-  const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
+  const [allRoutes, setAllRoutes] = useState<RouteInfo[]>([]);
+  const [selectedRouteIndex, setSelectedRouteIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const routeInfo = allRoutes.length > 0 ? allRoutes[selectedRouteIndex] ?? null : null;
 
   const searchRoute = useCallback(
     async (origin: LatLng, destination: LatLng, travelMode: TravelMode) => {
       setIsLoading(true);
       setError(null);
-      setRouteInfo(null);
+      setAllRoutes([]);
+      setSelectedRouteIndex(0);
 
       try {
-        const info = await computeRoute(origin, destination, travelMode);
-        setRouteInfo(info);
+        const routes = await computeRoute(origin, destination, travelMode);
+        setAllRoutes(routes);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'שגיאה בחיפוש מסלול');
       } finally {
@@ -26,9 +30,19 @@ export function useRoute() {
   );
 
   const clearRoute = useCallback(() => {
-    setRouteInfo(null);
+    setAllRoutes([]);
+    setSelectedRouteIndex(0);
     setError(null);
   }, []);
 
-  return { routeInfo, isLoading, error, searchRoute, clearRoute };
+  return {
+    routeInfo,
+    allRoutes,
+    selectedRouteIndex,
+    setSelectedRouteIndex,
+    isLoading,
+    error,
+    searchRoute,
+    clearRoute,
+  };
 }
