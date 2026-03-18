@@ -1252,7 +1252,8 @@ body {
   min-height: 44px;
 }
 
-.autocomplete-item:hover {
+.autocomplete-item:hover,
+.autocomplete-item.highlighted {
   background: var(--color-autocomplete-hover);
 }
 
@@ -1466,6 +1467,15 @@ body {
   min-width: 28px;
   text-align: end;
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  justify-content: flex-end;
+}
+
+.capacity-status-icon {
+  font-size: 10px;
+  line-height: 1;
 }
 
 /* Capacity Legend */
@@ -2086,4 +2096,32 @@ body {
 
 .sw-update-toast button:hover {
   opacity: 0.9;
+}
+
+/* Skip to content link */
+.skip-to-content {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: var(--color-primary, #1565C0);
+  color: white;
+  padding: 8px 16px;
+  z-index: 10000;
+  transition: top 0.2s;
+}
+.skip-to-content:focus {
+  top: 0;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01s !important;
+  }
+
+  .loading-spinner {
+    animation: none !important;
+  }
 }

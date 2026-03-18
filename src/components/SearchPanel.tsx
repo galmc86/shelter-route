@@ -7,7 +7,7 @@ import type { ShelterWithDistance } from '../hooks/useShelters';
 import type { LocationPoint } from '../types';
 import type { NominatimResult } from '../services/nominatimService';
 import type { CapacityData } from '../services/capacityService';
-import { getCapacityColor } from '../services/capacityService';
+import { getCapacityColor, getCapacityStatusKey } from '../services/capacityService';
 
 interface SearchPanelProps {
   isLoaded: boolean;
@@ -417,7 +417,7 @@ export function SearchPanel({
                 </div>
               </div>
             </div>
-            <div className="shelter-count">
+            <div className="shelter-count" aria-live="polite">
               <div className="shelter-badge" aria-label={`${sheltersLoading ? t('shelters.loading') : nearbyShelters.length} ${t('route.sheltersLabel')}`}>
                 {sheltersLoading ? '...' : nearbyShelters.length}
               </div>
@@ -526,6 +526,11 @@ export function SearchPanel({
                 ? Math.round((capData.currentOccupancy / capData.capacity) * 100)
                 : undefined;
               const capColor = getCapacityColor(occupancyPct);
+              const capStatus = getCapacityStatusKey(occupancyPct);
+              const statusIcon = capStatus === 'capacity.low' ? '\u2713'
+                : capStatus === 'capacity.medium' ? '\u26A0'
+                : capStatus === 'capacity.high' ? '!'
+                : '?';
 
               return (
                 <button
@@ -580,6 +585,7 @@ export function SearchPanel({
                         />
                       </div>
                       <span className="capacity-bar-label" style={{ color: capColor }}>
+                        <span className="capacity-status-icon" aria-hidden="true">{statusIcon}</span>
                         {occupancyPct !== undefined ? `${occupancyPct}%` : t('capacity.unknown')}
                       </span>
                     </div>
@@ -598,18 +604,22 @@ export function SearchPanel({
             <div className="capacity-legend-items">
               <div className="capacity-legend-item">
                 <span className="capacity-legend-dot" style={{ backgroundColor: '#4CAF50' }} />
+                <span aria-hidden="true">{'\u2713'}</span>
                 <span>{t('capacity.legendLow')}</span>
               </div>
               <div className="capacity-legend-item">
                 <span className="capacity-legend-dot" style={{ backgroundColor: '#FF9800' }} />
+                <span aria-hidden="true">{'\u26A0'}</span>
                 <span>{t('capacity.legendMedium')}</span>
               </div>
               <div className="capacity-legend-item">
                 <span className="capacity-legend-dot" style={{ backgroundColor: '#F44336' }} />
+                <span aria-hidden="true">!</span>
                 <span>{t('capacity.legendHigh')}</span>
               </div>
               <div className="capacity-legend-item">
                 <span className="capacity-legend-dot" style={{ backgroundColor: '#9E9E9E' }} />
+                <span aria-hidden="true">?</span>
                 <span>{t('capacity.legendUnknown')}</span>
               </div>
             </div>
