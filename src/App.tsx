@@ -9,6 +9,7 @@ import { useRoute } from './hooks/useRoute';
 import { useShelters } from './hooks/useShelters';
 import { useCurrentLocation } from './hooks/useCurrentLocation';
 import { useNearestShelters } from './hooks/useNearestShelters';
+import { useCapacity } from './hooks/useCapacity';
 import { useLanguage } from './i18n';
 import { useTheme } from './theme';
 import type { TravelMode, LatLng, RouteWithShelters } from './types';
@@ -23,6 +24,7 @@ function App() {
   const { allShelters, nearbyShelters, isLoading: sheltersLoading, filterByRoute, getRoutesWithShelters } = useShelters();
   const { location: currentLocation, isLoading: isLoadingLocation, error: locationError, getLocation } = useCurrentLocation();
   const { nearestShelters, isSearching: isEmergencySearching, findNearest, clear: clearNearest } = useNearestShelters();
+  const capacityMap = useCapacity(allShelters);
   const [selectedShelterId, setSelectedShelterId] = useState<string | null>(null);
   const [emergencyMode, setEmergencyMode] = useState(false);
   const [panelExpanded, setPanelExpanded] = useState(true);
@@ -165,6 +167,7 @@ function App() {
           routesWithShelters={emergencyMode ? [] : routesWithShelters}
           selectedRouteIndex={selectedRouteIndex}
           onRouteSelect={handleRouteSelect}
+          capacityMap={capacityMap}
         />
         <MapView
           isLoaded={isLoaded}
@@ -176,6 +179,7 @@ function App() {
           onShelterClick={handleShelterClick}
           selectedShelterId={selectedShelterId}
           userLocation={emergencyMode ? currentLocation : null}
+          capacityMap={capacityMap}
         />
       </main>
       <EmergencyButton onClick={handleEmergencyClick} />

@@ -1395,6 +1395,72 @@ body {
   background: var(--color-hotline-hover-bg);
 }
 
+/* Capacity Bar */
+.capacity-bar-container {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.capacity-bar-track {
+  flex: 1;
+  height: 4px;
+  background: var(--color-divider);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.capacity-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.capacity-bar-label {
+  font-size: 10px;
+  font-weight: 600;
+  min-width: 28px;
+  text-align: end;
+  white-space: nowrap;
+}
+
+/* Capacity Legend */
+.capacity-legend {
+  background: var(--color-shelter-bg);
+  border: 1px solid var(--color-shelter-border);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.capacity-legend-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-subtle-text);
+  margin-bottom: 6px;
+}
+
+.capacity-legend-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+}
+
+.capacity-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--color-shelter-count-text);
+}
+
+.capacity-legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
 /* Shelter Skeleton Loading */
 .shelter-skeleton {
   display: flex;
@@ -1630,7 +1696,8 @@ body {
   .search-panel.panel-collapsed .hotline-section,
   .search-panel.panel-collapsed .error-message,
   .search-panel.panel-collapsed .copied-toast,
-  .search-panel.panel-collapsed .route-selector {
+  .search-panel.panel-collapsed .route-selector,
+  .search-panel.panel-collapsed .capacity-legend {
     display: none;
   }
 

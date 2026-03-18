@@ -9,6 +9,9 @@ export interface Shelter {
   isAccessible?: boolean;
   hasElevator?: boolean;
   floorLevel?: number;
+  capacity?: number;
+  currentOccupancy?: number;
+  lastUpdated?: string;
 }
 
 export type ShelterSortMode = 'distance' | 'walkingTime';
