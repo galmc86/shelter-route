@@ -12,11 +12,8 @@ export function useServiceWorker(): ServiceWorkerState {
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return;
 
-    let registration: ServiceWorkerRegistration | undefined;
-
     navigator.serviceWorker.getRegistration().then((reg) => {
       if (!reg) return;
-      registration = reg;
 
       // Check if there's already a waiting worker
       if (reg.waiting) {
