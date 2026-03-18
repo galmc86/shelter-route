@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import type { Shelter } from '../types';
 import type { ShelterWithDistance } from './useShelters';
+import { calculateWalkingTime } from './useShelters';
 
 function haversineDistance(
   lat1: number,
@@ -39,12 +40,16 @@ export function useNearestShelters() {
       }
 
       const withDistance: ShelterWithDistance[] = allShelters
-        .map((shelter) => ({
-          ...shelter,
-          distanceFromRoute: Math.round(
+        .map((shelter) => {
+          const distance = Math.round(
             haversineDistance(lat, lng, shelter.lat, shelter.lon)
-          ),
-        }))
+          );
+          return {
+            ...shelter,
+            distanceFromRoute: distance,
+            walkingTimeMinutes: calculateWalkingTime(distance),
+          };
+        })
         .sort((a, b) => a.distanceFromRoute - b.distanceFromRoute)
         .slice(0, count);
 

@@ -1,8 +1,8 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { LocationInput } from './LocationInput';
 import { TravelModeSelector } from './TravelModeSelector';
 import { useLanguage } from '../i18n';
-import type { TravelMode, RouteInfo, LatLng } from '../types';
+import type { TravelMode, RouteInfo, LatLng, ShelterSortMode } from '../types';
 import type { ShelterWithDistance } from '../hooks/useShelters';
 import type { LocationPoint } from '../types';
 import type { NominatimResult } from '../services/nominatimService';
@@ -62,6 +62,27 @@ export function SearchPanel({
   const [destPlace, setDestPlace] = useState<NominatimResult | null>(null);
   const [travelMode, setTravelMode] = useState<TravelMode>('WALKING');
   const [useMyLocation, setUseMyLocation] = useState(false);
+  const [sortMode, setSortMode] = useState<ShelterSortMode>('distance');
+  const [showAccessibleOnly, setShowAccessibleOnly] = useState(false);
+
+  // Filter and sort shelters based on user preferences
+  const displayedShelters = useMemo(() => {
+    let shelters = [...nearbyShelters];
+
+    // Filter by accessibility
+    if (showAccessibleOnly) {
+      shelters = shelters.filter((s) => s.isAccessible);
+    }
+
+    // Sort
+    if (sortMode === 'walkingTime') {
+      shelters.sort((a, b) => a.walkingTimeMinutes - b.walkingTimeMinutes);
+    } else {
+      shelters.sort((a, b) => a.distanceFromRoute - b.distanceFromRoute);
+    }
+
+    return shelters;
+  }, [nearbyShelters, sortMode, showAccessibleOnly]);
 
   // Auto-hide copied toast after 2 seconds
   useEffect(() => {
@@ -333,7 +354,8 @@ export function SearchPanel({
       )}
 
       {/* No shelters message */}
-      {routeInfo && !sheltersLoading && nearbyShelters.length === 0 && (
+      {((routeInfo && !sheltersLoading && nearbyShelters.length === 0) ||
+        (nearbyShelters.length > 0 && displayedShelters.length === 0 && showAccessibleOnly)) && (
         <div className="info-message" role="status">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="#1565C0" aria-hidden="true">
             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
@@ -372,14 +394,50 @@ export function SearchPanel({
             </svg>
             {emergencyMode ? t('shelters.nearYou') : `${t('shelters.alongRoute')} (${nearbyShelters.length})`}
           </div>
+
+          {/* Sort & Filter Controls */}
+          <div className="shelter-controls">
+            <div className="sort-toggle" role="group" aria-label={t('sort.label')}>
+              <span className="control-label">{t('sort.label')}:</span>
+              <button
+                className={`sort-btn ${sortMode === 'distance' ? 'active' : ''}`}
+                onClick={() => setSortMode('distance')}
+                aria-pressed={sortMode === 'distance'}
+              >
+                {t('sort.distance')}
+              </button>
+              <button
+                className={`sort-btn ${sortMode === 'walkingTime' ? 'active' : ''}`}
+                onClick={() => setSortMode('walkingTime')}
+                aria-pressed={sortMode === 'walkingTime'}
+              >
+                {t('sort.walkingTime')}
+              </button>
+            </div>
+            <label className="accessibility-filter">
+              <input
+                type="checkbox"
+                checked={showAccessibleOnly}
+                onChange={(e) => setShowAccessibleOnly(e.target.checked)}
+              />
+              <span className="accessibility-filter-icon" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <circle cx="12" cy="4" r="2" />
+                  <path d="M19 13v-2c-1.54.02-3.09-.75-4.07-1.83l-1.29-1.43c-.17-.19-.38-.34-.61-.45-.01 0-.01-.01-.02-.01H13c-.35-.2-.75-.3-1.19-.26C10.76 7.11 10 8.04 10 9.09V15c0 1.1.9 2 2 2h5v5h2v-5.5c0-1.1-.9-2-2-2h-3v-3.45c1.29 1.07 3.25 1.94 5 1.95zM12.83 18H10c-1.1 0-2-.9-2-2v-1l-3.07 3.07c-.39.39-.39 1.02 0 1.41L8 22.55c.39.39 1.02.39 1.41 0L12.83 18z" />
+                </svg>
+              </span>
+              <span>{t('accessibility.filterLabel')}</span>
+            </label>
+          </div>
+
           <div className="shelter-list" role="list" aria-labelledby="shelter-list-label">
-            {nearbyShelters.map((shelter) => (
+            {displayedShelters.map((shelter) => (
               <button
                 key={shelter.id}
                 className={`shelter-item ${selectedShelterId === shelter.id ? 'selected' : ''}`}
                 onClick={() => onShelterClick?.(shelter)}
                 role="listitem"
-                aria-label={`${shelter.name}, ${shelter.distanceFromRoute} ${t('shelters.meters')}`}
+                aria-label={`${shelter.name}, ${shelter.distanceFromRoute} ${t('shelters.meters')}, ${t('shelters.walkingTime').replace('{{minutes}}', String(shelter.walkingTimeMinutes))}`}
                 aria-pressed={selectedShelterId === shelter.id}
               >
                 <div className="shelter-item-icon" aria-hidden="true">
@@ -389,10 +447,32 @@ export function SearchPanel({
                   </svg>
                 </div>
                 <div className="shelter-item-info">
-                  <div className="shelter-item-name">{shelter.name}</div>
+                  <div className="shelter-item-name">
+                    {shelter.name}
+                    {shelter.isAccessible && (
+                      <span className="accessible-badge" title={t('accessibility.accessible')} aria-label={t('accessibility.accessible')}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="#1B5E20" aria-hidden="true">
+                          <circle cx="12" cy="4" r="2" />
+                          <path d="M19 13v-2c-1.54.02-3.09-.75-4.07-1.83l-1.29-1.43c-.17-.19-.38-.34-.61-.45-.01 0-.01-.01-.02-.01H13c-.35-.2-.75-.3-1.19-.26C10.76 7.11 10 8.04 10 9.09V15c0 1.1.9 2 2 2h5v5h2v-5.5c0-1.1-.9-2-2-2h-3v-3.45c1.29 1.07 3.25 1.94 5 1.95zM12.83 18H10c-1.1 0-2-.9-2-2v-1l-3.07 3.07c-.39.39-.39 1.02 0 1.41L8 22.55c.39.39 1.02.39 1.41 0L12.83 18z" />
+                        </svg>
+                      </span>
+                    )}
+                  </div>
                   {shelter.address && (
                     <div className="shelter-item-address">{shelter.address}</div>
                   )}
+                  <div className="shelter-item-meta">
+                    <span className="shelter-walking-time">
+                      {t('shelters.walkingTime').replace('{{minutes}}', String(shelter.walkingTimeMinutes))}
+                    </span>
+                    {shelter.floorLevel !== undefined && (
+                      <span className="shelter-floor">
+                        {shelter.floorLevel === 0
+                          ? t('accessibility.groundFloor')
+                          : t('accessibility.floor').replace('{{level}}', String(shelter.floorLevel))}
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <div className="shelter-item-distance">
                   {shelter.distanceFromRoute} {t('shelters.meter')}

@@ -5,8 +5,26 @@ import { filterSheltersByProximity, getDistanceToRoute } from '../utils/geometry
 
 const SHELTER_BUFFER_METERS = 200;
 
+/** Average walking speed ~5 km/h = 83.33 m/min, with 20% overhead for non-straight paths */
+const WALKING_SPEED_M_PER_MIN = 83.33;
+const WALKING_OVERHEAD_FACTOR = 1.2;
+
+export function calculateWalkingTime(distanceMeters: number): number {
+  const adjustedDistance = distanceMeters * WALKING_OVERHEAD_FACTOR;
+  return Math.max(1, Math.round(adjustedDistance / WALKING_SPEED_M_PER_MIN));
+}
+
+/** Derive reasonable accessibility defaults: ground floor (0) shelters are accessible */
+export function deriveAccessibilityDefaults(shelter: Shelter): Shelter {
+  const floorLevel = shelter.floorLevel ?? 0;
+  const isAccessible = shelter.isAccessible ?? (floorLevel === 0);
+  const hasElevator = shelter.hasElevator ?? false;
+  return { ...shelter, floorLevel, isAccessible, hasElevator };
+}
+
 export interface ShelterWithDistance extends Shelter {
   distanceFromRoute: number;
+  walkingTimeMinutes: number;
 }
 
 export function useShelters() {
@@ -22,7 +40,8 @@ export function useShelters() {
       setAllShelters((prev) => [...prev]);
     })
       .then((shelters) => {
-        setAllShelters(shelters);
+        const withAccessibility = shelters.map(deriveAccessibilityDefaults);
+        setAllShelters(withAccessibility);
         setIsLoading(false);
       })
       .catch((err) => {
@@ -45,10 +64,14 @@ export function useShelters() {
       );
 
       const withDistance: ShelterWithDistance[] = filtered
-        .map((shelter) => ({
-          ...shelter,
-          distanceFromRoute: getDistanceToRoute(shelter, routeInfo.path),
-        }))
+        .map((shelter) => {
+          const distance = getDistanceToRoute(shelter, routeInfo.path);
+          return {
+            ...shelter,
+            distanceFromRoute: distance,
+            walkingTimeMinutes: calculateWalkingTime(distance),
+          };
+        })
         .sort((a, b) => a.distanceFromRoute - b.distanceFromRoute);
 
       setNearbyShelters(withDistance);

@@ -5,7 +5,13 @@ export interface Shelter {
   lat: number;
   lon: number;
   city: string;
+  walkingTimeMinutes?: number;
+  isAccessible?: boolean;
+  hasElevator?: boolean;
+  floorLevel?: number;
 }
+
+export type ShelterSortMode = 'distance' | 'walkingTime';
 
 export type TravelMode = 'WALKING' | 'BICYCLING' | 'DRIVING';
 
