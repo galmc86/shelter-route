@@ -170,6 +170,19 @@ export const translations = {
     'history.hoursAgo': 'לפני {{count}} שעות',
     'history.minutesAgo': 'לפני {{count}} דקות',
 
+    // Search History
+    'searchHistory.title': 'חיפושים אחרונים',
+    'searchHistory.clearAll': 'נקה הכל',
+    'searchHistory.clearConfirm': 'למחוק את כל היסטוריית החיפוש?',
+    'searchHistory.deleteAriaLabel': 'מחק חיפוש מ-{{origin}} אל {{dest}}',
+    'searchHistory.itemAriaLabel': 'מסלול מ-{{origin}} אל {{dest}} ב{{mode}}, {{time}}. לחץ לחיפוש מחדש',
+    'searchHistory.to': 'אל',
+    'searchHistory.showMore': 'הצג עוד',
+    'searchHistory.showLess': 'הצג פחות',
+    'searchHistory.justNow': 'עכשיו',
+    'searchHistory.yesterday': 'אתמול',
+    'searchHistory.daysAgo': 'לפני {{count}} ימים',
+
     // Errors
     'error.mapLoad': 'שגיאה בטעינת המפה',
     'error.mapLoadDesc': 'ודא שמפתח OpenRouteService מוגדר בקובץ .env',
@@ -342,6 +355,19 @@ export const translations = {
     'history.ago': '{{time}} ago',
     'history.hoursAgo': '{{count}} hours ago',
     'history.minutesAgo': '{{count}} min ago',
+
+    // Search History
+    'searchHistory.title': 'Recent Searches',
+    'searchHistory.clearAll': 'Clear all',
+    'searchHistory.clearConfirm': 'Clear all search history?',
+    'searchHistory.deleteAriaLabel': 'Remove search from {{origin}} to {{dest}}',
+    'searchHistory.itemAriaLabel': 'Route from {{origin}} to {{dest}} by {{mode}}, {{time}}. Press to search again',
+    'searchHistory.to': 'to',
+    'searchHistory.showMore': 'Show more',
+    'searchHistory.showLess': 'Show less',
+    'searchHistory.justNow': 'Just now',
+    'searchHistory.yesterday': 'Yesterday',
+    'searchHistory.daysAgo': '{{count}} days ago',
 
     // Errors
     'error.mapLoad': 'Error loading map',
