@@ -210,6 +210,12 @@ export const translations = {
     // Errors
     'error.mapLoad': 'שגיאה בטעינת המפה',
     'error.mapLoadDesc': 'ודא שמפתח OpenRouteService מוגדר בקובץ .env',
+    'error.routeNotFound': 'לא נמצא מסלול',
+    'error.networkError': 'שגיאת רשת – בדוק את חיבור האינטרנט',
+    'error.routeSearchFailed': 'שגיאה בחיפוש מסלול',
+    'error.geolocationUnsupported': 'הדפדפן לא תומך בשירותי מיקום',
+    'error.locationDenied': 'גישה למיקום נדחתה',
+    'error.locationUnavailable': 'לא ניתן לקבל את המיקום הנוכחי',
   },
   en: {
     // App Header
@@ -420,6 +426,12 @@ export const translations = {
     // Errors
     'error.mapLoad': 'Error loading map',
     'error.mapLoadDesc': 'Make sure the OpenRouteService key is set in the .env file',
+    'error.routeNotFound': 'No route found',
+    'error.networkError': 'Network error — check your internet connection',
+    'error.routeSearchFailed': 'Error searching for route',
+    'error.geolocationUnsupported': 'Your browser does not support location services',
+    'error.locationDenied': 'Location access denied',
+    'error.locationUnavailable': 'Unable to get your current location',
   },
 } as const;
 

@@ -103,7 +103,7 @@ function sanitizeDuration(durationSeconds: number, distanceMeters: number, trave
 
 function parseRoutes(data: { routes?: Array<{ geometry: string; summary: { duration: number; distance: number } }> }, travelMode: TravelMode, t: TranslateFn = defaultT): RouteOption[] {
   const routes = data.routes;
-  if (!routes || routes.length === 0) throw new Error('לא נמצא מסלול');
+  if (!routes || routes.length === 0) throw new Error(t('error.routeNotFound'));
 
   return routes.map((route) => {
     const path = decodePolyline(route.geometry);
@@ -181,7 +181,7 @@ export async function computeRoutes(
     try {
       response = await fetchRoutes(origin, destination, profile, apiKey, false);
     } catch {
-      throw new Error('שגיאת רשת – בדוק את חיבור האינטרנט');
+      throw new Error(t('error.networkError'));
     }
   }
 
@@ -190,13 +190,13 @@ export async function computeRoutes(
     try {
       response = await fetchRoutes(origin, destination, profile, apiKey, false);
     } catch {
-      throw new Error('שגיאת רשת – בדוק את חיבור האינטרנט');
+      throw new Error(t('error.networkError'));
     }
   }
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => null);
-    const message = errorData?.error?.message || 'לא נמצא מסלול';
+    const message = errorData?.error?.message || t('error.routeNotFound');
     throw new Error(message);
   }
 

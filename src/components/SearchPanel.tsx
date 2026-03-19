@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { LocationInput } from './LocationInput';
 import { TravelModeSelector } from './TravelModeSelector';
 import { SearchHistory } from './SearchHistory';
@@ -80,11 +80,19 @@ export function SearchPanel({
   const [destText, setDestText] = useState('');
   const [originPlace, setOriginPlace] = useState<PlaceResult | null>(null);
   const [destPlace, setDestPlace] = useState<PlaceResult | null>(null);
-  const [travelMode, setTravelMode] = useState<TravelMode>('WALKING');
+  const [travelMode, setTravelModeState] = useState<TravelMode>('WALKING');
+  const hasSearchedRef = useRef(false);
   const [useMyLocation, setUseMyLocation] = useState(false);
   const [sortMode, setSortMode] = useState<ShelterSortMode>('distance');
   const [showAccessibleOnly, setShowAccessibleOnly] = useState(false);
   const { entries: historyEntries, addEntry: addHistoryEntry, removeEntry: removeHistoryEntry, clearAll: clearHistory, togglePin: toggleHistoryPin, renameEntry: renameHistoryEntry, updateShelterCount: updateHistoryShelterCount } = useSearchHistory();
+
+  // Mark as searched when route info arrives (e.g. from shared URL)
+  useEffect(() => {
+    if (routeInfo) {
+      hasSearchedRef.current = true;
+    }
+  }, [routeInfo]);
 
   // Update shelter count in history when shelters finish loading for current route
   useEffect(() => {
@@ -177,6 +185,28 @@ export function SearchPanel({
     }
   }, [shareOrigin, shareDestination, shareTravelMode, nearbyShelters.length, t]);
 
+  // Auto-recalculate route when travel mode changes (if a route has already been searched)
+  const setTravelMode = useCallback((newMode: TravelMode) => {
+    setTravelModeState(newMode);
+
+    if (!hasSearchedRef.current) return;
+
+    let origin: LatLng | null = null;
+    if (useMyLocation && currentLocation) {
+      origin = { lat: currentLocation.lat, lng: currentLocation.lng };
+    } else if (originPlace) {
+      origin = { lat: originPlace.lat, lng: originPlace.lng };
+    }
+
+    const destination: LatLng | null = destPlace
+      ? { lat: destPlace.lat, lng: destPlace.lng }
+      : null;
+
+    if (origin && destination) {
+      onSearch(origin, destination, newMode);
+    }
+  }, [useMyLocation, currentLocation, originPlace, destPlace, onSearch]);
+
   const handleUseCurrentLocation = useCallback(() => {
     onGetLocation();
     setUseMyLocation(true);
@@ -198,6 +228,7 @@ export function SearchPanel({
 
     if (!origin || !destination) return;
 
+    hasSearchedRef.current = true;
     onSearch(origin, destination, travelMode);
 
     addHistoryEntry({
@@ -214,8 +245,9 @@ export function SearchPanel({
     setDestText(entry.destName);
     setOriginPlace({ lat: entry.origin.lat, lng: entry.origin.lng, displayName: entry.originName });
     setDestPlace({ lat: entry.destination.lat, lng: entry.destination.lng, displayName: entry.destName });
-    setTravelMode(entry.travelMode);
+    setTravelModeState(entry.travelMode);
     setUseMyLocation(false);
+    hasSearchedRef.current = true;
     onSearch(entry.origin, entry.destination, entry.travelMode);
   }, [onSearch]);
 

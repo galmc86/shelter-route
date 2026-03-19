@@ -518,12 +518,12 @@ body {
 
 .location-input {
   width: 100%;
-  padding: 14px 40px 14px 14px;
+  padding: 14px;
+  padding-inline-end: 40px;
   border: 1.5px solid var(--color-input-border);
   border-radius: 10px;
   font-size: 16px;
   font-family: inherit;
-  direction: rtl;
   transition: border-color 0.2s, box-shadow 0.2s;
   background: var(--color-input-bg);
   color: var(--color-text);
@@ -542,7 +542,7 @@ body {
 
 .input-icon {
   position: absolute;
-  right: 14px;
+  inset-inline-end: 14px;
   display: flex;
   align-items: center;
   pointer-events: none;
@@ -1387,11 +1387,10 @@ body {
   padding: 12px 14px;
   border: none;
   background: none;
-  text-align: right;
+  text-align: start;
   font-size: 13px;
   color: var(--color-autocomplete-text);
   cursor: pointer;
-  direction: rtl;
   line-height: 1.4;
   min-height: 44px;
 }
@@ -2365,7 +2364,8 @@ body {
 
   /* Compact inputs on mobile */
   .location-input {
-    padding: 10px 36px 10px 10px;
+    padding: 10px;
+    padding-inline-end: 36px;
     font-size: 16px;
     border-radius: 8px;
   }
