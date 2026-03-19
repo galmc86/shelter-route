@@ -26,7 +26,7 @@ export function useRoute() {
         const result = await computeRoutes(origin, destination, travelMode, t);
         setRoutes(result);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'שגיאה בחיפוש מסלול');
+        setError(err instanceof Error ? err.message : t('error.routeSearchFailed'));
       } finally {
         setIsLoading(false);
       }

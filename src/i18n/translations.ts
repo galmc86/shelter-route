@@ -210,6 +210,9 @@ export const translations = {
     // Errors
     'error.mapLoad': 'שגיאה בטעינת המפה',
     'error.mapLoadDesc': 'ודא שמפתח OpenRouteService מוגדר בקובץ .env',
+    'error.routeNotFound': 'לא נמצא מסלול',
+    'error.networkError': 'שגיאת רשת – בדוק את חיבור האינטרנט',
+    'error.routeSearchFailed': 'שגיאה בחיפוש מסלול',
   },
   en: {
     // App Header
@@ -420,6 +423,9 @@ export const translations = {
     // Errors
     'error.mapLoad': 'Error loading map',
     'error.mapLoadDesc': 'Make sure the OpenRouteService key is set in the .env file',
+    'error.routeNotFound': 'No route found',
+    'error.networkError': 'Network error — check your internet connection',
+    'error.routeSearchFailed': 'Error searching for route',
   },
 } as const;
 
