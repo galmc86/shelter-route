@@ -76,8 +76,7 @@ function formatDuration(seconds: number, t: TranslateFn = defaultT): string {
   if (hours === 1) {
     return t('units.hourMinutes').replace('{{n}}', String(hours)).replace('{{m}}', String(remaining));
   }
-  // For multiple hours with remaining minutes, use hours template + minutes
-  return t('units.hourMinutes').replace('{{n}}', String(hours)).replace('{{m}}', String(remaining));
+  return t('units.hoursMinutes' as TranslationKey).replace('{{n}}', String(hours)).replace('{{m}}', String(remaining));
 }
 
 function formatDistance(meters: number, t: TranslateFn = defaultT): string {
@@ -95,12 +94,9 @@ const MAX_SPEED: Record<TravelMode, number> = {
 function sanitizeDuration(durationSeconds: number, distanceMeters: number, travelMode: TravelMode): number {
   const impliedSpeed = distanceMeters / durationSeconds; // m/s
   const maxSpeed = MAX_SPEED[travelMode];
-  console.log('[route-debug] sanitize:', { durationSeconds, distanceMeters, impliedSpeed, maxSpeed, travelMode, willFix: impliedSpeed > maxSpeed });
   if (impliedSpeed > maxSpeed) {
     // ORS returned an unrealistic duration — estimate from distance and max speed
-    const fixed = Math.round(distanceMeters / maxSpeed);
-    console.log('[route-debug] FIXED duration:', durationSeconds, '→', fixed);
-    return fixed;
+    return Math.round(distanceMeters / maxSpeed);
   }
   return durationSeconds;
 }
@@ -205,7 +201,5 @@ export async function computeRoutes(
   }
 
   const data = await response.json();
-  console.log('[route-debug] ORS response summary:', data.routes?.map((r: { summary: { duration: number; distance: number } }) => r.summary));
-  console.log('[route-debug] travelMode:', travelMode);
   return parseRoutes(data, travelMode, t);
 }
