@@ -394,6 +394,7 @@ body {
   align-items: center;
   gap: 12px;
   box-shadow: var(--shadow-header);
+  position: relative;
   z-index: 10;
   flex-shrink: 0;
 }
@@ -2326,7 +2327,7 @@ body {
     top: 0;
     z-index: 2;
     background: var(--color-handle-bg);
-    border-radius: 20px 20px 0 0;
+    border-radius: 0;
     font-family: inherit;
     -webkit-tap-highlight-color: transparent;
   }
@@ -2689,7 +2690,7 @@ body {
 }
 
 /* Shift app content down when alert banner is showing */
-.app-with-alert .app-header {
+.app-with-alert .header {
   margin-top: 80px;
 }
 
@@ -2719,7 +2720,7 @@ body {
     text-align: center;
   }
 
-  .app-with-alert .app-header {
+  .app-with-alert .header {
     margin-top: 110px;
   }
 }
