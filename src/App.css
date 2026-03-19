@@ -2397,8 +2397,10 @@ body {
   }
 
   .route-info {
-    padding: 12px;
-    border-radius: 10px;
+    padding: 0;
+    border: none;
+    background: none;
+    border-radius: 0;
   }
 
   .shelter-item {

@@ -432,24 +432,6 @@ export function SearchPanel({
           <div className="divider" />
           <div className="route-info" aria-label={t('route.details')}>
             <div className="route-info-header">{t('route.details')}</div>
-            {routes && routes.length > 1 && (
-              <div className="route-options" role="radiogroup" aria-label={t('route.alternatives')}>
-                {routes.map((route, index) => (
-                  <button
-                    key={index}
-                    className={`route-option ${selectedRouteIndex === index ? 'route-option-selected' : ''}`}
-                    onClick={() => onSelectRoute?.(index)}
-                    role="radio"
-                    aria-checked={selectedRouteIndex === index}
-                  >
-                    <span className="route-option-label">{t('route.optionLabel')} {index + 1}</span>
-                    <span className="route-option-stats">
-                      {route.duration} · {route.distance}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            )}
             <div className="route-stats">
               <div className="stat">
                 <span className="stat-icon" aria-hidden="true">
