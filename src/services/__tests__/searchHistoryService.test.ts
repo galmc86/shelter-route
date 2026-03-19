@@ -7,6 +7,8 @@ import {
   removeFromHistory,
   clearHistory,
   togglePin,
+  renameEntry,
+  updateShelterCount,
   MAX_ENTRIES,
 } from '../searchHistoryService';
 import type { SearchHistoryEntry } from '../../types';
@@ -233,6 +235,59 @@ describe('searchHistoryService', () => {
       const entries = [makeEntry({ id: 'a' }), makeEntry({ id: 'b', pinned: true })];
       const result = togglePin(entries, 'a');
       expect(result[1].pinned).toBe(true);
+    });
+  });
+
+  describe('renameEntry', () => {
+    it('sets label on entry', () => {
+      const entries = [makeEntry({ id: 'a' })];
+      const result = renameEntry(entries, 'a', 'Home to Office');
+      expect(result[0].label).toBe('Home to Office');
+    });
+
+    it('removes label when empty string', () => {
+      const entries = [makeEntry({ id: 'a', label: 'Old Label' })];
+      const result = renameEntry(entries, 'a', '');
+      expect(result[0].label).toBeUndefined();
+    });
+
+    it('trims whitespace from label', () => {
+      const entries = [makeEntry({ id: 'a' })];
+      const result = renameEntry(entries, 'a', '  My Route  ');
+      expect(result[0].label).toBe('My Route');
+    });
+
+    it('does not affect other entries', () => {
+      const entries = [makeEntry({ id: 'a' }), makeEntry({ id: 'b' })];
+      const result = renameEntry(entries, 'a', 'Renamed');
+      expect(result[0].label).toBe('Renamed');
+      expect(result[1].label).toBeUndefined();
+    });
+  });
+
+  describe('updateShelterCount', () => {
+    it('updates shelter count for matching entry', () => {
+      const entries = [makeEntry({ id: 'a' })];
+      const result = updateShelterCount(
+        entries,
+        entries[0].origin,
+        entries[0].destination,
+        entries[0].travelMode,
+        42
+      );
+      expect(result[0].shelterCount).toBe(42);
+    });
+
+    it('does not update non-matching entries', () => {
+      const entries = [makeEntry({ id: 'a' })];
+      const result = updateShelterCount(
+        entries,
+        { lat: 99, lng: 99 },
+        { lat: 99, lng: 99 },
+        'WALKING',
+        42
+      );
+      expect(result[0].shelterCount).toBeUndefined();
     });
   });
 });

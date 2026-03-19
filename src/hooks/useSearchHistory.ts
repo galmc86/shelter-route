@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import type { SearchHistoryEntry } from '../types';
+import type { SearchHistoryEntry, LatLng, TravelMode } from '../types';
 import {
   loadHistory,
   saveHistory,
@@ -7,6 +7,8 @@ import {
   removeFromHistory,
   clearHistory as clearHistoryEntries,
   togglePin as togglePinEntry,
+  renameEntry as renameEntryService,
+  updateShelterCount as updateShelterCountService,
 } from '../services/searchHistoryService';
 
 export interface UseSearchHistoryReturn {
@@ -15,6 +17,8 @@ export interface UseSearchHistoryReturn {
   removeEntry: (id: string) => void;
   clearAll: () => void;
   togglePin: (id: string) => void;
+  renameEntry: (id: string, label: string) => void;
+  updateShelterCount: (origin: LatLng, destination: LatLng, travelMode: TravelMode, shelterCount: number) => void;
 }
 
 export function useSearchHistory(): UseSearchHistoryReturn {
@@ -55,5 +59,24 @@ export function useSearchHistory(): UseSearchHistoryReturn {
     });
   }, []);
 
-  return { entries, addEntry, removeEntry, clearAll, togglePin };
+  const renameEntry = useCallback((id: string, label: string) => {
+    setEntries((prev) => {
+      const updated = renameEntryService(prev, id, label);
+      saveHistory(updated);
+      return updated;
+    });
+  }, []);
+
+  const updateShelterCount = useCallback(
+    (origin: LatLng, destination: LatLng, travelMode: TravelMode, shelterCount: number) => {
+      setEntries((prev) => {
+        const updated = updateShelterCountService(prev, origin, destination, travelMode, shelterCount);
+        saveHistory(updated);
+        return updated;
+      });
+    },
+    []
+  );
+
+  return { entries, addEntry, removeEntry, clearAll, togglePin, renameEntry, updateShelterCount };
 }

@@ -125,3 +125,28 @@ export function togglePin(
     e.id === id ? { ...e, pinned: !e.pinned } : e
   );
 }
+
+export function renameEntry(
+  entries: SearchHistoryEntry[],
+  id: string,
+  label: string
+): SearchHistoryEntry[] {
+  const trimmed = label.trim();
+  return entries.map((e) =>
+    e.id === id ? { ...e, label: trimmed || undefined } : e
+  );
+}
+
+export function updateShelterCount(
+  entries: SearchHistoryEntry[],
+  origin: LatLng,
+  destination: LatLng,
+  travelMode: TravelMode,
+  shelterCount: number
+): SearchHistoryEntry[] {
+  return entries.map((e) =>
+    isDuplicate(e, origin, destination, travelMode)
+      ? { ...e, shelterCount }
+      : e
+  );
+}

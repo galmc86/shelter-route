@@ -71,4 +71,5 @@ export interface SearchHistoryEntry {
   timestamp: number;
   shelterCount?: number;
   pinned?: boolean;
+  label?: string;
 }

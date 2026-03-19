@@ -1893,13 +1893,23 @@ body {
   color: var(--color-subtle-text);
 }
 
+.history-item-actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 2px;
+  margin-inline-end: 4px;
+}
+
+.history-pin-btn,
+.history-rename-btn,
 .history-delete-btn {
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   background: none;
   border: none;
   border-radius: 6px;
@@ -1907,7 +1917,18 @@ body {
   cursor: pointer;
   opacity: 0.5;
   transition: opacity 0.15s, background 0.15s, color 0.15s;
-  margin-inline-end: 4px;
+}
+
+.history-pin-btn:hover,
+.history-rename-btn:hover {
+  opacity: 1;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+.history-pin-btn.active {
+  opacity: 1;
+  color: var(--color-primary);
 }
 
 .history-delete-btn:hover {
@@ -1916,10 +1937,56 @@ body {
   color: #C62828;
 }
 
+.history-pin-btn:focus-visible,
+.history-rename-btn:focus-visible,
 .history-delete-btn:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: -2px;
   opacity: 1;
+}
+
+.history-item-pinned {
+  border-color: var(--color-primary-border);
+  background: var(--color-primary-bg);
+}
+
+.history-item-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-primary-dark);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-item-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.history-item-shelters {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.75rem;
+  color: var(--color-primary);
+  font-weight: 500;
+}
+
+.history-item-pinned-badge {
+  font-size: 0.7rem;
+  color: var(--color-primary);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.history-item-names-sub {
+  font-size: 0.75rem;
+  color: var(--color-subtle-text);
+  font-weight: 400;
 }
 
 .history-toggle-btn {

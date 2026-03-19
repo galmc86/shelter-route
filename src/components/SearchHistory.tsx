@@ -7,6 +7,8 @@ interface SearchHistoryProps {
   onSelect: (entry: SearchHistoryEntry) => void;
   onRemove: (id: string) => void;
   onClearAll: () => void;
+  onTogglePin: (id: string) => void;
+  onRename: (id: string, label: string) => void;
 }
 
 const INITIAL_DISPLAY_COUNT = 5;
@@ -62,7 +64,7 @@ function travelModeLabel(mode: TravelMode, t: (key: string) => string): string {
   }
 }
 
-export function SearchHistory({ entries, onSelect, onRemove, onClearAll }: SearchHistoryProps) {
+export function SearchHistory({ entries, onSelect, onRemove, onClearAll, onTogglePin, onRename }: SearchHistoryProps) {
   const { t } = useLanguage();
   const [expanded, setExpanded] = useState(false);
 
@@ -72,10 +74,24 @@ export function SearchHistory({ entries, onSelect, onRemove, onClearAll }: Searc
     }
   }, [onClearAll, t]);
 
+  const handleRename = useCallback((entry: SearchHistoryEntry) => {
+    const newLabel = window.prompt(t('searchHistory.renamePrompt'), entry.label || '');
+    if (newLabel !== null) {
+      onRename(entry.id, newLabel);
+    }
+  }, [onRename, t]);
+
   if (entries.length === 0) return null;
 
-  const displayed = expanded ? entries : entries.slice(0, INITIAL_DISPLAY_COUNT);
-  const hasMore = entries.length > INITIAL_DISPLAY_COUNT;
+  // Sort: pinned first, then by timestamp
+  const sorted = [...entries].sort((a, b) => {
+    if (a.pinned && !b.pinned) return -1;
+    if (!a.pinned && b.pinned) return 1;
+    return 0; // preserve insertion order within same pin status
+  });
+
+  const displayed = expanded ? sorted : sorted.slice(0, INITIAL_DISPLAY_COUNT);
+  const hasMore = sorted.length > INITIAL_DISPLAY_COUNT;
 
   return (
     <div className="history-section">
@@ -93,6 +109,7 @@ export function SearchHistory({ entries, onSelect, onRemove, onClearAll }: Searc
         {displayed.map((entry) => {
           const timeStr = formatRelativeTime(entry.timestamp, t);
           const modeLabel = travelModeLabel(entry.travelMode, t);
+          const displayName = entry.label || `${entry.originName} \u2192 ${entry.destName}`;
           const ariaLabel = t('searchHistory.itemAriaLabel')
             .replace('{{origin}}', entry.originName)
             .replace('{{dest}}', entry.destName)
@@ -100,7 +117,7 @@ export function SearchHistory({ entries, onSelect, onRemove, onClearAll }: Searc
             .replace('{{time}}', timeStr);
 
           return (
-            <div key={entry.id} className="history-item" role="listitem">
+            <div key={entry.id} className={`history-item ${entry.pinned ? 'history-item-pinned' : ''}`} role="listitem">
               <button
                 className="history-item-btn"
                 onClick={() => onSelect(entry)}
@@ -110,28 +127,85 @@ export function SearchHistory({ entries, onSelect, onRemove, onClearAll }: Searc
                   <TravelModeIcon mode={entry.travelMode} />
                 </span>
                 <span className="history-item-route">
-                  <span className="history-item-names">
-                    <span className="history-item-origin">{entry.originName}</span>
-                    <span className="history-item-arrow" aria-hidden="true">&rarr;</span>
-                    <span className="history-item-dest">{entry.destName}</span>
+                  {entry.label ? (
+                    <span className="history-item-label">{entry.label}</span>
+                  ) : (
+                    <span className="history-item-names">
+                      <span className="history-item-origin">{entry.originName}</span>
+                      <span className="history-item-arrow" aria-hidden="true">&rarr;</span>
+                      <span className="history-item-dest">{entry.destName}</span>
+                    </span>
+                  )}
+                  <span className="history-item-meta">
+                    <span className="history-item-time">{timeStr}</span>
+                    {entry.shelterCount !== undefined && entry.shelterCount > 0 && (
+                      <span className="history-item-shelters">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                          <path d="M12 2L3 7v10l9 5 9-5V7l-9-5z" />
+                        </svg>
+                        {entry.shelterCount} {t('searchHistory.shelters')}
+                      </span>
+                    )}
+                    {entry.pinned && (
+                      <span className="history-item-pinned-badge">{t('searchHistory.pinned')}</span>
+                    )}
                   </span>
-                  <span className="history-item-time">{timeStr}</span>
+                  {entry.label && (
+                    <span className="history-item-names history-item-names-sub">
+                      <span className="history-item-origin">{entry.originName}</span>
+                      <span className="history-item-arrow" aria-hidden="true">&rarr;</span>
+                      <span className="history-item-dest">{entry.destName}</span>
+                    </span>
+                  )}
                 </span>
               </button>
-              <button
-                className="history-delete-btn"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onRemove(entry.id);
-                }}
-                aria-label={t('searchHistory.deleteAriaLabel')
-                  .replace('{{origin}}', entry.originName)
-                  .replace('{{dest}}', entry.destName)}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                </svg>
-              </button>
+              <div className="history-item-actions">
+                <button
+                  className={`history-pin-btn ${entry.pinned ? 'active' : ''}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onTogglePin(entry.id);
+                  }}
+                  aria-label={
+                    (entry.pinned ? t('searchHistory.unpinAriaLabel') : t('searchHistory.pinAriaLabel'))
+                      .replace('{{origin}}', entry.originName)
+                      .replace('{{dest}}', entry.destName)
+                  }
+                  aria-pressed={!!entry.pinned}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill={entry.pinned ? 'currentColor' : 'none'} aria-hidden="true">
+                    <path d="M16 4l-1.5 1.5L17 8l-4 4-5-1L6 13l5 5 2-2-1-5 4-4 2.5 2.5L20 8l-4-4z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M4 20l4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                  </svg>
+                </button>
+                <button
+                  className="history-rename-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRename(entry);
+                  }}
+                  aria-label={t('searchHistory.rename')}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </button>
+                <button
+                  className="history-delete-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onRemove(entry.id);
+                  }}
+                  aria-label={t('searchHistory.deleteAriaLabel')
+                    .replace('{{origin}}', entry.originName)
+                    .replace('{{dest}}', entry.destName)}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                  </svg>
+                </button>
+              </div>
             </div>
           );
         })}

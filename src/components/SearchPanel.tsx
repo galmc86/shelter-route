@@ -88,7 +88,22 @@ export function SearchPanel({
   const [useMyLocation, setUseMyLocation] = useState(false);
   const [sortMode, setSortMode] = useState<ShelterSortMode>('distance');
   const [showAccessibleOnly, setShowAccessibleOnly] = useState(false);
-  const { entries: historyEntries, addEntry: addHistoryEntry, removeEntry: removeHistoryEntry, clearAll: clearHistory } = useSearchHistory();
+  const { entries: historyEntries, addEntry: addHistoryEntry, removeEntry: removeHistoryEntry, clearAll: clearHistory, togglePin: toggleHistoryPin, renameEntry: renameHistoryEntry, updateShelterCount: updateHistoryShelterCount } = useSearchHistory();
+
+  // Update shelter count in history when shelters finish loading for current route
+  useEffect(() => {
+    if (routeInfo && !sheltersLoading && nearbyShelters.length > 0) {
+      const origin = shareOrigin || (useMyLocation && currentLocation
+        ? { lat: currentLocation.lat, lng: currentLocation.lng }
+        : originPlace ? { lat: originPlace.lat, lng: originPlace.lng } : null);
+      const destination = shareDestination || (destPlace
+        ? { lat: destPlace.lat, lng: destPlace.lng }
+        : null);
+      if (origin && destination) {
+        updateHistoryShelterCount(origin, destination, travelMode, nearbyShelters.length);
+      }
+    }
+  }, [routeInfo, sheltersLoading, nearbyShelters.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Filter and sort shelters based on user preferences
   const displayedShelters = useMemo(() => {
@@ -355,6 +370,8 @@ export function SearchPanel({
           onSelect={handleHistorySelect}
           onRemove={removeHistoryEntry}
           onClearAll={clearHistory}
+          onTogglePin={toggleHistoryPin}
+          onRename={renameHistoryEntry}
         />
       )}
 

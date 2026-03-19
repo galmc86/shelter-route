@@ -182,6 +182,12 @@ export const translations = {
     'searchHistory.justNow': 'עכשיו',
     'searchHistory.yesterday': 'אתמול',
     'searchHistory.daysAgo': 'לפני {{count}} ימים',
+    'searchHistory.pinAriaLabel': 'הצמד מסלול מ-{{origin}} אל {{dest}}',
+    'searchHistory.unpinAriaLabel': 'בטל הצמדה מסלול מ-{{origin}} אל {{dest}}',
+    'searchHistory.shelters': 'מקלטים',
+    'searchHistory.rename': 'שנה שם',
+    'searchHistory.renamePrompt': 'הזן שם למסלול (או השאר ריק למחיקת השם):',
+    'searchHistory.pinned': 'מוצמד',
 
     // Errors
     'error.mapLoad': 'שגיאה בטעינת המפה',
@@ -368,6 +374,12 @@ export const translations = {
     'searchHistory.justNow': 'Just now',
     'searchHistory.yesterday': 'Yesterday',
     'searchHistory.daysAgo': '{{count}} days ago',
+    'searchHistory.pinAriaLabel': 'Pin route from {{origin}} to {{dest}}',
+    'searchHistory.unpinAriaLabel': 'Unpin route from {{origin}} to {{dest}}',
+    'searchHistory.shelters': 'shelters',
+    'searchHistory.rename': 'Rename',
+    'searchHistory.renamePrompt': 'Enter a name for this route (or leave empty to remove):',
+    'searchHistory.pinned': 'Pinned',
 
     // Errors
     'error.mapLoad': 'Error loading map',
