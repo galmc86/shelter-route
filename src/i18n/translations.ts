@@ -189,6 +189,24 @@ export const translations = {
     'searchHistory.renamePrompt': 'הזן שם למסלול (או השאר ריק למחיקת השם):',
     'searchHistory.pinned': 'מוצמד',
 
+    // Bug Report
+    'bugReport.button': 'דווח על באג',
+    'bugReport.title': 'דווח על בעיה',
+    'bugReport.close': 'סגור',
+    'bugReport.categoryLabel': 'קטגוריה',
+    'bugReport.category.shelter-data': 'נתוני מקלט',
+    'bugReport.category.routing': 'ניווט',
+    'bugReport.category.alerts': 'התרעות',
+    'bugReport.category.ui': 'ממשק משתמש',
+    'bugReport.category.other': 'אחר',
+    'bugReport.descriptionLabel': 'תיאור הבעיה',
+    'bugReport.descriptionPlaceholder': 'תאר את הבעיה שנתקלת בה...',
+    'bugReport.submit': 'שלח דיווח',
+    'bugReport.cancel': 'ביטול',
+    'bugReport.thankYou': 'תודה על הדיווח!',
+    'bugReport.queuedOffline': 'הדיווח נשמר ויישלח כשתתחבר לאינטרנט.',
+    'bugReport.offlineNote': 'אתה במצב לא מקוון — הדיווח יישמר ויישלח מאוחר יותר.',
+
     // Errors
     'error.mapLoad': 'שגיאה בטעינת המפה',
     'error.mapLoadDesc': 'ודא שמפתח OpenRouteService מוגדר בקובץ .env',
@@ -380,6 +398,24 @@ export const translations = {
     'searchHistory.rename': 'Rename',
     'searchHistory.renamePrompt': 'Enter a name for this route (or leave empty to remove):',
     'searchHistory.pinned': 'Pinned',
+
+    // Bug Report
+    'bugReport.button': 'Report a bug',
+    'bugReport.title': 'Report a Problem',
+    'bugReport.close': 'Close',
+    'bugReport.categoryLabel': 'Category',
+    'bugReport.category.shelter-data': 'Shelter data',
+    'bugReport.category.routing': 'Routing',
+    'bugReport.category.alerts': 'Alerts',
+    'bugReport.category.ui': 'User interface',
+    'bugReport.category.other': 'Other',
+    'bugReport.descriptionLabel': 'Describe the issue',
+    'bugReport.descriptionPlaceholder': 'Describe the problem you encountered...',
+    'bugReport.submit': 'Submit report',
+    'bugReport.cancel': 'Cancel',
+    'bugReport.thankYou': 'Thanks for your report!',
+    'bugReport.queuedOffline': 'Your report has been saved and will be sent when you reconnect.',
+    'bugReport.offlineNote': 'You are offline — the report will be saved and sent later.',
 
     // Errors
     'error.mapLoad': 'Error loading map',
