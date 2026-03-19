@@ -1,14 +1,16 @@
 import { useState, useCallback } from 'react';
 import type { LocationPoint } from '../types';
+import { useLanguage } from '../i18n';
 
 export function useCurrentLocation() {
+  const { t } = useLanguage();
   const [location, setLocation] = useState<LocationPoint | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const getLocation = useCallback(() => {
     if (!navigator.geolocation) {
-      setError('הדפדפן לא תומך בשירותי מיקום');
+      setError(t('error.geolocationUnsupported'));
       return;
     }
 
@@ -26,14 +28,14 @@ export function useCurrentLocation() {
       (err) => {
         setError(
           err.code === 1
-            ? 'גישה למיקום נדחתה'
-            : 'לא ניתן לקבל את המיקום הנוכחי'
+            ? t('error.locationDenied')
+            : t('error.locationUnavailable')
         );
         setIsLoading(false);
       },
       { enableHighAccuracy: true, timeout: 10000 }
     );
-  }, []);
+  }, [t]);
 
   return { location, isLoading, error, getLocation };
 }
