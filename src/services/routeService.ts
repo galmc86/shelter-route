@@ -95,9 +95,12 @@ const MAX_SPEED: Record<TravelMode, number> = {
 function sanitizeDuration(durationSeconds: number, distanceMeters: number, travelMode: TravelMode): number {
   const impliedSpeed = distanceMeters / durationSeconds; // m/s
   const maxSpeed = MAX_SPEED[travelMode];
+  console.log('[route-debug] sanitize:', { durationSeconds, distanceMeters, impliedSpeed, maxSpeed, travelMode, willFix: impliedSpeed > maxSpeed });
   if (impliedSpeed > maxSpeed) {
     // ORS returned an unrealistic duration — estimate from distance and max speed
-    return Math.round(distanceMeters / maxSpeed);
+    const fixed = Math.round(distanceMeters / maxSpeed);
+    console.log('[route-debug] FIXED duration:', durationSeconds, '→', fixed);
+    return fixed;
   }
   return durationSeconds;
 }
@@ -202,5 +205,7 @@ export async function computeRoutes(
   }
 
   const data = await response.json();
+  console.log('[route-debug] ORS response summary:', data.routes?.map((r: { summary: { duration: number; distance: number } }) => r.summary));
+  console.log('[route-debug] travelMode:', travelMode);
   return parseRoutes(data, travelMode, t);
 }
