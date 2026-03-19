@@ -72,6 +72,7 @@ function App() {
         const destination: LatLng = { lat: toLat, lng: toLng };
         const travelMode: TravelMode = (mode && ['WALKING', 'BICYCLING', 'DRIVING'].includes(mode)) ? mode : 'WALKING';
 
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- initializing from URL params on mount
         setShareOrigin(origin);
         setShareDestination(destination);
         setShareTravelMode(travelMode);
@@ -102,6 +103,7 @@ function App() {
   useEffect(() => {
     if (isAlertActive && !prevAlertActive.current) {
       // Alert just became active - trigger emergency mode
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- responding to external alert system
       setEmergencyMode(true);
       setSelectedShelterId(null);
       setPanelExpanded(false);
@@ -190,9 +192,7 @@ function App() {
           onSearch={handleSearch}
           isSearching={isRouteLoading}
           routeInfo={emergencyMode ? null : selectedRoute}
-          routes={emergencyMode ? [] : routes}
           selectedRouteIndex={selectedRouteIndex}
-          onSelectRoute={selectRoute}
           nearbyShelters={displayShelters}
           sheltersLoading={sheltersLoading || isEmergencySearching}
           currentLocation={currentLocation}
@@ -230,7 +230,7 @@ function App() {
           capacityMap={capacityMap}
         />
       </main>
-      <EmergencyButton onClick={handleEmergencyClick} />
+      <EmergencyButton onClick={handleEmergencyClick} panelExpanded={panelExpanded} />
     </div>
   );
 }

@@ -212,7 +212,7 @@ function extractLocationHint(description: string): string | null {
   if (trimmed.length <= 40) return trimmed;
 
   // Try to extract a street reference: רחוב <name> <number>
-  const streetMatch = trimmed.match(/רחוב\s+([\p{L}\u0590-\u05FF"'.׳\-]+(?:\s+[\p{L}\u0590-\u05FF"'.׳\-]+)*\s*\d*)/u);
+  const streetMatch = trimmed.match(/רחוב\s+([\p{L}\u0590-\u05FF"'.׳-]+(?:\s+[\p{L}\u0590-\u05FF"'.׳-]+)*\s*\d*)/u);
   if (streetMatch) return `רח׳ ${streetMatch[1].trim()}`;
 
   // Try to extract a school name: ביה"ס "X" or בית הספר "X"
@@ -294,6 +294,6 @@ export async function fetchAllShelters(
       return cachedShelters;
     }
     console.error('Failed to fetch shelters:', err);
-    throw new Error('שגיאה בטעינת מקלטים. בדוק את חיבור האינטרנט.');
+    throw new Error('שגיאה בטעינת מקלטים. בדוק את חיבור האינטרנט.', { cause: err });
   }
 }

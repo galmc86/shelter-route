@@ -100,7 +100,7 @@ describe('computeRoutes', () => {
         routes: [
           {
             geometry: SIMPLE_POLYLINE,
-            summary: { duration: 600, distance: 1500 },
+            summary: { duration: 1200, distance: 1500 },
           },
         ],
       })
@@ -117,7 +117,7 @@ describe('computeRoutes', () => {
     expect(result[0]).toHaveProperty('bounds');
     expect(result[0]).toHaveProperty('duration');
     expect(result[0]).toHaveProperty('distance');
-    expect(result[0]).toHaveProperty('durationSeconds', 600);
+    expect(result[0]).toHaveProperty('durationSeconds', 1200);
     expect(result[0]).toHaveProperty('distanceMeters', 1500);
     expect(result[0].path.length).toBeGreaterThan(0);
     expect(result[0].bounds).toHaveProperty('southWest');

@@ -18,7 +18,7 @@ const localStorageMock = (() => {
     get length() {
       return Object.keys(store).length;
     },
-    key: vi.fn((_i: number) => null),
+    key: vi.fn(() => null),
   };
 })();
 
@@ -148,7 +148,7 @@ describe('fetchAllShelters', () => {
 
     // Pre-populate localStorage cache
     const cachedData = {
-      version: 1,
+      version: 2,
       data: [
         { id: '1', name: 'Cached Shelter', lat: 32.0, lon: 34.8, city: '' },
       ],

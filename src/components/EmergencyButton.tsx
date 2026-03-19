@@ -2,14 +2,15 @@ import { useLanguage } from '../i18n';
 
 interface EmergencyButtonProps {
   onClick: () => void;
+  panelExpanded?: boolean;
 }
 
-export function EmergencyButton({ onClick }: EmergencyButtonProps) {
+export function EmergencyButton({ onClick, panelExpanded }: EmergencyButtonProps) {
   const { t } = useLanguage();
 
   return (
     <button
-      className="emergency-fab"
+      className={`emergency-fab${panelExpanded ? ' fab-panel-expanded' : ''}`}
       onClick={onClick}
       aria-label={t('emergency.findShelter')}
       title={t('emergency.findShelter')}

@@ -18,6 +18,7 @@ export function useGoogleMaps() {
 
     if (!apiKey) {
       // No API key configured — fall back to Nominatim
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- setting initial state from env check
       setIsPlacesLoaded(false);
       return;
     }
