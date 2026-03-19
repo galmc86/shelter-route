@@ -107,8 +107,8 @@ export function SearchHistory({ entries, onSelect, onRemove, onClearAll, onToggl
       </div>
       <div className="history-list" role="list">
         {displayed.map((entry) => {
-          const timeStr = formatRelativeTime(entry.timestamp, t);
-          const modeLabel = travelModeLabel(entry.travelMode, t);
+          const timeStr = formatRelativeTime(entry.timestamp, t as (key: string) => string);
+          const modeLabel = travelModeLabel(entry.travelMode, t as (key: string) => string);
           const ariaLabel = t('searchHistory.itemAriaLabel')
             .replace('{{origin}}', entry.originName)
             .replace('{{dest}}', entry.destName)
