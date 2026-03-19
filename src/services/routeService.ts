@@ -85,7 +85,24 @@ function formatDistance(meters: number, t: TranslateFn = defaultT): string {
   return t('units.km').replace('{{n}}', (meters / 1000).toFixed(1));
 }
 
-function parseRoutes(data: { routes?: Array<{ geometry: string; summary: { duration: number; distance: number } }> }, t: TranslateFn = defaultT): RouteOption[] {
+// Max realistic speeds (m/s) per travel mode — used to sanity-check ORS durations
+const MAX_SPEED: Record<TravelMode, number> = {
+  WALKING: 5 / 3.6,     // 5 km/h
+  BICYCLING: 18 / 3.6,  // 18 km/h
+  DRIVING: 90 / 3.6,    // 90 km/h
+};
+
+function sanitizeDuration(durationSeconds: number, distanceMeters: number, travelMode: TravelMode): number {
+  const impliedSpeed = distanceMeters / durationSeconds; // m/s
+  const maxSpeed = MAX_SPEED[travelMode];
+  if (impliedSpeed > maxSpeed) {
+    // ORS returned an unrealistic duration — estimate from distance and max speed
+    return Math.round(distanceMeters / maxSpeed);
+  }
+  return durationSeconds;
+}
+
+function parseRoutes(data: { routes?: Array<{ geometry: string; summary: { duration: number; distance: number } }> }, travelMode: TravelMode, t: TranslateFn = defaultT): RouteOption[] {
   const routes = data.routes;
   if (!routes || routes.length === 0) throw new Error('לא נמצא מסלול');
 
@@ -93,13 +110,14 @@ function parseRoutes(data: { routes?: Array<{ geometry: string; summary: { durat
     const path = decodePolyline(route.geometry);
     const bounds = computeBounds(path);
     const summary = route.summary;
+    const duration = sanitizeDuration(summary.duration, summary.distance, travelMode);
 
     return {
       path,
       bounds,
-      duration: formatDuration(summary.duration, t),
+      duration: formatDuration(duration, t),
       distance: formatDistance(summary.distance, t),
-      durationSeconds: summary.duration,
+      durationSeconds: duration,
       distanceMeters: summary.distance,
     };
   });
@@ -184,5 +202,5 @@ export async function computeRoutes(
   }
 
   const data = await response.json();
-  return parseRoutes(data, t);
+  return parseRoutes(data, travelMode, t);
 }
