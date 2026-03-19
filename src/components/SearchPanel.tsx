@@ -1,8 +1,10 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { LocationInput } from './LocationInput';
 import { TravelModeSelector } from './TravelModeSelector';
+import { SearchHistory } from './SearchHistory';
 import { useLanguage } from '../i18n';
-import type { TravelMode, RouteInfo, RouteOption, LatLng, ShelterSortMode, RouteWithShelters } from '../types';
+import { useSearchHistory } from '../hooks/useSearchHistory';
+import type { TravelMode, RouteInfo, RouteOption, LatLng, ShelterSortMode, RouteWithShelters, SearchHistoryEntry } from '../types';
 import type { ShelterWithDistance } from '../hooks/useShelters';
 import type { LocationPoint } from '../types';
 import type { PlaceResult } from '../types';
@@ -86,6 +88,22 @@ export function SearchPanel({
   const [useMyLocation, setUseMyLocation] = useState(false);
   const [sortMode, setSortMode] = useState<ShelterSortMode>('distance');
   const [showAccessibleOnly, setShowAccessibleOnly] = useState(false);
+  const { entries: historyEntries, addEntry: addHistoryEntry, removeEntry: removeHistoryEntry, clearAll: clearHistory, togglePin: toggleHistoryPin, renameEntry: renameHistoryEntry, updateShelterCount: updateHistoryShelterCount } = useSearchHistory();
+
+  // Update shelter count in history when shelters finish loading for current route
+  useEffect(() => {
+    if (routeInfo && !sheltersLoading && nearbyShelters.length > 0) {
+      const origin = shareOrigin || (useMyLocation && currentLocation
+        ? { lat: currentLocation.lat, lng: currentLocation.lng }
+        : originPlace ? { lat: originPlace.lat, lng: originPlace.lng } : null);
+      const destination = shareDestination || (destPlace
+        ? { lat: destPlace.lat, lng: destPlace.lng }
+        : null);
+      if (origin && destination) {
+        updateHistoryShelterCount(origin, destination, travelMode, nearbyShelters.length);
+      }
+    }
+  }, [routeInfo, sheltersLoading, nearbyShelters.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Filter and sort shelters based on user preferences
   const displayedShelters = useMemo(() => {
@@ -185,7 +203,25 @@ export function SearchPanel({
     if (!origin || !destination) return;
 
     onSearch(origin, destination, travelMode);
-  }, [useMyLocation, currentLocation, originPlace, destPlace, travelMode, onSearch]);
+
+    addHistoryEntry({
+      origin,
+      destination,
+      originName: originText || t('search.myLocation'),
+      destName: destText,
+      travelMode,
+    });
+  }, [useMyLocation, currentLocation, originPlace, destPlace, travelMode, onSearch, addHistoryEntry, originText, destText, t]);
+
+  const handleHistorySelect = useCallback((entry: SearchHistoryEntry) => {
+    setOriginText(entry.originName);
+    setDestText(entry.destName);
+    setOriginPlace({ lat: entry.origin.lat, lng: entry.origin.lng, displayName: entry.originName });
+    setDestPlace({ lat: entry.destination.lat, lng: entry.destination.lng, displayName: entry.destName });
+    setTravelMode(entry.travelMode);
+    setUseMyLocation(false);
+    onSearch(entry.origin, entry.destination, entry.travelMode);
+  }, [onSearch]);
 
   const canSearch = (useMyLocation && currentLocation || originPlace) && destPlace && !isSearching;
 
@@ -325,6 +361,18 @@ export function SearchPanel({
             )}
           </div>
         </>
+      )}
+
+      {/* Search History — shown when no route is displayed */}
+      {!routeInfo && !emergencyMode && historyEntries.length > 0 && (
+        <SearchHistory
+          entries={historyEntries}
+          onSelect={handleHistorySelect}
+          onRemove={removeHistoryEntry}
+          onClearAll={clearHistory}
+          onTogglePin={toggleHistoryPin}
+          onRename={renameHistoryEntry}
+        />
       )}
 
       {/* Errors */}

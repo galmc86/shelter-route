@@ -60,3 +60,16 @@ export interface RouteWithShelters {
   route: RouteInfo;
   shelterCount: number;
 }
+
+export interface SearchHistoryEntry {
+  id: string;
+  origin: LatLng;
+  destination: LatLng;
+  originName: string;
+  destName: string;
+  travelMode: TravelMode;
+  timestamp: number;
+  shelterCount?: number;
+  pinned?: boolean;
+  label?: string;
+}
