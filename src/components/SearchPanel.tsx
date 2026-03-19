@@ -4,7 +4,7 @@ import { TravelModeSelector } from './TravelModeSelector';
 import { SearchHistory } from './SearchHistory';
 import { useLanguage } from '../i18n';
 import { useSearchHistory } from '../hooks/useSearchHistory';
-import type { TravelMode, RouteInfo, RouteOption, LatLng, ShelterSortMode, RouteWithShelters, SearchHistoryEntry } from '../types';
+import type { TravelMode, RouteInfo, LatLng, ShelterSortMode, RouteWithShelters, SearchHistoryEntry } from '../types';
 import type { ShelterWithDistance } from '../hooks/useShelters';
 import type { LocationPoint } from '../types';
 import type { PlaceResult } from '../types';
@@ -18,9 +18,7 @@ interface SearchPanelProps {
   onSearch: (origin: LatLng, destination: LatLng, travelMode: TravelMode) => void;
   isSearching: boolean;
   routeInfo: RouteInfo | null;
-  routes?: RouteOption[];
   selectedRouteIndex?: number;
-  onSelectRoute?: (index: number) => void;
   nearbyShelters: ShelterWithDistance[];
   sheltersLoading: boolean;
   currentLocation: LocationPoint | null;
@@ -51,9 +49,7 @@ export function SearchPanel({
   onSearch,
   isSearching,
   routeInfo,
-  routes,
   selectedRouteIndex = 0,
-  onSelectRoute,
   nearbyShelters,
   sheltersLoading,
   currentLocation,

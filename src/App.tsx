@@ -190,9 +190,7 @@ function App() {
           onSearch={handleSearch}
           isSearching={isRouteLoading}
           routeInfo={emergencyMode ? null : selectedRoute}
-          routes={emergencyMode ? [] : routes}
           selectedRouteIndex={selectedRouteIndex}
-          onSelectRoute={selectRoute}
           nearbyShelters={displayShelters}
           sheltersLoading={sheltersLoading || isEmergencySearching}
           currentLocation={currentLocation}
