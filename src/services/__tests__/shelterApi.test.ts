@@ -18,7 +18,7 @@ const localStorageMock = (() => {
     get length() {
       return Object.keys(store).length;
     },
-    key: vi.fn((_i: number) => null),
+    key: vi.fn(() => null),
   };
 })();
 

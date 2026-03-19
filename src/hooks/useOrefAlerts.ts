@@ -76,7 +76,7 @@ export function useOrefAlerts(
         if (countdownRef.current) clearInterval(countdownRef.current);
       };
     } else {
-      setCountdown(null);
+      setCountdown(null); // eslint-disable-line react-hooks/set-state-in-effect -- clearing countdown when alert dismissed
     }
   }, [alertTimestamp, matchedRegion, dismissed]);
 
