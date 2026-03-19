@@ -230,7 +230,7 @@ function App() {
           capacityMap={capacityMap}
         />
       </main>
-      <EmergencyButton onClick={handleEmergencyClick} />
+      <EmergencyButton onClick={handleEmergencyClick} panelExpanded={panelExpanded} />
     </div>
   );
 }

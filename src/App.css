@@ -2413,11 +2413,18 @@ body {
 
   /* Emergency FAB — above the bottom sheet */
   .emergency-fab {
-    bottom: calc(110px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(140px + env(safe-area-inset-bottom, 0px));
     left: 16px;
     width: 48px;
     height: 48px;
     z-index: 15;
+    transition: opacity 0.2s, transform 0.2s;
+  }
+
+  .emergency-fab.fab-panel-expanded {
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(0.8);
   }
 
   /* Hotline at bottom */
