@@ -56,15 +56,18 @@ async function sendReport(report: BugReport): Promise<boolean> {
   }
 
   try {
-    // Google Apps Script redirects POST to script.googleusercontent.com.
-    // Both domains must be in the CSP connect-src directive.
-    const res = await fetch(endpoint, {
+    // Google Apps Script doesn't return CORS headers, so we must use no-cors.
+    // The request still reaches the server; the response is opaque (status 0).
+    // Both script.google.com and script.googleusercontent.com must be in CSP
+    // connect-src for the browser to allow the request.
+    await fetch(endpoint, {
       method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify(report),
-      redirect: 'follow',
+      mode: 'no-cors',
     });
-    return res.ok || res.type === 'opaque';
+    // With no-cors we can't read the response, but if fetch didn't throw
+    // the request was sent successfully.
+    return true;
   } catch {
     return false;
   }
