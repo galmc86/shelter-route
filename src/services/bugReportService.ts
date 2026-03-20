@@ -56,12 +56,15 @@ async function sendReport(report: BugReport): Promise<boolean> {
   }
 
   try {
+    // Google Apps Script redirects POST to a different origin, causing an
+    // opaque response (type "opaque" with status 0). The data still reaches
+    // the sheet, so we treat opaque responses as success.
     const res = await fetch(endpoint, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(report),
+      mode: 'no-cors',
     });
-    return res.ok;
+    return res.status === 0 || res.ok;
   } catch {
     return false;
   }
