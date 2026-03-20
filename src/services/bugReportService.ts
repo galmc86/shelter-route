@@ -56,15 +56,15 @@ async function sendReport(report: BugReport): Promise<boolean> {
   }
 
   try {
-    // Google Apps Script redirects POST to a different origin, causing an
-    // opaque response (type "opaque" with status 0). The data still reaches
-    // the sheet, so we treat opaque responses as success.
+    // Google Apps Script redirects POST to script.googleusercontent.com.
+    // Both domains must be in the CSP connect-src directive.
     const res = await fetch(endpoint, {
       method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify(report),
-      mode: 'no-cors',
+      redirect: 'follow',
     });
-    return res.status === 0 || res.ok;
+    return res.ok || res.type === 'opaque';
   } catch {
     return false;
   }
