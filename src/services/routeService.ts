@@ -122,26 +122,29 @@ function parseRoutes(data: { routes?: Array<{ geometry: string; summary: { durat
   });
 }
 
+interface AlternativeParams {
+  target_count: number;
+  share_factor: number;
+  weight_factor: number;
+}
+
 async function fetchRoutes(
   origin: LatLng,
   destination: LatLng,
   profile: string,
   apiKey: string,
-  withAlternatives: boolean
+  alternativeParams?: AlternativeParams
 ): Promise<Response> {
   const body: Record<string, unknown> = {
     coordinates: [
       [origin.lng, origin.lat],
       [destination.lng, destination.lat],
     ],
+    preference: 'fastest',
   };
 
-  if (withAlternatives) {
-    body.alternative_routes = {
-      target_count: 5,
-      share_factor: 0.6,
-      weight_factor: 2.0,
-    };
+  if (alternativeParams) {
+    body.alternative_routes = alternativeParams;
   }
 
   const doFetch = () =>
@@ -162,6 +165,13 @@ async function fetchRoutes(
   }
 }
 
+// Graduated fallback: try progressively relaxed alternative params before giving up
+const ALTERNATIVE_STRATEGIES: (AlternativeParams | undefined)[] = [
+  { target_count: 3, share_factor: 0.8, weight_factor: 2.0 },
+  { target_count: 2, share_factor: 0.9, weight_factor: 1.5 },
+  undefined, // single route, no alternatives
+];
+
 export async function computeRoutes(
   origin: LatLng,
   destination: LatLng,
@@ -171,37 +181,42 @@ export async function computeRoutes(
   const profile = PROFILE_MAP[travelMode];
   const apiKey = import.meta.env.VITE_ORS_API_KEY;
 
-  let response: Response;
+  let response: Response | null = null;
+  let lastErrorMessage: string | null = null;
 
-  try {
-    // Try with alternative routes first
-    response = await fetchRoutes(origin, destination, profile, apiKey, true);
-  } catch {
-    // Network error on alternatives request — try without
+  for (const strategy of ALTERNATIVE_STRATEGIES) {
+    const label = strategy ? `alternatives(target=${strategy.target_count},share=${strategy.share_factor})` : 'single route';
+
     try {
-      response = await fetchRoutes(origin, destination, profile, apiKey, false);
+      response = await fetchRoutes(origin, destination, profile, apiKey, strategy);
     } catch {
-      throw new Error(t('error.networkError'));
+      console.warn(`[RouteService] Network error with ${label}, trying next strategy`);
+      continue;
     }
+
+    if (!response.ok) {
+      const errorBody = await response.clone().json().catch(() => null);
+      lastErrorMessage = errorBody?.error?.message ?? null;
+      console.warn(`[RouteService] HTTP ${response.status} with ${label}:`, lastErrorMessage ?? 'unknown error');
+      response = null;
+      continue;
+    }
+
+    // Success
+    if (strategy) {
+      console.info(`[RouteService] Got response with ${label}`);
+    }
+    break;
   }
 
-  // If alternative routes HTTP error, fall back to single route
-  if (!response.ok) {
-    try {
-      response = await fetchRoutes(origin, destination, profile, apiKey, false);
-    } catch {
-      throw new Error(t('error.networkError'));
-    }
-  }
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => null);
-    const message = errorData?.error?.message || t('error.routeNotFound');
-    throw new Error(message);
+  if (!response || !response.ok) {
+    throw new Error(lastErrorMessage || t('error.networkError'));
   }
 
   const data = await response.json();
   const routes = parseRoutes(data, travelMode, t);
+
+  console.info(`[RouteService] Received ${routes.length} route(s) from ORS`);
 
   // Sort routes by duration (fastest first) — matches Google Maps behavior
   routes.sort((a, b) => a.durationSeconds - b.durationSeconds);

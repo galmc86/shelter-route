@@ -151,7 +151,8 @@ describe('computeRoutes', () => {
 
   it('falls back to single route when alternatives request fails with HTTP error', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch')
-      .mockResolvedValueOnce(mockResponse({}, false, 400)) // alternatives fail
+      .mockResolvedValueOnce(mockResponse({}, false, 400)) // strategy 1 fails
+      .mockResolvedValueOnce(mockResponse({}, false, 400)) // strategy 2 fails
       .mockResolvedValueOnce(
         mockResponse({
           routes: [
@@ -169,14 +170,16 @@ describe('computeRoutes', () => {
       'WALKING'
     );
 
-    expect(fetchSpy).toHaveBeenCalledTimes(2);
+    expect(fetchSpy).toHaveBeenCalledTimes(3);
     expect(result).toHaveLength(1);
   });
 
   it('falls back to single route when alternatives request throws network error', async () => {
     vi.spyOn(globalThis, 'fetch')
-      .mockRejectedValueOnce(new Error('Network error')) // first attempt
-      .mockRejectedValueOnce(new Error('Network error')) // retry inside fetchRoutes
+      .mockRejectedValueOnce(new Error('Network error')) // strategy 1: first attempt
+      .mockRejectedValueOnce(new Error('Network error')) // strategy 1: retry inside fetchRoutes
+      .mockRejectedValueOnce(new Error('Network error')) // strategy 2: first attempt
+      .mockRejectedValueOnce(new Error('Network error')) // strategy 2: retry inside fetchRoutes
       .mockResolvedValueOnce(
         mockResponse({
           routes: [
