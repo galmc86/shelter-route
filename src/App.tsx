@@ -191,6 +191,7 @@ function App() {
 
   const handleCancelNavigation = useCallback(() => {
     stopNavigation();
+    setPanelExpanded(true);
   }, [stopNavigation]);
 
   const displayShelters = emergencyMode ? nearestShelters : nearbyShelters;
@@ -227,36 +228,38 @@ function App() {
       <OfflineIndicator />
       <AppHeader />
       <main className="main-content" id="main-content">
-        <SearchPanel
-          isLoaded={isLoaded}
-          onSearch={handleSearch}
-          isSearching={isRouteLoading}
-          routeInfo={emergencyMode ? null : selectedRoute}
-          selectedRouteIndex={selectedRouteIndex}
-          nearbyShelters={displayShelters}
-          sheltersLoading={sheltersLoading || isEmergencySearching}
-          currentLocation={currentLocation}
-          isLoadingLocation={isLoadingLocation}
-          onGetLocation={getLocation}
-          searchError={routeError}
-          locationError={locationError}
-          onShelterClick={handleShelterClick}
-          selectedShelterId={selectedShelterId}
-          emergencyMode={emergencyMode}
-          onEmergencyClick={handleEmergencyClick}
-          onExitEmergency={handleExitEmergency}
-          panelExpanded={panelExpanded}
-          onTogglePanel={() => setPanelExpanded((v) => !v)}
-          shareOrigin={shareOrigin}
-          shareDestination={shareDestination}
-          shareTravelMode={shareTravelMode}
-          routesWithShelters={emergencyMode ? [] : routesWithShelters}
-          onRouteSelect={handleRouteSelect}
-          capacityMap={capacityMap}
-          routeRisk={routeRisk}
-          timeFilter={timeFilter}
-          onTimeFilterChange={setTimeFilter}
-        />
+        {!isNavigating && (
+          <SearchPanel
+            isLoaded={isLoaded}
+            onSearch={handleSearch}
+            isSearching={isRouteLoading}
+            routeInfo={emergencyMode ? null : selectedRoute}
+            selectedRouteIndex={selectedRouteIndex}
+            nearbyShelters={displayShelters}
+            sheltersLoading={sheltersLoading || isEmergencySearching}
+            currentLocation={currentLocation}
+            isLoadingLocation={isLoadingLocation}
+            onGetLocation={getLocation}
+            searchError={routeError}
+            locationError={locationError}
+            onShelterClick={handleShelterClick}
+            selectedShelterId={selectedShelterId}
+            emergencyMode={emergencyMode}
+            onEmergencyClick={handleEmergencyClick}
+            onExitEmergency={handleExitEmergency}
+            panelExpanded={panelExpanded}
+            onTogglePanel={() => setPanelExpanded((v) => !v)}
+            shareOrigin={shareOrigin}
+            shareDestination={shareDestination}
+            shareTravelMode={shareTravelMode}
+            routesWithShelters={emergencyMode ? [] : routesWithShelters}
+            onRouteSelect={handleRouteSelect}
+            capacityMap={capacityMap}
+            routeRisk={routeRisk}
+            timeFilter={timeFilter}
+            onTimeFilterChange={setTimeFilter}
+          />
+        )}
         <MapView
           isLoaded={isLoaded}
           routeInfo={emergencyMode ? null : selectedRoute}
@@ -292,7 +295,9 @@ function App() {
           onCancel={handleCancelNavigation}
         />
       )}
-      <EmergencyButton onClick={handleEmergencyClick} panelExpanded={panelExpanded} />
+      {!isNavigating && (
+        <EmergencyButton onClick={handleEmergencyClick} panelExpanded={panelExpanded} />
+      )}
     </div>
   );
 }

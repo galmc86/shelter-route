@@ -208,6 +208,10 @@ export function MapView({
       maxZoom: 19,
     }).addTo(map);
 
+    // Custom pane for navigation polyline so it always renders above route polylines
+    map.createPane('navigationPane');
+    map.getPane('navigationPane')!.style.zIndex = '650';
+
     mapInstanceRef.current = map;
     markersLayerRef.current = L.markerClusterGroup({
       maxClusterRadius: 40,
@@ -536,9 +540,8 @@ export function MapView({
       weight: 6,
       opacity: 0.9,
       dashArray: '12 8',
+      pane: 'navigationPane',
     }).addTo(map);
-
-    polyline.bringToFront();
     navigationLayerRef.current = polyline;
 
     // Fit bounds to navigation route
