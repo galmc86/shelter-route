@@ -176,6 +176,13 @@ export function MapView({
       center: ISRAEL_CENTER,
       zoom: 8,
       zoomControl: true,
+      rotate: true,
+      bearing: 0,
+      touchRotate: true,
+      shiftKeyRotate: true,
+      rotateControl: {
+        closeOnZeroBearing: false,
+      },
     });
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {

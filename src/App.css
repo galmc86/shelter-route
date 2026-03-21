@@ -2938,3 +2938,24 @@ body {
   margin-top: 8px;
   text-align: center;
 }
+
+/* Map rotation control (leaflet-rotate) */
+.leaflet-control-rotate {
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.leaflet-control-rotate .leaflet-control-rotate-toggle {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-panel-bg);
+  border: none;
+  cursor: pointer;
+}
+
+.leaflet-control-rotate .leaflet-control-rotate-toggle:hover {
+  background-color: var(--color-autocomplete-hover);
+}
