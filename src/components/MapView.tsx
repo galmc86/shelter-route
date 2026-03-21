@@ -178,6 +178,14 @@ export function MapView({
   const popupRootsRef = useRef<Map<string, Root>>(new Map());
   const navigationLayerRef = useRef<L.Polyline | null>(null);
 
+  // Use a ref for onNavigateToShelter so the shelter markers useEffect
+  // doesn't re-run (recreating all markers and closing popups) when
+  // the callback reference changes due to parent state updates.
+  const onNavigateRef = useRef(onNavigateToShelter);
+  useEffect(() => {
+    onNavigateRef.current = onNavigateToShelter;
+  }, [onNavigateToShelter]);
+
   // Initialize map
   useEffect(() => {
     if (!isLoaded || !mapRef.current || mapInstanceRef.current) return;
@@ -468,23 +476,10 @@ export function MapView({
               hasRoute={!!routeInfo}
               capacityData={currentCapData}
               lang={language}
-              onNavigate={onNavigateToShelter}
+              onNavigate={(s) => onNavigateRef.current?.(s)}
             />
           </LanguageProvider>
         );
-
-        // Attach native click listener for navigate button to bypass
-        // Leaflet's touch/click event interception on mobile devices.
-        // React's synthetic onClick may not fire inside Leaflet popups.
-        requestAnimationFrame(() => {
-          const navBtn = popupContainer.querySelector('.shelter-popup-nav-btn');
-          if (navBtn && onNavigateToShelter) {
-            navBtn.addEventListener('click', (e) => {
-              e.stopPropagation();
-              onNavigateToShelter(shelter);
-            });
-          }
-        });
       });
 
       // Clean up React root when popup closes
@@ -518,7 +513,7 @@ export function MapView({
       });
       currentPopupRoots.clear();
     };
-  }, [shelters, selectedShelterId, onShelterClick, routeInfo, language, capacityMap, onNavigateToShelter]);
+  }, [shelters, selectedShelterId, onShelterClick, routeInfo, language, capacityMap]);
 
   // Render navigation polyline (walking to shelter)
   useEffect(() => {
