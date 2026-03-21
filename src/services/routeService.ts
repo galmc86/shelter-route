@@ -203,16 +203,11 @@ export async function computeRoutes(
   const data = await response.json();
   const routes = parseRoutes(data, travelMode, t);
 
-  // Mark the fastest route (shortest duration)
-  if (routes.length > 1) {
-    let fastestIdx = 0;
-    for (let i = 1; i < routes.length; i++) {
-      if (routes[i].durationSeconds < routes[fastestIdx].durationSeconds) {
-        fastestIdx = i;
-      }
-    }
-    routes[fastestIdx].isFastest = true;
-  } else if (routes.length === 1) {
+  // Sort routes by duration (fastest first) — matches Google Maps behavior
+  routes.sort((a, b) => a.durationSeconds - b.durationSeconds);
+
+  // Mark the fastest route
+  if (routes.length > 0) {
     routes[0].isFastest = true;
   }
 
