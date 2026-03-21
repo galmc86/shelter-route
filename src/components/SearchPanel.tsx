@@ -431,6 +431,9 @@ export function SearchPanel({
                 >
                   <div className="route-option-header">
                     <span className="route-option-number">{t('routes.route')} {idx + 1}</span>
+                    {rws.route.isFastest && (
+                      <span className="route-option-fastest-badge">{t('routes.fastest')}</span>
+                    )}
                     {isBest && (
                       <span className="route-option-best-badge">{t('routes.mostShelters')}</span>
                     )}
