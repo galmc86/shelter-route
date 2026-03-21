@@ -190,6 +190,19 @@ export const translations = {
     'searchHistory.renamePrompt': 'הזן שם למסלול (או השאר ריק למחיקת השם):',
     'searchHistory.pinned': 'מוצמד',
 
+    // Saved Routes
+    'savedRoutes.save': 'שמור מסלול',
+    'savedRoutes.saved': 'מסלול שמור',
+    'savedRoutes.unsave': 'הסר שמירה',
+
+    // Navigation
+    'nav.navigate': 'נווט למקלט',
+    'nav.openGoogleMaps': 'פתח ב-Google Maps',
+    'nav.cancel': 'בטל',
+    'nav.walkingTo': 'הליכה אל',
+    'nav.locationRequired': 'נדרש מיקום לניווט',
+    'nav.calculatingRoute': 'מחשב מסלול...',
+
     // Bug Report
     'bugReport.button': 'דווח על באג',
     'bugReport.title': 'דווח על בעיה',
@@ -406,6 +419,19 @@ export const translations = {
     'searchHistory.rename': 'Rename',
     'searchHistory.renamePrompt': 'Enter a name for this route (or leave empty to remove):',
     'searchHistory.pinned': 'Pinned',
+
+    // Saved Routes
+    'savedRoutes.save': 'Save Route',
+    'savedRoutes.saved': 'Saved',
+    'savedRoutes.unsave': 'Unsave',
+
+    // Navigation
+    'nav.navigate': 'Navigate to shelter',
+    'nav.openGoogleMaps': 'Open in Google Maps',
+    'nav.cancel': 'Cancel',
+    'nav.walkingTo': 'Walking to',
+    'nav.locationRequired': 'Location required',
+    'nav.calculatingRoute': 'Calculating route...',
 
     // Bug Report
     'bugReport.button': 'Report a bug',

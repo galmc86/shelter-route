@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import type { SearchHistoryEntry, LatLng, TravelMode } from '../types';
+import type { SearchHistoryEntry, SavedRouteData, LatLng, TravelMode } from '../types';
 import {
   loadHistory,
   saveHistory,
@@ -9,6 +9,8 @@ import {
   togglePin as togglePinEntry,
   renameEntry as renameEntryService,
   updateShelterCount as updateShelterCountService,
+  saveRouteData as saveRouteDataService,
+  unsaveRouteData as unsaveRouteDataService,
 } from '../services/searchHistoryService';
 
 export interface UseSearchHistoryReturn {
@@ -19,6 +21,8 @@ export interface UseSearchHistoryReturn {
   togglePin: (id: string) => void;
   renameEntry: (id: string, label: string) => void;
   updateShelterCount: (origin: LatLng, destination: LatLng, travelMode: TravelMode, shelterCount: number) => void;
+  saveRoute: (id: string, routeData: SavedRouteData) => void;
+  unsaveRoute: (id: string) => void;
 }
 
 export function useSearchHistory(): UseSearchHistoryReturn {
@@ -78,5 +82,21 @@ export function useSearchHistory(): UseSearchHistoryReturn {
     []
   );
 
-  return { entries, addEntry, removeEntry, clearAll, togglePin, renameEntry, updateShelterCount };
+  const saveRoute = useCallback((id: string, routeData: SavedRouteData) => {
+    setEntries((prev) => {
+      const updated = saveRouteDataService(prev, id, routeData);
+      saveHistory(updated);
+      return updated;
+    });
+  }, []);
+
+  const unsaveRoute = useCallback((id: string) => {
+    setEntries((prev) => {
+      const updated = unsaveRouteDataService(prev, id);
+      saveHistory(updated);
+      return updated;
+    });
+  }, []);
+
+  return { entries, addEntry, removeEntry, clearAll, togglePin, renameEntry, updateShelterCount, saveRoute, unsaveRoute };
 }
