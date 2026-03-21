@@ -47,7 +47,8 @@ export function useNavigation(): UseNavigationReturn {
           setIsNavigating(false);
           setTargetShelter(null);
         }
-      } catch {
+      } catch (err) {
+        console.error('[Navigation] Failed to compute walking route:', err);
         setNavError(t('nav.locationRequired'));
         setIsNavigating(false);
         setTargetShelter(null);
