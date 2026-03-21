@@ -162,6 +162,19 @@ async function fetchRoutes(
   }
 }
 
+/**
+ * Check whether two routes are essentially the same path by comparing
+ * duration and distance (within 5% tolerance).
+ */
+function isSameRoute(a: RouteOption, b: RouteOption): boolean {
+  const durationDiff = Math.abs(a.durationSeconds - b.durationSeconds);
+  const distanceDiff = Math.abs(a.distanceMeters - b.distanceMeters);
+  return (
+    durationDiff / Math.max(a.durationSeconds, 1) < 0.05 &&
+    distanceDiff / Math.max(a.distanceMeters, 1) < 0.05
+  );
+}
+
 export async function computeRoutes(
   origin: LatLng,
   destination: LatLng,
@@ -171,44 +184,60 @@ export async function computeRoutes(
   const profile = PROFILE_MAP[travelMode];
   const apiKey = import.meta.env.VITE_ORS_API_KEY;
 
-  let response: Response;
+  // Fetch the direct (fastest) route and alternatives in parallel
+  const [directResult, altResult] = await Promise.allSettled([
+    fetchRoutes(origin, destination, profile, apiKey, false),
+    fetchRoutes(origin, destination, profile, apiKey, true),
+  ]);
 
-  try {
-    // Try with alternative routes first
-    response = await fetchRoutes(origin, destination, profile, apiKey, true);
-  } catch {
-    // Network error on alternatives request — try without
+  // Parse the direct route
+  let directRoute: RouteOption | null = null;
+  if (directResult.status === 'fulfilled' && directResult.value.ok) {
     try {
-      response = await fetchRoutes(origin, destination, profile, apiKey, false);
-    } catch {
-      throw new Error(t('error.networkError'));
-    }
+      const data = await directResult.value.json();
+      const parsed = parseRoutes(data, travelMode, t);
+      if (parsed.length > 0) {
+        directRoute = parsed[0];
+        directRoute.isFastest = true;
+      }
+    } catch { /* ignore parse errors */ }
   }
 
-  // If alternative routes HTTP error, fall back to single route
-  if (!response.ok) {
+  // Parse the alternative routes
+  let altRoutes: RouteOption[] = [];
+  if (altResult.status === 'fulfilled' && altResult.value.ok) {
     try {
-      response = await fetchRoutes(origin, destination, profile, apiKey, false);
-    } catch {
-      throw new Error(t('error.networkError'));
-    }
+      const data = await altResult.value.json();
+      altRoutes = parseRoutes(data, travelMode, t);
+    } catch { /* ignore parse errors */ }
   }
 
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => null);
-    const message = errorData?.error?.message || t('error.routeNotFound');
-    throw new Error(message);
-  }
-
-  const data = await response.json();
-  const routes = parseRoutes(data, travelMode, t);
-
-  // Sort routes by duration (fastest first) — matches Google Maps behavior
-  routes.sort((a, b) => a.durationSeconds - b.durationSeconds);
-
-  // Mark the fastest route
-  if (routes.length > 0) {
+  // Combine: direct route first, then alternatives (deduped)
+  let routes: RouteOption[];
+  if (directRoute) {
+    // Remove any alternative that's essentially the same as the direct route
+    const uniqueAlts = altRoutes.filter((alt) => !isSameRoute(alt, directRoute!));
+    routes = [directRoute, ...uniqueAlts];
+  } else if (altRoutes.length > 0) {
+    // No direct route — fall back to alternatives only
+    routes.sort((a, b) => a.durationSeconds - b.durationSeconds);
+    routes = altRoutes;
     routes[0].isFastest = true;
+  } else {
+    // Both failed — try one more single-route request
+    try {
+      const response = await fetchRoutes(origin, destination, profile, apiKey, false);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.error?.message || t('error.routeNotFound'));
+      }
+      const data = await response.json();
+      routes = parseRoutes(data, travelMode, t);
+      if (routes.length > 0) routes[0].isFastest = true;
+    } catch (err) {
+      if (err instanceof Error && err.message !== t('error.networkError')) throw err;
+      throw new Error(t('error.networkError'));
+    }
   }
 
   return routes;
