@@ -162,6 +162,19 @@ async function fetchRoutes(
   }
 }
 
+/**
+ * Check whether two routes are essentially the same path by comparing
+ * duration and distance (within 5% tolerance).
+ */
+function isSameRoute(a: RouteOption, b: RouteOption): boolean {
+  const durationDiff = Math.abs(a.durationSeconds - b.durationSeconds);
+  const distanceDiff = Math.abs(a.distanceMeters - b.distanceMeters);
+  return (
+    durationDiff / Math.max(a.durationSeconds, 1) < 0.05 &&
+    distanceDiff / Math.max(a.distanceMeters, 1) < 0.05
+  );
+}
+
 export async function computeRoutes(
   origin: LatLng,
   destination: LatLng,
@@ -171,49 +184,55 @@ export async function computeRoutes(
   const profile = PROFILE_MAP[travelMode];
   const apiKey = import.meta.env.VITE_ORS_API_KEY;
 
-  let response: Response;
+  // Fetch the direct (fastest) route and alternatives in parallel
+  const [directResult, altResult] = await Promise.allSettled([
+    fetchRoutes(origin, destination, profile, apiKey, false),
+    fetchRoutes(origin, destination, profile, apiKey, true),
+  ]);
 
-  try {
-    // Try with alternative routes first
-    response = await fetchRoutes(origin, destination, profile, apiKey, true);
-  } catch {
-    // Network error on alternatives request — try without
+  // Parse the direct route
+  let directRoute: RouteOption | null = null;
+  if (directResult.status === 'fulfilled' && directResult.value.ok) {
     try {
-      response = await fetchRoutes(origin, destination, profile, apiKey, false);
-    } catch {
-      throw new Error(t('error.networkError'));
-    }
-  }
-
-  // If alternative routes HTTP error, fall back to single route
-  if (!response.ok) {
-    try {
-      response = await fetchRoutes(origin, destination, profile, apiKey, false);
-    } catch {
-      throw new Error(t('error.networkError'));
-    }
-  }
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => null);
-    const message = errorData?.error?.message || t('error.routeNotFound');
-    throw new Error(message);
-  }
-
-  const data = await response.json();
-  const routes = parseRoutes(data, travelMode, t);
-
-  // Mark the fastest route (shortest duration)
-  if (routes.length > 1) {
-    let fastestIdx = 0;
-    for (let i = 1; i < routes.length; i++) {
-      if (routes[i].durationSeconds < routes[fastestIdx].durationSeconds) {
-        fastestIdx = i;
+      const data = await directResult.value.json();
+      const parsed = parseRoutes(data, travelMode, t);
+      if (parsed.length > 0) {
+        directRoute = parsed[0];
+        directRoute.isFastest = true;
       }
-    }
-    routes[fastestIdx].isFastest = true;
-  } else if (routes.length === 1) {
+    } catch { /* ignore parse errors */ }
+  }
+
+  // Parse the alternative routes
+  let altRoutes: RouteOption[] = [];
+  if (altResult.status === 'fulfilled' && altResult.value.ok) {
+    try {
+      const data = await altResult.value.json();
+      altRoutes = parseRoutes(data, travelMode, t);
+    } catch { /* ignore parse errors */ }
+  }
+
+  // Combine: direct route first, then alternatives (deduped)
+  let routes: RouteOption[];
+  if (directRoute) {
+    // Remove any alternative that's essentially the same as the direct route
+    const uniqueAlts = altRoutes.filter((alt) => !isSameRoute(alt, directRoute!));
+    routes = [directRoute, ...uniqueAlts];
+  } else if (altRoutes.length > 0) {
+    // No direct route — fall back to alternatives only
+    altRoutes.sort((a, b) => a.durationSeconds - b.durationSeconds);
+    routes = altRoutes;
     routes[0].isFastest = true;
+  } else {
+    // Both failed — try one more single-route request
+    const response = await fetchRoutes(origin, destination, profile, apiKey, false);
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      throw new Error(errorData?.error?.message || t('error.routeNotFound'));
+    }
+    const data = await response.json();
+    routes = parseRoutes(data, travelMode, t);
+    if (routes.length > 0) routes[0].isFastest = true;
   }
 
   return routes;
