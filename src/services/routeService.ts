@@ -201,5 +201,20 @@ export async function computeRoutes(
   }
 
   const data = await response.json();
-  return parseRoutes(data, travelMode, t);
+  const routes = parseRoutes(data, travelMode, t);
+
+  // Mark the fastest route (shortest duration)
+  if (routes.length > 1) {
+    let fastestIdx = 0;
+    for (let i = 1; i < routes.length; i++) {
+      if (routes[i].durationSeconds < routes[fastestIdx].durationSeconds) {
+        fastestIdx = i;
+      }
+    }
+    routes[fastestIdx].isFastest = true;
+  } else if (routes.length === 1) {
+    routes[0].isFastest = true;
+  }
+
+  return routes;
 }

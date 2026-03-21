@@ -109,6 +109,7 @@ export const translations = {
     'routes.selectRoute': 'בחר מסלול',
     'routes.route': 'מסלול',
     'routes.mostShelters': 'הכי הרבה מקלטים',
+    'routes.fastest': 'הכי מהיר',
 
     // Capacity
     'capacity.title': 'תפוסה',
@@ -325,6 +326,7 @@ export const translations = {
     'routes.selectRoute': 'Select route',
     'routes.route': 'Route',
     'routes.mostShelters': 'Most shelters',
+    'routes.fastest': 'Fastest',
 
     // Capacity
     'capacity.title': 'Capacity',

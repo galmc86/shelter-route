@@ -38,6 +38,7 @@ export interface RouteInfo {
 export interface RouteOption extends RouteInfo {
   durationSeconds: number;
   distanceMeters: number;
+  isFastest?: boolean;
 }
 
 export interface PlaceResult {
@@ -57,7 +58,7 @@ export interface LocationPoint {
 }
 
 export interface RouteWithShelters {
-  route: RouteInfo;
+  route: RouteOption;
   shelterCount: number;
 }
 

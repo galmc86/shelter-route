@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { Shelter, RouteInfo, RouteWithShelters } from '../types';
+import type { Shelter, RouteInfo, RouteOption, RouteWithShelters } from '../types';
 import { fetchAllShelters } from '../services/shelterApi';
 import { filterSheltersByProximity, getDistanceToRoute } from '../utils/geometry';
 
@@ -92,7 +92,7 @@ export function useShelters() {
   );
 
   const getRoutesWithShelters = useCallback(
-    (routes: RouteInfo[]): RouteWithShelters[] => {
+    (routes: RouteOption[]): RouteWithShelters[] => {
       return routes.map((route) => ({
         route,
         shelterCount: countSheltersForRoute(route),

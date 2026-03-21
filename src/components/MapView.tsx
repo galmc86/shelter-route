@@ -320,6 +320,13 @@ export function MapView({
               btn.appendChild(colorSpan);
               btn.appendChild(infoSpan);
 
+              if (route.isFastest) {
+                const badge = document.createElement('span');
+                badge.className = 'route-picker-fastest-badge';
+                badge.textContent = tRaw(language, 'routes.fastest');
+                btn.appendChild(badge);
+              }
+
               btn.addEventListener('click', () => {
                 onSelectRoute?.(index);
               });
