@@ -497,12 +497,13 @@ export function MapView({
       }
     });
 
-    // Cleanup on unmount
+    // Capture ref value for cleanup
+    const currentPopupRoots = popupRootsRef.current;
     return () => {
-      popupRootsRef.current.forEach((root) => {
+      currentPopupRoots.forEach((root) => {
         root.unmount();
       });
-      popupRootsRef.current.clear();
+      currentPopupRoots.clear();
     };
   }, [shelters, selectedShelterId, onShelterClick, routeInfo, language, capacityMap, onNavigateToShelter]);
 

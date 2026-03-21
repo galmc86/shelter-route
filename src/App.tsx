@@ -48,10 +48,13 @@ function App() {
     navigationRoute,
     targetShelter,
     isNavigating,
+    isLoadingNav,
+    navError,
     startNavigation,
     stopNavigation,
   } = useNavigation();
   const prevAlertActive = useRef(false);
+  const pendingNavShelterRef = useRef<ShelterWithDistance | null>(null);
   const [selectedShelterId, setSelectedShelterId] = useState<string | null>(null);
   const [emergencyMode, setEmergencyMode] = useState(false);
   const [panelExpanded, setPanelExpanded] = useState(true);
@@ -162,14 +165,29 @@ function App() {
     setSelectedShelterId(null);
   }, [selectRoute]);
 
-  const handleNavigateToShelter = useCallback((shelter: ShelterWithDistance) => {
+  const handleNavigateToShelter = useCallback(async (shelter: ShelterWithDistance) => {
     if (!currentLocation) {
+      pendingNavShelterRef.current = shelter;
       getLocation();
       return;
     }
-    startNavigation(shelter, currentLocation, t);
+    pendingNavShelterRef.current = null;
+    await startNavigation(shelter, currentLocation, t);
     setPanelExpanded(false);
   }, [currentLocation, getLocation, startNavigation, t]);
+
+  // Auto-navigate once location arrives for a pending shelter.
+  // startNavigation is async so setPanelExpanded runs after it resolves,
+  // not synchronously inside the effect body.
+  useEffect(() => {
+    if (currentLocation && pendingNavShelterRef.current) {
+      const shelter = pendingNavShelterRef.current;
+      pendingNavShelterRef.current = null;
+      startNavigation(shelter, currentLocation, t).then(() => {
+        setPanelExpanded(false);
+      });
+    }
+  }, [currentLocation, startNavigation, t]);
 
   const handleCancelNavigation = useCallback(() => {
     stopNavigation();
@@ -255,6 +273,18 @@ function App() {
           onNavigateToShelter={handleNavigateToShelter}
         />
       </main>
+      {isLoadingNav && (
+        <div className="navigation-loading" role="status">
+          <div className="loading-spinner" aria-hidden="true" />
+          <span>{t('nav.calculatingRoute')}</span>
+        </div>
+      )}
+      {navError && !isLoadingNav && (
+        <div className="navigation-error" role="alert">
+          <span>{navError}</span>
+          <button onClick={stopNavigation} aria-label={t('nav.cancel')}>✕</button>
+        </div>
+      )}
       {isNavigating && navigationRoute && targetShelter && (
         <NavigationPanel
           shelter={targetShelter}
