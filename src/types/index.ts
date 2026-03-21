@@ -62,6 +62,15 @@ export interface RouteWithShelters {
   shelterCount: number;
 }
 
+export interface SavedRouteData {
+  duration: string;
+  distance: string;
+  durationSeconds: number;
+  distanceMeters: number;
+  shelterCount: number;
+  savedAt: number;
+}
+
 export interface SearchHistoryEntry {
   id: string;
   origin: LatLng;
@@ -73,4 +82,5 @@ export interface SearchHistoryEntry {
   shelterCount?: number;
   pinned?: boolean;
   label?: string;
+  routeData?: SavedRouteData;
 }

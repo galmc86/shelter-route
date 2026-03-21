@@ -22,6 +22,9 @@ interface MapViewProps {
   selectedShelterId?: string | null;
   userLocation?: LocationPoint | null;
   capacityMap?: Map<string, CapacityData>;
+  navigationRoute?: RouteOption | null;
+  navigatingToShelter?: ShelterWithDistance | null;
+  onNavigateToShelter?: (shelter: ShelterWithDistance) => void;
 }
 
 const ISRAEL_CENTER: L.LatLngExpression = [31.5, 34.8];
@@ -111,11 +114,13 @@ function ShelterPopupWithLanguage({
   hasRoute,
   capacityData,
   lang,
+  onNavigate,
 }: {
   shelter: ShelterWithDistance;
   hasRoute: boolean;
   capacityData?: CapacityData;
   lang: Language;
+  onNavigate?: (shelter: ShelterWithDistance) => void;
 }) {
   const { setLanguage } = useLanguage();
   // Sync language on mount (LanguageProvider defaults to 'he')
@@ -128,6 +133,7 @@ function ShelterPopupWithLanguage({
       shelter={shelter}
       hasRoute={hasRoute}
       capacityData={capacityData}
+      onNavigate={onNavigate}
     />
   );
 }
@@ -157,6 +163,9 @@ export function MapView({
   selectedShelterId,
   userLocation,
   capacityMap,
+  navigationRoute,
+  navigatingToShelter,
+  onNavigateToShelter,
 }: MapViewProps) {
   const { language, t } = useLanguage();
   const mapRef = useRef<HTMLDivElement>(null);
@@ -167,6 +176,7 @@ export function MapView({
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
   const userMarkerRef = useRef<L.Marker | null>(null);
   const popupRootsRef = useRef<Map<string, Root>>(new Map());
+  const navigationLayerRef = useRef<L.Polyline | null>(null);
 
   // Initialize map
   useEffect(() => {
@@ -458,6 +468,7 @@ export function MapView({
               hasRoute={!!routeInfo}
               capacityData={currentCapData}
               lang={language}
+              onNavigate={onNavigateToShelter}
             />
           </LanguageProvider>
         );
@@ -493,7 +504,45 @@ export function MapView({
       });
       popupRootsRef.current.clear();
     };
-  }, [shelters, selectedShelterId, onShelterClick, routeInfo, language, capacityMap]);
+  }, [shelters, selectedShelterId, onShelterClick, routeInfo, language, capacityMap, onNavigateToShelter]);
+
+  // Render navigation polyline (walking to shelter)
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+
+    // Clean up previous navigation polyline
+    if (navigationLayerRef.current) {
+      navigationLayerRef.current.remove();
+      navigationLayerRef.current = null;
+    }
+
+    if (!navigationRoute || !navigatingToShelter) return;
+
+    if (navigationRoute.path.length < 2) return;
+
+    const latLngs: L.LatLngExpression[] = navigationRoute.path.map((p) => [p.lat, p.lng]);
+    const polyline = L.polyline(latLngs, {
+      color: '#10B981',
+      weight: 6,
+      opacity: 0.9,
+      dashArray: '12 8',
+    }).addTo(map);
+
+    polyline.bringToFront();
+    navigationLayerRef.current = polyline;
+
+    // Fit bounds to navigation route
+    const bounds = L.latLngBounds(latLngs);
+    map.fitBounds(bounds, { padding: [50, 50], maxZoom: 16 });
+
+    return () => {
+      if (navigationLayerRef.current) {
+        navigationLayerRef.current.remove();
+        navigationLayerRef.current = null;
+      }
+    };
+  }, [navigationRoute, navigatingToShelter]);
 
   if (!isLoaded) {
     return (

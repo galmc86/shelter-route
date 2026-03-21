@@ -12,7 +12,9 @@ import { useNearestShelters } from './hooks/useNearestShelters';
 import { useCapacity } from './hooks/useCapacity';
 import { useOrefAlerts } from './hooks/useOrefAlerts';
 import { useAlertHistory } from './hooks/useAlertHistory';
+import { useNavigation } from './hooks/useNavigation';
 import { AlertBanner } from './components/AlertBanner';
+import { NavigationPanel } from './components/NavigationPanel';
 import { useLanguage } from './i18n';
 import { useTheme } from './theme';
 import type { TravelMode, LatLng, RouteWithShelters } from './types';
@@ -42,6 +44,13 @@ function App() {
     timeFilter,
     setTimeFilter,
   } = useAlertHistory(selectedRoute);
+  const {
+    navigationRoute,
+    targetShelter,
+    isNavigating,
+    startNavigation,
+    stopNavigation,
+  } = useNavigation();
   const prevAlertActive = useRef(false);
   const [selectedShelterId, setSelectedShelterId] = useState<string | null>(null);
   const [emergencyMode, setEmergencyMode] = useState(false);
@@ -153,6 +162,19 @@ function App() {
     setSelectedShelterId(null);
   }, [selectRoute]);
 
+  const handleNavigateToShelter = useCallback((shelter: ShelterWithDistance) => {
+    if (!currentLocation) {
+      getLocation();
+      return;
+    }
+    startNavigation(shelter, currentLocation, t);
+    setPanelExpanded(false);
+  }, [currentLocation, getLocation, startNavigation, t]);
+
+  const handleCancelNavigation = useCallback(() => {
+    stopNavigation();
+  }, [stopNavigation]);
+
   const displayShelters = emergencyMode ? nearestShelters : nearbyShelters;
 
   if (mapsError) {
@@ -226,10 +248,20 @@ function App() {
           shelters={displayShelters}
           onShelterClick={handleShelterClick}
           selectedShelterId={selectedShelterId}
-          userLocation={emergencyMode ? currentLocation : null}
+          userLocation={emergencyMode || isNavigating ? currentLocation : null}
           capacityMap={capacityMap}
+          navigationRoute={navigationRoute}
+          navigatingToShelter={targetShelter}
+          onNavigateToShelter={handleNavigateToShelter}
         />
       </main>
+      {isNavigating && navigationRoute && targetShelter && (
+        <NavigationPanel
+          shelter={targetShelter}
+          route={navigationRoute}
+          onCancel={handleCancelNavigation}
+        />
+      )}
       <EmergencyButton onClick={handleEmergencyClick} panelExpanded={panelExpanded} />
     </div>
   );
