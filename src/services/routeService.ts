@@ -220,24 +220,19 @@ export async function computeRoutes(
     routes = [directRoute, ...uniqueAlts];
   } else if (altRoutes.length > 0) {
     // No direct route — fall back to alternatives only
-    routes.sort((a, b) => a.durationSeconds - b.durationSeconds);
+    altRoutes.sort((a, b) => a.durationSeconds - b.durationSeconds);
     routes = altRoutes;
     routes[0].isFastest = true;
   } else {
     // Both failed — try one more single-route request
-    try {
-      const response = await fetchRoutes(origin, destination, profile, apiKey, false);
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        throw new Error(errorData?.error?.message || t('error.routeNotFound'));
-      }
-      const data = await response.json();
-      routes = parseRoutes(data, travelMode, t);
-      if (routes.length > 0) routes[0].isFastest = true;
-    } catch (err) {
-      if (err instanceof Error && err.message !== t('error.networkError')) throw err;
-      throw new Error(t('error.networkError'));
+    const response = await fetchRoutes(origin, destination, profile, apiKey, false);
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      throw new Error(errorData?.error?.message || t('error.routeNotFound'));
     }
+    const data = await response.json();
+    routes = parseRoutes(data, travelMode, t);
+    if (routes.length > 0) routes[0].isFastest = true;
   }
 
   return routes;
