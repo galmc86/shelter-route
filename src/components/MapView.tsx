@@ -472,6 +472,19 @@ export function MapView({
             />
           </LanguageProvider>
         );
+
+        // Attach native click listener for navigate button to bypass
+        // Leaflet's touch/click event interception on mobile devices.
+        // React's synthetic onClick may not fire inside Leaflet popups.
+        requestAnimationFrame(() => {
+          const navBtn = popupContainer.querySelector('.shelter-popup-nav-btn');
+          if (navBtn && onNavigateToShelter) {
+            navBtn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              onNavigateToShelter(shelter);
+            });
+          }
+        });
       });
 
       // Clean up React root when popup closes
