@@ -165,24 +165,27 @@ function App() {
     setSelectedShelterId(null);
   }, [selectRoute]);
 
-  const handleNavigateToShelter = useCallback((shelter: ShelterWithDistance) => {
+  const handleNavigateToShelter = useCallback(async (shelter: ShelterWithDistance) => {
     if (!currentLocation) {
       pendingNavShelterRef.current = shelter;
       getLocation();
       return;
     }
     pendingNavShelterRef.current = null;
-    startNavigation(shelter, currentLocation, t);
+    await startNavigation(shelter, currentLocation, t);
     setPanelExpanded(false);
   }, [currentLocation, getLocation, startNavigation, t]);
 
-  // Auto-navigate once location arrives for a pending shelter
+  // Auto-navigate once location arrives for a pending shelter.
+  // startNavigation is async so setPanelExpanded runs after it resolves,
+  // not synchronously inside the effect body.
   useEffect(() => {
     if (currentLocation && pendingNavShelterRef.current) {
       const shelter = pendingNavShelterRef.current;
       pendingNavShelterRef.current = null;
-      startNavigation(shelter, currentLocation, t);
-      setPanelExpanded(false);
+      startNavigation(shelter, currentLocation, t).then(() => {
+        setPanelExpanded(false);
+      });
     }
   }, [currentLocation, startNavigation, t]);
 
