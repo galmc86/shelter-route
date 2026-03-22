@@ -1,1 +1,0 @@
-{"success": true, "filesModified": ["vitest.config.ts", ".github/workflows/ci.yml", "src/components/__tests__/AlertBanner.test.tsx", "src/components/__tests__/ErrorBoundary.test.tsx", "src/utils/__tests__/alertSound.test.ts"], "summary": "Coverage config (v8, 60%/40% thresholds). 14 new tests: AlertBanner (5), ErrorBoundary (4), alertSound (5). CI coverage step. All pass."}

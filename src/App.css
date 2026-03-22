@@ -679,6 +679,16 @@ body {
     overflow-y: auto;
     overscroll-behavior: contain;
     will-change: max-height;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .search-panel::-webkit-scrollbar {
+    display: none;
+  }
+
+  .search-panel.panel-expanded {
+    padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   }
 
   .search-panel.panel-expanded {
@@ -788,14 +798,60 @@ body {
   }
 
   .route-info {
-    padding: 0;
-    border: none;
-    background: none;
-    border-radius: 0;
+    padding: 14px;
+    border: 1px solid var(--color-divider-light);
+    background: var(--color-panel-bg);
+    border-radius: 12px;
+  }
+
+  .stat-value {
+    font-size: 18px;
   }
 
   .shelter-item {
     padding: 10px;
+  }
+
+  /* Route picker compact on mobile */
+  .route-picker-overlay {
+    min-width: 100px;
+    padding: 4px;
+    max-width: 160px;
+  }
+
+  .route-picker-item {
+    padding: 6px 8px;
+    gap: 6px;
+  }
+
+  .route-picker-duration {
+    font-size: 12px;
+  }
+
+  .route-picker-distance {
+    font-size: 10px;
+  }
+
+  .route-picker-fastest-badge {
+    font-size: 9px;
+    padding: 1px 4px;
+  }
+
+  /* Shelter popup compact on mobile */
+  .shelter-popup {
+    padding: 10px 12px;
+    min-width: 180px;
+    max-width: 240px;
+  }
+
+  .shelter-popup-name {
+    font-size: 13px;
+  }
+
+  .shelter-popup-nav,
+  .shelter-popup-nav-btn {
+    padding: 8px 6px;
+    font-size: 13px;
   }
 
   .my-location-btn {

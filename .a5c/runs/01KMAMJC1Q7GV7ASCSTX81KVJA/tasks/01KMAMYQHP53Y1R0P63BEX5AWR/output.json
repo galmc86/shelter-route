@@ -1,1 +1,0 @@
-{"success": true, "filesModified": ["src/components/AlertBanner.tsx", "src/App.css"], "summary": "Dismiss button hidden during active countdown (only shown when isExpired). Find Shelter button goes full-width during countdown for max tap target. Both buttons shown after expiry with Find Shelter as primary."}

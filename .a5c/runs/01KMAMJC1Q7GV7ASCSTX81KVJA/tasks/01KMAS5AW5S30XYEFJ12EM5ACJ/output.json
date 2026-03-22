@@ -1,1 +1,0 @@
-{"success": true, "filesModified": ["src/services/savedLocationsService.ts", "src/hooks/useSavedLocations.ts", "src/components/SavedLocations.tsx", "src/components/SearchPanel.tsx", "src/i18n/translations.ts", "src/App.css"], "summary": "My Shelters: saved locations with chip UI, label icons, localStorage persistence, max 5 locations, add/remove, 4-language translations."}

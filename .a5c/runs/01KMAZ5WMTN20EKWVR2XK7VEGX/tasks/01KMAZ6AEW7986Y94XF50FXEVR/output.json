@@ -1,1 +1,0 @@
-{"success": true, "filesModified": ["src/test/setup.ts"], "summary": "Added complete localStorage mock to test setup. All 147 tests across 11 files now pass (was 36 failures).", "allTestsPass": true}

@@ -1,1 +1,0 @@
-{"success": true, "filesModified": ["src/services/safetyAnalyticsService.ts", "src/components/SafetyDashboard.tsx", "src/App.tsx", "src/i18n/translations.ts", "src/App.css"], "summary": "Safety dashboard: routes analyzed, avg shelters, emergency count, bar chart. localStorage tracking. Collapsible panel. 4-language translations."}

@@ -689,7 +689,12 @@ export function MapView({
       // Create a container element for the React popup
       const popupContainer = document.createElement('div');
 
-      const popup = L.popup({ maxWidth: 280, minWidth: 200 }).setContent(popupContainer);
+      const popup = L.popup({
+        maxWidth: 280,
+        minWidth: 200,
+        autoPanPaddingTopLeft: L.point(10, 80),
+        autoPanPaddingBottomRight: L.point(10, 160),
+      }).setContent(popupContainer);
 
       marker.bindPopup(popup);
 

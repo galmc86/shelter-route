@@ -1,1 +1,0 @@
-{"success": true, "filesModified": ["src/services/alertHistoryService.ts", "src/components/MapView.tsx", "src/i18n/translations.ts", "src/App.css"], "summary": "Alert heat map: toggleable layer with recency-weighted circleMarkers (red/orange/yellow), grid aggregation, legend, zoom-responsive radius. 4-language translations."}
