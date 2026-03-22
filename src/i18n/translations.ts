@@ -208,6 +208,21 @@ export const translations = {
     'bugReport.queuedOffline': 'הדיווח נשמר ויישלח כשתתחבר לאינטרנט.',
     'bugReport.offlineNote': 'אתה במצב לא מקוון — הדיווח יישמר ויישלח מאוחר יותר.',
 
+    // Save Route
+    'route.save': 'שמור מסלול',
+    'route.saved': 'מסלול שמור',
+
+    // Shelter Status Report
+    'shelterStatus.reportTitle': 'דווח על מצב המקלט',
+    'shelterStatus.reportButton': 'דווח מצב',
+    'shelterStatus.open': 'פתוח',
+    'shelterStatus.locked': 'נעול',
+    'shelterStatus.crowded': 'צפוף',
+    'shelterStatus.needsKey': 'דרוש מפתח',
+    'shelterStatus.damaged': 'פגום',
+    'shelterStatus.empty': 'ריק',
+    'shelterStatus.thankYou': 'תודה על הדיווח!',
+
     // Errors
     'error.mapLoad': 'שגיאה בטעינת המפה',
     'error.mapLoadDesc': 'ודא שמפתח OpenRouteService מוגדר בקובץ .env',
@@ -424,6 +439,21 @@ export const translations = {
     'bugReport.thankYou': 'Thanks for your report!',
     'bugReport.queuedOffline': 'Your report has been saved and will be sent when you reconnect.',
     'bugReport.offlineNote': 'You are offline — the report will be saved and sent later.',
+
+    // Save Route
+    'route.save': 'Save route',
+    'route.saved': 'Route saved',
+
+    // Shelter Status Report
+    'shelterStatus.reportTitle': 'Report shelter status',
+    'shelterStatus.reportButton': 'Report status',
+    'shelterStatus.open': 'Open',
+    'shelterStatus.locked': 'Locked',
+    'shelterStatus.crowded': 'Crowded',
+    'shelterStatus.needsKey': 'Needs key',
+    'shelterStatus.damaged': 'Damaged',
+    'shelterStatus.empty': 'Empty',
+    'shelterStatus.thankYou': 'Thanks for reporting!',
 
     // Errors
     'error.mapLoad': 'Error loading map',

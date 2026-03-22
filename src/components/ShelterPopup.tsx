@@ -59,14 +59,30 @@ export function ShelterPopup({ shelter, hasRoute, capacityData }: ShelterPopupPr
         </div>
       )}
 
-      <a
-        href={navUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="shelter-popup-nav"
-      >
-        {t('shelters.navigateToShelter')}
-      </a>
+      <div className="shelter-popup-actions">
+        <a
+          href={navUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="shelter-popup-nav"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M21 3L3 10.53v.98l6.84 2.65L12.48 21h.98L21 3z"/>
+          </svg>
+          {t('shelters.navigateToShelter')}
+        </a>
+        <a
+          href={navUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="shelter-popup-gmaps"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          Google Maps
+        </a>
+      </div>
     </div>
   );
 }

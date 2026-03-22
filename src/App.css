@@ -723,6 +723,10 @@ body {
 .route-stats {
   display: flex;
   gap: 24px;
+  padding: 12px;
+  background: var(--color-shelter-bg);
+  border-radius: 10px;
+  border: 1px solid var(--color-shelter-border);
 }
 
 .stat {
@@ -914,32 +918,60 @@ body {
   border-width: 2px;
 }
 
-/* Share Button */
-.share-btn {
+/* Route Actions (Share + Save) */
+.route-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-divider-light);
+}
+
+.route-action-btn {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  width: 100%;
-  margin-top: 12px;
-  padding: 10px 12px;
-  background: none;
-  border: 1.5px solid var(--color-primary);
-  color: var(--color-primary);
-  border-radius: 8px;
+  gap: 8px;
+  padding: 11px 12px;
+  border-radius: 10px;
   cursor: pointer;
   font-size: 13px;
   font-weight: 600;
   font-family: inherit;
-  transition: background 0.2s;
-  min-height: 40px;
+  transition: all 0.2s;
+  min-height: 42px;
+  border: 1.5px solid var(--color-primary);
+  color: var(--color-primary);
+  background: none;
 }
 
-.share-btn:hover {
+.route-action-btn:hover {
   background: var(--color-primary-light);
 }
 
-.share-btn:active {
+.route-action-btn:active {
+  transform: scale(0.97);
+}
+
+.route-action-save {
+  background: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
+}
+
+.route-action-save:hover {
+  background: var(--color-primary-dark);
+  border-color: var(--color-primary-dark);
+}
+
+.route-action-save.saved {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.route-action-save.saved:hover {
   background: var(--color-primary-border);
 }
 
@@ -1212,6 +1244,168 @@ body {
   margin-inline-start: 4px;
   vertical-align: middle;
 }
+
+/* Shelter Item Wrapper (for inline status report) */
+.shelter-item-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.shelter-item-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.shelter-report-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: 1px solid var(--color-divider);
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 10px;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--color-subtle-text);
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.shelter-report-btn:hover {
+  background: var(--color-primary-light);
+  border-color: var(--color-primary-border);
+  color: var(--color-primary);
+}
+
+/* Shelter Status Report Section */
+.status-report-section {
+  background: var(--color-shelter-bg);
+  border: 1px solid var(--color-shelter-border);
+  border-top: none;
+  border-radius: 0 0 10px 10px;
+  padding: 12px;
+  animation: fadeIn 0.2s ease;
+}
+
+.status-report-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 4px;
+}
+
+.status-report-subtitle {
+  font-size: 11px;
+  color: var(--color-subtle-text);
+  margin-bottom: 10px;
+}
+
+.status-report-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  color: var(--color-subtle-text);
+  display: flex;
+  align-items: center;
+  transition: background 0.15s;
+}
+
+.status-report-close:hover {
+  background: var(--color-divider);
+}
+
+.status-report-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.status-report-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 8px;
+  border-radius: 10px;
+  border: 1.5px solid var(--color-divider);
+  background: var(--color-panel-bg);
+  cursor: pointer;
+  transition: all 0.15s;
+  min-height: 68px;
+  font-family: inherit;
+}
+
+.status-report-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.status-report-btn:active {
+  transform: scale(0.96);
+}
+
+.status-report-btn--open { border-color: #C8E6C9; }
+.status-report-btn--open:hover { background: #E8F5E9; border-color: #A5D6A7; }
+.status-report-btn--locked { border-color: #FFE0B2; }
+.status-report-btn--locked:hover { background: #FFF3E0; border-color: #FFCC80; }
+.status-report-btn--crowded { border-color: #FFCDD2; }
+.status-report-btn--crowded:hover { background: #FFEBEE; border-color: #EF9A9A; }
+.status-report-btn--needsKey { border-color: #FFF9C4; }
+.status-report-btn--needsKey:hover { background: #FFFDE7; border-color: #FFF176; }
+.status-report-btn--damaged { border-color: #FFCDD2; }
+.status-report-btn--damaged:hover { background: #FFEBEE; border-color: #EF9A9A; }
+.status-report-btn--empty { border-color: #BBDEFB; }
+.status-report-btn--empty:hover { background: #E3F2FD; border-color: #90CAF9; }
+
+.status-report-btn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.status-report-btn-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.status-report-thanks {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #2E7D32;
+}
+
+/* Dark mode status report overrides */
+[data-theme="dark"] .status-report-btn--open { border-color: #2E5A2E; }
+[data-theme="dark"] .status-report-btn--open:hover { background: #1B3A1B; }
+[data-theme="dark"] .status-report-btn--locked { border-color: #5C3A1A; }
+[data-theme="dark"] .status-report-btn--locked:hover { background: #3A2A1A; }
+[data-theme="dark"] .status-report-btn--crowded { border-color: #5A2525; }
+[data-theme="dark"] .status-report-btn--crowded:hover { background: #3A1515; }
+[data-theme="dark"] .status-report-btn--needsKey { border-color: #5A5030; }
+[data-theme="dark"] .status-report-btn--needsKey:hover { background: #3A3520; }
+[data-theme="dark"] .status-report-btn--damaged { border-color: #5A2525; }
+[data-theme="dark"] .status-report-btn--damaged:hover { background: #3A1515; }
+[data-theme="dark"] .status-report-btn--empty { border-color: #1E3A5F; }
+[data-theme="dark"] .status-report-btn--empty:hover { background: #1A2A3A; }
+[data-theme="dark"] .status-report-thanks { color: #81C784; }
 
 /* Sort & Filter Controls */
 .shelter-controls {
@@ -2213,19 +2407,30 @@ body {
   text-align: end;
 }
 
+.shelter-popup-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--color-border, #eee);
+}
+
 .shelter-popup-nav {
-  display: block;
-  text-align: center;
-  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   padding: 10px 8px;
   background: #0D47A1;
   color: #FFFFFF;
   text-decoration: none;
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 14px;
   font-weight: 700;
   letter-spacing: 0.3px;
   text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+  transition: background 0.15s;
 }
 
 .shelter-popup-nav:visited {
@@ -2234,6 +2439,30 @@ body {
 
 .shelter-popup-nav:hover {
   background: #1565C0;
+}
+
+.shelter-popup-gmaps {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px;
+  background: none;
+  border: 1.5px solid var(--color-primary, #1565C0);
+  color: var(--color-primary, #1565C0);
+  text-decoration: none;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  transition: background 0.15s;
+}
+
+.shelter-popup-gmaps:visited {
+  color: var(--color-primary, #1565C0);
+}
+
+.shelter-popup-gmaps:hover {
+  background: var(--color-primary-light, #E3F2FD);
 }
 
 /* Shelter Distance Label (on map markers) */
@@ -2313,6 +2542,13 @@ body {
     transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
     overflow-y: auto;
     overscroll-behavior: contain;
+    will-change: max-height;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .search-panel::-webkit-scrollbar {
+    display: none;
   }
 
   .search-panel.panel-expanded {
@@ -2326,8 +2562,12 @@ body {
     }
   }
 
+  .search-panel.panel-expanded {
+    padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  }
+
   .search-panel.panel-collapsed {
-    max-height: calc(130px + env(safe-area-inset-bottom, 0px));
+    max-height: calc(150px + env(safe-area-inset-bottom, 0px));
     overflow: hidden;
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
@@ -2379,7 +2619,8 @@ body {
   .search-panel.panel-collapsed .error-message,
   .search-panel.panel-collapsed .copied-toast,
   .search-panel.panel-collapsed .route-selector,
-  .search-panel.panel-collapsed .capacity-legend {
+  .search-panel.panel-collapsed .capacity-legend,
+  .search-panel.panel-collapsed .shelter-controls {
     display: none;
   }
 
@@ -2419,10 +2660,65 @@ body {
   }
 
   .route-info {
-    padding: 0;
-    border: none;
-    background: none;
-    border-radius: 0;
+    padding: 14px;
+    border: 1px solid var(--color-divider-light);
+    background: var(--color-panel-bg);
+    border-radius: 12px;
+  }
+
+  .stat-value {
+    font-size: 18px;
+  }
+
+  /* Route picker compact on mobile */
+  .route-picker-overlay {
+    min-width: 100px;
+    padding: 4px;
+    max-width: 160px;
+  }
+
+  .route-picker-item {
+    padding: 6px 8px;
+    gap: 6px;
+  }
+
+  .route-picker-duration {
+    font-size: 12px;
+  }
+
+  .route-picker-distance {
+    font-size: 10px;
+  }
+
+  .route-picker-fastest-badge {
+    font-size: 9px;
+    padding: 1px 4px;
+  }
+
+  /* Shelter popup compact on mobile */
+  .shelter-popup {
+    padding: 10px 12px;
+    min-width: 180px;
+    max-width: 240px;
+  }
+
+  .shelter-popup-name {
+    font-size: 13px;
+  }
+
+  .shelter-popup-nav {
+    padding: 8px 6px;
+    font-size: 13px;
+  }
+
+  /* Status report grid compact on mobile */
+  .status-report-grid {
+    gap: 6px;
+  }
+
+  .status-report-btn {
+    padding: 10px 6px;
+    min-height: 60px;
   }
 
   .shelter-item {
