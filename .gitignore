@@ -29,3 +29,4 @@ dist-ssr
 !.env.example
 .claude/worktrees/
 .claude/
+.a5c/

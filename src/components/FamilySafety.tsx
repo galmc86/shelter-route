@@ -1,0 +1,227 @@
+import { useState, useEffect, useCallback } from 'react';
+import { useLanguage } from '../i18n';
+import {
+  getGroup,
+  createGroup,
+  joinGroup,
+  setImSafe,
+  leaveGroup,
+  getShareLink,
+  type FamilyGroup,
+} from '../services/familySafetyService';
+
+interface FamilySafetyProps {
+  initialGroupCode?: string | null;
+}
+
+export function FamilySafety({ initialGroupCode }: FamilySafetyProps) {
+  const { t } = useLanguage();
+  const [group, setGroup] = useState<FamilyGroup | null>(null);
+  const [nameInput, setNameInput] = useState('');
+  const [codeInput, setCodeInput] = useState('');
+  const [showJoinInput, setShowJoinInput] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  // Load existing group on mount
+  useEffect(() => {
+    const existing = getGroup();
+    if (existing) {
+      queueMicrotask(() => setGroup(existing));
+    } else if (initialGroupCode) {
+      queueMicrotask(() => {
+        setShowJoinInput(true);
+        setCodeInput(initialGroupCode);
+        setIsExpanded(true);
+      });
+    }
+  }, [initialGroupCode]);
+
+  const handleCreate = useCallback(() => {
+    if (!nameInput.trim()) return;
+    const g = createGroup(nameInput.trim());
+    setGroup(g);
+    setNameInput('');
+  }, [nameInput]);
+
+  const handleJoin = useCallback(() => {
+    if (!nameInput.trim() || !codeInput.trim()) return;
+    const g = joinGroup(codeInput.trim(), nameInput.trim());
+    setGroup(g);
+    setNameInput('');
+    setCodeInput('');
+    setShowJoinInput(false);
+  }, [nameInput, codeInput]);
+
+  const handleImSafe = useCallback(() => {
+    const updated = setImSafe();
+    if (updated) setGroup({ ...updated });
+  }, []);
+
+  const handleLeave = useCallback(() => {
+    leaveGroup();
+    setGroup(null);
+  }, []);
+
+  const handleShare = useCallback(async () => {
+    const link = getShareLink();
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: t('family.shareTitle'),
+          text: t('family.shareText'),
+          url: link,
+        });
+        return;
+      } catch {
+        // User cancelled or share failed, fall through to clipboard
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(link);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // clipboard unavailable
+    }
+  }, [t]);
+
+  const currentMember = group?.members.find((m) => m.name === group.memberName);
+  const isSafe = currentMember?.isSafe ?? false;
+
+  return (
+    <div className="family-safety">
+      <button
+        className="family-safety-header"
+        onClick={() => setIsExpanded(!isExpanded)}
+        aria-expanded={isExpanded}
+      >
+        <span className="family-safety-header-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" />
+          </svg>
+        </span>
+        <span className="family-safety-header-title">{t('family.title')}</span>
+        <span className={`family-safety-chevron ${isExpanded ? 'expanded' : ''}`}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z" />
+          </svg>
+        </span>
+      </button>
+
+      {isExpanded && (
+        <div className="family-safety-content">
+          {!group ? (
+            <div className="family-safety-setup">
+              <p className="family-safety-desc">{t('family.description')}</p>
+              <p className="family-safety-local-note">{t('family.localNote')}</p>
+
+              <input
+                className="family-safety-input"
+                type="text"
+                placeholder={t('family.namePlaceholder')}
+                value={nameInput}
+                onChange={(e) => setNameInput(e.target.value)}
+                maxLength={30}
+              />
+
+              {!showJoinInput ? (
+                <div className="family-safety-actions">
+                  <button
+                    className="family-safety-btn family-safety-btn-create"
+                    onClick={handleCreate}
+                    disabled={!nameInput.trim()}
+                  >
+                    {t('family.createGroup')}
+                  </button>
+                  <button
+                    className="family-safety-btn family-safety-btn-join"
+                    onClick={() => setShowJoinInput(true)}
+                  >
+                    {t('family.joinGroup')}
+                  </button>
+                </div>
+              ) : (
+                <div className="family-safety-join">
+                  <input
+                    className="family-safety-input"
+                    type="text"
+                    placeholder={t('family.codePlaceholder')}
+                    value={codeInput}
+                    onChange={(e) => setCodeInput(e.target.value.toUpperCase())}
+                    maxLength={6}
+                  />
+                  <div className="family-safety-actions">
+                    <button
+                      className="family-safety-btn family-safety-btn-create"
+                      onClick={handleJoin}
+                      disabled={!nameInput.trim() || codeInput.trim().length < 6}
+                    >
+                      {t('family.join')}
+                    </button>
+                    <button
+                      className="family-safety-btn family-safety-btn-join"
+                      onClick={() => {
+                        setShowJoinInput(false);
+                        setCodeInput('');
+                      }}
+                    >
+                      {t('family.cancel')}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="family-safety-group">
+              <div className="family-safety-code-row">
+                <span className="family-safety-code-label">{t('family.groupCode')}:</span>
+                <span className="family-safety-code-value">{group.groupCode}</span>
+              </div>
+
+              <div className="family-safety-members">
+                <span className="family-safety-members-label">
+                  {t('family.members')} ({group.members.length})
+                </span>
+                {group.members.map((m) => (
+                  <div key={m.id} className="family-safety-member">
+                    <span
+                      className={`family-safety-status-dot ${m.isSafe ? 'safe' : 'unknown'}`}
+                      title={m.isSafe ? t('family.statusSafe') : t('family.statusUnknown')}
+                    />
+                    <span className="family-safety-member-name">
+                      {m.name}
+                      {m.name === group.memberName ? ` (${t('family.you')})` : ''}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                className={`family-safety-btn-imsafe ${isSafe ? 'is-safe' : ''}`}
+                onClick={handleImSafe}
+              >
+                {isSafe ? t('family.markedSafe') : t('family.imSafe')}
+              </button>
+
+              <div className="family-safety-group-actions">
+                <button
+                  className="family-safety-btn family-safety-btn-share"
+                  onClick={handleShare}
+                >
+                  {copied ? t('family.linkCopied') : t('family.shareWithFamily')}
+                </button>
+                <button
+                  className="family-safety-btn family-safety-btn-leave"
+                  onClick={handleLeave}
+                >
+                  {t('family.leaveGroup')}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}

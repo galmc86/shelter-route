@@ -2,9 +2,15 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   type OrefAlert,
   type AlertRegion,
+  type AlertHealthStatus,
   subscribeToAlerts,
   getTimeToShelter,
 } from '../services/orefAlertService';
+import {
+  showLocalNotification,
+  requestNotificationPermission,
+  isNotificationSupported,
+} from '../services/pushNotificationService';
 
 interface UseOrefAlertsResult {
   activeAlerts: OrefAlert[];
@@ -16,6 +22,7 @@ interface UseOrefAlertsResult {
   dismissAlert: () => void;
   isEnabled: boolean;
   setEnabled: (enabled: boolean) => void;
+  alertHealthStatus: AlertHealthStatus;
 }
 
 export function useOrefAlerts(
@@ -30,6 +37,7 @@ export function useOrefAlerts(
   const [isEnabled, setEnabled] = useState(() => {
     return localStorage.getItem('shelter-route:oref-alerts') !== 'disabled';
   });
+  const [alertHealthStatus, setAlertHealthStatus] = useState<AlertHealthStatus>('connected');
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const handleAlerts = useCallback((alerts: OrefAlert[], region: AlertRegion | null) => {
@@ -39,6 +47,17 @@ export function useOrefAlerts(
       setMatchedRegion(region);
       setAlertTimestamp(Date.now());
       setDismissed(false);
+
+      // Show local notification when tab is not visible
+      if (document.hidden) {
+        const regionName = region.nameEn || region.name;
+        const seconds = region.timeToShelter;
+        showLocalNotification(
+          'Shelter Route Alert',
+          `Alert in ${regionName} — ${seconds}s to reach shelter!`,
+          `alert-${regionName}`
+        );
+      }
     } else if (alerts.length === 0) {
       setMatchedRegion(null);
       setAlertTimestamp(null);
@@ -46,11 +65,18 @@ export function useOrefAlerts(
     }
   }, []);
 
+  // Request notification permission when alerts are enabled
+  useEffect(() => {
+    if (isEnabled && isNotificationSupported()) {
+      requestNotificationPermission();
+    }
+  }, [isEnabled]);
+
   // Subscribe to OREF alerts
   useEffect(() => {
     if (!isEnabled) return;
 
-    const unsubscribe = subscribeToAlerts(userLat, userLng, handleAlerts);
+    const unsubscribe = subscribeToAlerts(userLat, userLng, handleAlerts, 5000, setAlertHealthStatus);
     return unsubscribe;
   }, [userLat, userLng, isEnabled, handleAlerts]);
 
@@ -102,5 +128,6 @@ export function useOrefAlerts(
     dismissAlert,
     isEnabled,
     setEnabled,
+    alertHealthStatus,
   };
 }

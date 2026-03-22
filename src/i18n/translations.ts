@@ -1,10 +1,15 @@
-export type Language = 'he' | 'en';
+export type Language = 'he' | 'en' | 'ar' | 'ru';
 
 export const translations = {
   he: {
     // App Header
     'header.title': 'Shelter Route',
     'header.subtitle': 'מצא מקלטים לאורך המסלול שלך',
+
+    // Data freshness
+    'data.updatedToday': 'נתונים: היום',
+    'data.updatedDaysAgo': 'נתונים: לפני {days} ימים',
+    'data.stale': 'הנתונים עשויים להיות לא עדכניים',
 
     // Search Panel
     'search.ariaLabel': 'חיפוש מסלול ומקלטים',
@@ -22,6 +27,8 @@ export const translations = {
     'search.button.ariaDisabled': 'הזן נקודת מוצא ויעד כדי לחפש',
     'search.searching': 'מחפש מסלול...',
     'search.myLocation': 'המיקום הנוכחי שלי',
+    'search.sheltersNearMe': 'מקלטים קרובים אליי',
+    'search.planSafeRoute': 'תכנן מסלול בטוח',
 
     // Emergency
     'emergency.findShelter': 'מצא מקלט קרוב עכשיו',
@@ -30,6 +37,10 @@ export const translations = {
     'emergency.nearbyShelters': 'מקלטים קרובים אליך',
     'emergency.exit': 'חזור',
     'emergency.exitAriaLabel': 'צא ממצב חירום',
+    'emergency.useMapCenter': 'השתמש במרכז המפה',
+    'emergency.locationPermissionHint': 'ניתן לאפשר שירותי מיקום בהגדרות המכשיר',
+    'emergency.navigateNow': 'נווט למקלט הקרוב',
+    'emergency.walkingTime': 'זמן הליכה',
 
     // Route Info
     'route.details': 'פרטי מסלול',
@@ -70,6 +81,11 @@ export const translations = {
     'map.loadingAriaLabel': 'טוען מפה',
     'map.ariaLabel': 'מפת מקלטים',
     'map.yourLocation': 'המיקום שלך',
+    'map.heatMapToggle': 'היסטוריית התרעות',
+    'map.heatMapLegendTitle': 'תדירות התרעות',
+    'map.heatMapHigh': 'גבוהה (אחרונה)',
+    'map.heatMapMedium': 'בינונית',
+    'map.heatMapLow': 'נמוכה',
 
     // Theme
     'theme.toggleDark': 'מצב כהה',
@@ -81,6 +97,7 @@ export const translations = {
     'share.copied': 'הקישור הועתק!',
     'share.title': 'מסלול מקלטים',
     'share.text': 'מסלול עם {{count}} מקלטים',
+    'share.richText': '\u{1F6E1}\uFE0F נמצאו {{count}} מקלטים במסלול מ-{{origin}} ל-{{destination}} | Shelter Route',
     'share.sharedLocation': 'מיקום משותף',
 
     // Offline / SW
@@ -95,6 +112,17 @@ export const translations = {
 
     // Walking time
     'shelters.walkingTime': '~{{minutes}} דק׳ הליכה',
+
+    // Community reports
+    'report.title': 'דווח על מצב המקלט',
+    'report.reportStatus': 'דווח מצב',
+    'report.thanks': 'תודה על הדיווח!',
+    'report.open': 'פתוח',
+    'report.locked': 'נעול',
+    'report.crowded': 'צפוף',
+    'report.empty': 'ריק',
+    'report.damaged': 'פגום',
+    'report.keyRequired': 'דרוש מפתח',
 
     // Accessibility
     'accessibility.filterLabel': 'נגישים בלבד',
@@ -129,6 +157,8 @@ export const translations = {
     'capacity.legendUnknown': 'לא ידוע',
     'capacity.walkingTime': 'הליכה',
     'capacity.minutes': 'דק׳',
+    'capacity.estimated': 'הערכה',
+    'capacity.estimatedTooltip': 'נתוני התפוסה הם הערכה בלבד, לא בזמן אמת',
 
     // Search attribution
     'search.poweredByGoogle': 'מופעל ע"י Google',
@@ -154,6 +184,15 @@ export const translations = {
     'alert.seconds': 'שניות',
     'alert.expired': 'הכנס למקלט מיד!',
     'alert.settings': 'התראות',
+    'alert.staySheltered': 'הישאר במקלט',
+    'alert.remainInShelter': 'הישאר במקלט לפחות 10 דקות',
+    'alert.minutesRemaining': 'דקות נותרו',
+    'alert.imSafe': 'אני בטוח/ה',
+    'alert.needHelp': 'צריך עזרה?',
+    'alert.police': 'משטרה',
+    'alert.mda': 'מד"א',
+    'alert.fire': 'כיבוי אש',
+    'alert.homeFrontCommand': 'פיקוד העורף',
 
     // Route Risk
     'risk.none': 'אין התרעות אחרונות',
@@ -190,6 +229,19 @@ export const translations = {
     'searchHistory.renamePrompt': 'הזן שם למסלול (או השאר ריק למחיקת השם):',
     'searchHistory.pinned': 'מוצמד',
 
+    // Saved Routes
+    'savedRoutes.save': 'שמור מסלול',
+    'savedRoutes.saved': 'מסלול שמור',
+    'savedRoutes.unsave': 'הסר שמירה',
+
+    // Navigation
+    'nav.navigate': 'נווט למקלט',
+    'nav.openGoogleMaps': 'פתח ב-Google Maps',
+    'nav.cancel': 'בטל',
+    'nav.walkingTo': 'הליכה אל',
+    'nav.locationRequired': 'נדרש מיקום לניווט',
+    'nav.calculatingRoute': 'מחשב מסלול...',
+
     // Bug Report
     'bugReport.button': 'דווח על באג',
     'bugReport.title': 'דווח על בעיה',
@@ -208,21 +260,6 @@ export const translations = {
     'bugReport.queuedOffline': 'הדיווח נשמר ויישלח כשתתחבר לאינטרנט.',
     'bugReport.offlineNote': 'אתה במצב לא מקוון — הדיווח יישמר ויישלח מאוחר יותר.',
 
-    // Save Route
-    'route.save': 'שמור מסלול',
-    'route.saved': 'מסלול שמור',
-
-    // Shelter Status Report
-    'shelterStatus.reportTitle': 'דווח על מצב המקלט',
-    'shelterStatus.reportButton': 'דווח מצב',
-    'shelterStatus.open': 'פתוח',
-    'shelterStatus.locked': 'נעול',
-    'shelterStatus.crowded': 'צפוף',
-    'shelterStatus.needsKey': 'דרוש מפתח',
-    'shelterStatus.damaged': 'פגום',
-    'shelterStatus.empty': 'ריק',
-    'shelterStatus.thankYou': 'תודה על הדיווח!',
-
     // Errors
     'error.mapLoad': 'שגיאה בטעינת המפה',
     'error.mapLoadDesc': 'ודא שמפתח OpenRouteService מוגדר בקובץ .env',
@@ -232,11 +269,94 @@ export const translations = {
     'error.geolocationUnsupported': 'הדפדפן לא תומך בשירותי מיקום',
     'error.locationDenied': 'גישה למיקום נדחתה',
     'error.locationUnavailable': 'לא ניתן לקבל את המיקום הנוכחי',
+
+    // Onboarding
+    'onboarding.welcomeTitle': 'ברוכים הבאים ל-Shelter Route',
+    'onboarding.welcomeDesc': 'האפליקציה מוצאת מקלטים לאורך המסלול שלך ובזמן מצבי חירום, כדי שתמיד תדע לאן לרוץ.',
+    'onboarding.locationTitle': 'שירותי מיקום',
+    'onboarding.locationDesc': 'המיקום שלך עוזר למצוא מקלטים קרובים באופן מיידי.',
+    'onboarding.grantLocation': 'אפשר מיקום',
+    'onboarding.locationGranted': 'המיקום אושר!',
+    'onboarding.emergencyTitle': 'כפתור חירום',
+    'onboarding.emergencyDesc': 'לחץ על הכפתור האדום בזמן אזעקה כדי למצוא את המקלט הקרוב ביותר.',
+    'onboarding.next': 'הבא',
+    'onboarding.skip': 'דלג',
+    'onboarding.getStarted': 'בואו נתחיל',
+    'onboarding.step': 'שלב {{current}} מתוך {{total}}',
+
+    // Saved Locations
+    'savedLocations.title': 'המקומות שלי',
+    'savedLocations.tapToFind': 'לחץ למציאת מקלטים קרובים',
+    'savedLocations.remove': 'הסר',
+    'savedLocations.addCurrent': 'שמור מיקום נוכחי',
+    'savedLocations.namePlaceholder': 'שם המיקום...',
+    'savedLocations.save': 'שמור',
+    'savedLocations.savedPoint': 'מיקום שמור',
+    'savedLocations.label.home': 'בית',
+    'savedLocations.label.work': 'עבודה',
+    'savedLocations.label.school': 'בית ספר',
+    'savedLocations.label.other': 'אחר',
+    'savedLocations.maxReached': 'מקסימום 5 מיקומות שמורים',
+
+    // Shelter Score
+    'shelterScore.title': 'ציון מקלטים',
+    'shelterScore.grade': 'ציון',
+    'shelterScore.checkScore': 'בדוק ציון מקלטים',
+    'shelterScore.hideScore': 'הסתר ציון מקלטים',
+    'shelterScore.nearbyShelters': 'מקלטים בקרבת מקום',
+    'shelterScore.nearestWalkTime': 'זמן הליכה לקרוב',
+    'shelterScore.accessibleShelters': 'מקלטים נגישים',
+    'shelterScore.nearestDistance': 'מרחק לקרוב ביותר',
+    'shelterScore.share': 'שתף ציון',
+    'shelterScore.shareText': 'ציון המקלטים שלי: {{grade}} ({{score}}/100) - {{count}} מקלטים בקרבת {{location}}',
+    'shelterScore.richShareText': '\u{1F3E0} ציון המקלטים שלי: {{grade}} ({{score}}/100) - {{count}} מקלטים בטווח 200 מטר | בדוק את שלך ב-Shelter Route',
+
+    // Family Safety
+    'family.title': 'רשת ביטחון משפחתית',
+    'family.description': 'צור קבוצה משפחתית כדי לשתף סטטוס בטיחות עם המשפחה.',
+    'family.localNote': 'גרסה מקומית — סנכרון בזמן אמת ידרוש שרת בעתיד.',
+    'family.namePlaceholder': 'השם שלך...',
+    'family.codePlaceholder': 'קוד קבוצה (6 תווים)',
+    'family.createGroup': 'צור קבוצה',
+    'family.joinGroup': 'הצטרף לקבוצה',
+    'family.join': 'הצטרף',
+    'family.cancel': 'ביטול',
+    'family.groupCode': 'קוד קבוצה',
+    'family.members': 'חברים',
+    'family.you': 'אתה',
+    'family.statusSafe': 'בטוח',
+    'family.statusUnknown': 'לא ידוע',
+    'family.imSafe': 'אני בטוח!',
+    'family.markedSafe': 'סומנת כבטוח/ה',
+    'family.shareWithFamily': 'שתף עם המשפחה',
+    'family.linkCopied': 'הקישור הועתק!',
+    'family.leaveGroup': 'עזוב קבוצה',
+    'family.shareTitle': 'הצטרף לקבוצת הבטיחות שלי',
+    'family.shareText': 'הצטרף לקבוצת הבטיחות המשפחתית שלי ב-Shelter Route',
+
+    // In-app Navigation
+    'nav.directions': 'ניווט למקלט',
+    'nav.stop': 'עצור ניווט',
+    'nav.arriving': 'מגיע למקלט!',
+    'nav.calculating': 'מחשב מסלול...',
+
+    // Safety Dashboard
+    'dashboard.title': 'לוח בטיחות אישי',
+    'dashboard.routesAnalyzed': 'מסלולים שנותחו',
+    'dashboard.avgShelters': 'מקלטים ממוצע למסלול',
+    'dashboard.emergencyActivations': 'הפעלות חירום',
+    'dashboard.recentRoutes': 'מסלולים אחרונים',
+    'dashboard.shelters': 'מקלטים',
   },
   en: {
     // App Header
     'header.title': 'Shelter Route',
     'header.subtitle': 'Find shelters along your route',
+
+    // Data freshness
+    'data.updatedToday': 'Data: today',
+    'data.updatedDaysAgo': 'Data: {days} days ago',
+    'data.stale': 'Data may be outdated',
 
     // Search Panel
     'search.ariaLabel': 'Search route and shelters',
@@ -254,6 +374,8 @@ export const translations = {
     'search.button.ariaDisabled': 'Enter origin and destination to search',
     'search.searching': 'Searching for route...',
     'search.myLocation': 'My current location',
+    'search.sheltersNearMe': 'Shelters near me',
+    'search.planSafeRoute': 'Plan a safe route',
 
     // Emergency
     'emergency.findShelter': 'Find nearest shelter now',
@@ -262,6 +384,10 @@ export const translations = {
     'emergency.nearbyShelters': 'shelters near you',
     'emergency.exit': 'Back',
     'emergency.exitAriaLabel': 'Exit emergency mode',
+    'emergency.useMapCenter': 'Use map center',
+    'emergency.locationPermissionHint': 'You can enable location services in your device settings',
+    'emergency.navigateNow': 'Navigate to nearest shelter',
+    'emergency.walkingTime': 'Walking time',
 
     // Route Info
     'route.details': 'Route Details',
@@ -302,6 +428,11 @@ export const translations = {
     'map.loadingAriaLabel': 'Loading map',
     'map.ariaLabel': 'Shelter map',
     'map.yourLocation': 'Your location',
+    'map.heatMapToggle': 'Alert History',
+    'map.heatMapLegendTitle': 'Alert Frequency',
+    'map.heatMapHigh': 'High (recent)',
+    'map.heatMapMedium': 'Medium',
+    'map.heatMapLow': 'Low',
 
     // Theme
     'theme.toggleDark': 'Dark mode',
@@ -313,6 +444,7 @@ export const translations = {
     'share.copied': 'Link copied!',
     'share.title': 'Shelter Route',
     'share.text': 'Route with {{count}} shelters',
+    'share.richText': '\u{1F6E1}\uFE0F Found {{count}} shelters on route from {{origin}} to {{destination}} | Shelter Route',
     'share.sharedLocation': 'Shared location',
 
     // Offline / SW
@@ -327,6 +459,17 @@ export const translations = {
 
     // Walking time
     'shelters.walkingTime': '~{{minutes}} min walk',
+
+    // Community reports
+    'report.title': 'Report shelter status',
+    'report.reportStatus': 'Report Status',
+    'report.thanks': 'Thanks for reporting!',
+    'report.open': 'Open',
+    'report.locked': 'Locked',
+    'report.crowded': 'Crowded',
+    'report.empty': 'Empty',
+    'report.damaged': 'Damaged',
+    'report.keyRequired': 'Key Required',
 
     // Accessibility
     'accessibility.filterLabel': 'Accessible only',
@@ -361,6 +504,8 @@ export const translations = {
     'capacity.legendUnknown': 'Unknown',
     'capacity.walkingTime': 'Walking',
     'capacity.minutes': 'min',
+    'capacity.estimated': 'Estimated',
+    'capacity.estimatedTooltip': 'Capacity data is estimated, not real-time',
 
     // Search attribution
     'search.poweredByGoogle': 'Powered by Google',
@@ -386,6 +531,15 @@ export const translations = {
     'alert.seconds': 'seconds',
     'alert.expired': 'Get to shelter immediately!',
     'alert.settings': 'Alert notifications',
+    'alert.staySheltered': 'Stay Sheltered',
+    'alert.remainInShelter': 'Remain in shelter for at least 10 minutes',
+    'alert.minutesRemaining': 'minutes remaining',
+    'alert.imSafe': "I'm Safe",
+    'alert.needHelp': 'Need Help?',
+    'alert.police': 'Police',
+    'alert.mda': 'Magen David Adom',
+    'alert.fire': 'Fire Department',
+    'alert.homeFrontCommand': 'Home Front Command',
 
     // Route Risk
     'risk.none': 'No recent alerts',
@@ -422,6 +576,19 @@ export const translations = {
     'searchHistory.renamePrompt': 'Enter a name for this route (or leave empty to remove):',
     'searchHistory.pinned': 'Pinned',
 
+    // Saved Routes
+    'savedRoutes.save': 'Save Route',
+    'savedRoutes.saved': 'Saved',
+    'savedRoutes.unsave': 'Unsave',
+
+    // Navigation
+    'nav.navigate': 'Navigate to shelter',
+    'nav.openGoogleMaps': 'Open in Google Maps',
+    'nav.cancel': 'Cancel',
+    'nav.walkingTo': 'Walking to',
+    'nav.locationRequired': 'Location required',
+    'nav.calculatingRoute': 'Calculating route...',
+
     // Bug Report
     'bugReport.button': 'Report a bug',
     'bugReport.title': 'Report a Problem',
@@ -440,21 +607,6 @@ export const translations = {
     'bugReport.queuedOffline': 'Your report has been saved and will be sent when you reconnect.',
     'bugReport.offlineNote': 'You are offline — the report will be saved and sent later.',
 
-    // Save Route
-    'route.save': 'Save route',
-    'route.saved': 'Route saved',
-
-    // Shelter Status Report
-    'shelterStatus.reportTitle': 'Report shelter status',
-    'shelterStatus.reportButton': 'Report status',
-    'shelterStatus.open': 'Open',
-    'shelterStatus.locked': 'Locked',
-    'shelterStatus.crowded': 'Crowded',
-    'shelterStatus.needsKey': 'Needs key',
-    'shelterStatus.damaged': 'Damaged',
-    'shelterStatus.empty': 'Empty',
-    'shelterStatus.thankYou': 'Thanks for reporting!',
-
     // Errors
     'error.mapLoad': 'Error loading map',
     'error.mapLoadDesc': 'Make sure the OpenRouteService key is set in the .env file',
@@ -464,6 +616,778 @@ export const translations = {
     'error.geolocationUnsupported': 'Your browser does not support location services',
     'error.locationDenied': 'Location access denied',
     'error.locationUnavailable': 'Unable to get your current location',
+
+    // Onboarding
+    'onboarding.welcomeTitle': 'Welcome to Shelter Route',
+    'onboarding.welcomeDesc': 'This app finds shelters along your route and during emergencies, so you always know where to go.',
+    'onboarding.locationTitle': 'Location Services',
+    'onboarding.locationDesc': 'Your location helps find shelters near you instantly.',
+    'onboarding.grantLocation': 'Grant Location',
+    'onboarding.locationGranted': 'Location granted!',
+    'onboarding.emergencyTitle': 'Emergency Button',
+    'onboarding.emergencyDesc': 'Tap the red button during an alert to find the nearest shelter.',
+    'onboarding.next': 'Next',
+    'onboarding.skip': 'Skip',
+    'onboarding.getStarted': 'Get Started',
+    'onboarding.step': 'Step {{current}} of {{total}}',
+
+    // Saved Locations
+    'savedLocations.title': 'My Shelters',
+    'savedLocations.tapToFind': 'Tap to find nearby shelters',
+    'savedLocations.remove': 'Remove',
+    'savedLocations.addCurrent': 'Save current location',
+    'savedLocations.namePlaceholder': 'Location name...',
+    'savedLocations.save': 'Save',
+    'savedLocations.savedPoint': 'Saved location',
+    'savedLocations.label.home': 'Home',
+    'savedLocations.label.work': 'Work',
+    'savedLocations.label.school': 'School',
+    'savedLocations.label.other': 'Other',
+    'savedLocations.maxReached': 'Maximum 5 saved locations',
+
+    // Shelter Score
+    'shelterScore.title': 'Shelter Score',
+    'shelterScore.grade': 'Grade',
+    'shelterScore.checkScore': 'Check Shelter Score',
+    'shelterScore.hideScore': 'Hide Shelter Score',
+    'shelterScore.nearbyShelters': 'Nearby shelters',
+    'shelterScore.nearestWalkTime': 'Walk to nearest',
+    'shelterScore.accessibleShelters': 'Accessible shelters',
+    'shelterScore.nearestDistance': 'Nearest distance',
+    'shelterScore.share': 'Share Score',
+    'shelterScore.shareText': 'My shelter score: {{grade}} ({{score}}/100) - {{count}} shelters near {{location}}',
+    'shelterScore.richShareText': '\u{1F3E0} My shelter score: {{grade}} ({{score}}/100) - {{count}} shelters within 200m | Check yours at Shelter Route',
+
+    // Family Safety
+    'family.title': 'Family Safety Network',
+    'family.description': 'Create a family group to share safety status with your family.',
+    'family.localNote': 'Local version — real-time sync will require server integration in the future.',
+    'family.namePlaceholder': 'Your name...',
+    'family.codePlaceholder': 'Group code (6 chars)',
+    'family.createGroup': 'Create Group',
+    'family.joinGroup': 'Join Group',
+    'family.join': 'Join',
+    'family.cancel': 'Cancel',
+    'family.groupCode': 'Group Code',
+    'family.members': 'Members',
+    'family.you': 'You',
+    'family.statusSafe': 'Safe',
+    'family.statusUnknown': 'Unknown',
+    'family.imSafe': "I'm Safe!",
+    'family.markedSafe': 'Marked as Safe',
+    'family.shareWithFamily': 'Share with Family',
+    'family.linkCopied': 'Link Copied!',
+    'family.leaveGroup': 'Leave Group',
+    'family.shareTitle': 'Join my safety group',
+    'family.shareText': 'Join my family safety group on Shelter Route',
+
+    // In-app Navigation
+    'nav.directions': 'Navigate to shelter',
+    'nav.stop': 'Stop navigation',
+    'nav.arriving': 'Arriving at shelter!',
+    'nav.calculating': 'Calculating route...',
+
+    // Safety Dashboard
+    'dashboard.title': 'Personal Safety Dashboard',
+    'dashboard.routesAnalyzed': 'Routes analyzed',
+    'dashboard.avgShelters': 'Avg shelters per route',
+    'dashboard.emergencyActivations': 'Emergency activations',
+    'dashboard.recentRoutes': 'Recent routes',
+    'dashboard.shelters': 'shelters',
+  },
+  ar: {
+    // App Header
+    'header.title': 'Shelter Route',
+    'header.subtitle': 'ابحث عن ملاجئ على طول مسارك',
+
+    // Data freshness
+    'data.updatedToday': 'البيانات: اليوم',
+    'data.updatedDaysAgo': 'البيانات: قبل {days} أيام',
+    'data.stale': 'قد تكون البيانات غير محدّثة',
+
+    // Search Panel
+    'search.ariaLabel': 'البحث عن مسار وملاجئ',
+    'search.panelCollapse': 'طي اللوحة',
+    'search.panelExpand': 'توسيع اللوحة',
+    'search.showMap': 'عرض الخريطة',
+    'search.showDetails': 'تم العثور على ملاجئ — عرض التفاصيل',
+    'search.planRoute': 'تخطيط مسار',
+    'search.sectionRoute': 'تخطيط المسار',
+    'search.sectionTransport': 'وسيلة النقل',
+    'search.placeholder.origin': 'نقطة الانطلاق...',
+    'search.placeholder.dest': 'الوجهة...',
+    'search.button': 'ابحث عن مسار',
+    'search.button.ariaEnabled': 'ابحث عن مسار',
+    'search.button.ariaDisabled': 'أدخل نقطة الانطلاق والوجهة للبحث',
+    'search.searching': 'جارٍ البحث عن مسار...',
+    'search.myLocation': 'موقعي الحالي',
+    'search.sheltersNearMe': 'ملاجئ قريبة مني',
+    'search.planSafeRoute': 'خطط لمسار آمن',
+
+    // Emergency
+    'emergency.findShelter': 'ابحث عن أقرب ملجأ الآن',
+    'emergency.bannerTitle': 'وضع الطوارئ',
+    'emergency.locating': 'جارٍ تحديد الموقع...',
+    'emergency.nearbyShelters': 'ملاجئ قريبة منك',
+    'emergency.exit': 'رجوع',
+    'emergency.exitAriaLabel': 'الخروج من وضع الطوارئ',
+    'emergency.useMapCenter': 'استخدم مركز الخريطة',
+    'emergency.locationPermissionHint': 'يمكنك تفعيل خدمات الموقع من إعدادات الجهاز',
+    'emergency.navigateNow': 'انتقل إلى أقرب ملجأ',
+    'emergency.walkingTime': 'وقت المشي',
+
+    // Route Info
+    'route.details': 'تفاصيل المسار',
+    'route.alternatives': 'مسارات بديلة',
+    'route.optionLabel': 'مسار',
+    'route.sheltersAlongRoute': 'ملاجئ عامة على طول المسار',
+    'route.sheltersLabel': 'ملاجئ',
+
+    // Shelters
+    'shelters.noSheltersFound': 'لم يتم العثور على ملاجئ ضمن 200 متر من المسار',
+    'shelters.nearYou': 'ملاجئ قريبة منك',
+    'shelters.alongRoute': 'ملاجئ على المسار',
+    'shelters.meter': 'م',
+    'shelters.meters': 'متر',
+    'shelters.fromRoute': 'من المسار',
+    'shelters.fromYou': 'من موقعك',
+    'shelters.publicShelter': 'ملجأ عام',
+    'shelters.navigateToShelter': 'انتقل إلى الملجأ',
+    'shelters.loading': 'جارٍ التحميل',
+    'shelters.distanceMeters': 'م',
+    'search.button.tooltip': 'الرجاء إدخال نقطة الانطلاق والوجهة',
+
+    // Location
+    'location.useMyLocation': 'استخدم موقعي الحالي',
+    'location.locating': 'جارٍ التحديد...',
+
+    // Travel modes
+    'travel.walking': 'مشي',
+    'travel.bicycling': 'دراجة',
+    'travel.driving': 'سيارة',
+
+    // Hotline
+    'hotline.label': 'قيادة الجبهة الداخلية: 104',
+    'hotline.ariaLabel': 'اتصل بقيادة الجبهة الداخلية 104',
+
+    // Map
+    'map.loading': 'جارٍ تحميل الخريطة...',
+    'map.loadingAriaLabel': 'جارٍ تحميل الخريطة',
+    'map.ariaLabel': 'خريطة الملاجئ',
+    'map.yourLocation': 'موقعك',
+    'map.heatMapToggle': 'سجل التنبيهات',
+    'map.heatMapLegendTitle': 'تكرار التنبيهات',
+    'map.heatMapHigh': 'مرتفع (حديث)',
+    'map.heatMapMedium': 'متوسط',
+    'map.heatMapLow': 'منخفض',
+
+    // Theme
+    'theme.toggleDark': 'الوضع الداكن',
+    'theme.toggleLight': 'الوضع الفاتح',
+    'theme.toggleHighContrast': 'تباين عالٍ',
+
+    // Share
+    'share.button': 'مشاركة المسار',
+    'share.copied': 'تم نسخ الرابط!',
+    'share.title': 'مسار الملاجئ',
+    'share.text': 'مسار يحتوي على {{count}} ملاجئ',
+    'share.richText': '\u{1F6E1}\uFE0F تم العثور على {{count}} ملاجئ في المسار من {{origin}} إلى {{destination}} | Shelter Route',
+    'share.sharedLocation': 'موقع مشترك',
+
+    // Offline / SW
+    'offline.indicator': 'لا يوجد اتصال بالإنترنت — وضع غير متصل',
+    'sw.updateAvailable': 'يتوفر إصدار جديد',
+    'sw.updateButton': 'تحديث',
+
+    // Sorting
+    'sort.label': 'ترتيب حسب',
+    'sort.distance': 'المسافة',
+    'sort.walkingTime': 'وقت المشي',
+
+    // Walking time
+    'shelters.walkingTime': '~{{minutes}} دق. مشي',
+
+    // Community reports
+    'report.title': 'الإبلاغ عن حالة الملجأ',
+    'report.reportStatus': 'الإبلاغ عن الحالة',
+    'report.thanks': 'شكراً على الإبلاغ!',
+    'report.open': 'مفتوح',
+    'report.locked': 'مقفل',
+    'report.crowded': 'مزدحم',
+    'report.empty': 'فارغ',
+    'report.damaged': 'متضرر',
+    'report.keyRequired': 'يتطلب مفتاح',
+
+    // Accessibility
+    'accessibility.filterLabel': 'ملاجئ مهيّأة فقط',
+    'accessibility.accessible': 'مهيّأ لذوي الكراسي المتحركة',
+    'accessibility.notAccessible': 'غير مهيّأ',
+    'accessibility.hasElevator': 'مصعد',
+    'accessibility.floor': 'الطابق {{level}}',
+    'accessibility.groundFloor': 'الطابق الأرضي',
+
+    // Routes (alternatives)
+    'routes.alternativeRoutes': 'مسارات بديلة',
+    'routes.selectRoute': 'اختر مسارًا',
+    'routes.route': 'مسار',
+    'routes.mostShelters': 'أكثر ملاجئ',
+    'routes.fastest': 'الأسرع',
+
+    // Capacity
+    'capacity.title': 'السعة',
+    'capacity.occupancy': 'الإشغال',
+    'capacity.available': 'متاح',
+    'capacity.full': 'ممتلئ',
+    'capacity.low': 'إشغال منخفض',
+    'capacity.medium': 'إشغال متوسط',
+    'capacity.high': 'إشغال مرتفع',
+    'capacity.unknown': 'السعة غير معروفة',
+    'capacity.of': 'من',
+    'capacity.lastUpdated': 'آخر تحديث',
+    'capacity.legend': 'دليل السعة',
+    'capacity.legendLow': 'متاح (أقل من 50%)',
+    'capacity.legendMedium': 'إشغال متوسط (50%-80%)',
+    'capacity.legendHigh': 'إشغال مرتفع (أكثر من 80%)',
+    'capacity.legendUnknown': 'غير معروف',
+    'capacity.walkingTime': 'مشي',
+    'capacity.minutes': 'دق.',
+    'capacity.estimated': 'تقديري',
+    'capacity.estimatedTooltip': 'بيانات السعة تقديرية وليست آنية',
+
+    // Search attribution
+    'search.poweredByGoogle': 'مدعوم من Google',
+
+    // Units (duration & distance)
+    'units.lessThanMinute': 'أقل من دقيقة',
+    'units.minute': '{{n}} دقيقة',
+    'units.minutes': '{{n}} دقائق',
+    'units.hour': '{{n}} ساعة',
+    'units.hourMinutes': '{{n}} ساعة و{{m}} دق.',
+    'units.hoursMinutes': '{{n}} ساعات و{{m}} دق.',
+    'units.hours': '{{n}} ساعات',
+    'units.meters': '{{n}} م',
+    'units.km': '{{n}} كم',
+
+    // OREF Alerts
+    'alert.active': 'تنبيه فعّال!',
+    'alert.title': 'إنذار صاروخي',
+    'alert.countdown': 'الوقت للوصول إلى الملجأ:',
+    'alert.findShelter': 'ابحث عن ملجأ الآن',
+    'alert.dismiss': 'إغلاق',
+    'alert.region': 'تنبيه في:',
+    'alert.seconds': 'ثوانٍ',
+    'alert.expired': 'ادخل الملجأ فورًا!',
+    'alert.settings': 'إشعارات التنبيه',
+    'alert.staySheltered': 'ابقَ في الملجأ',
+    'alert.remainInShelter': 'ابقَ في الملجأ لمدة 10 دقائق على الأقل',
+    'alert.minutesRemaining': 'دقائق متبقية',
+    'alert.imSafe': 'أنا بأمان',
+    'alert.needHelp': 'تحتاج مساعدة؟',
+    'alert.police': 'شرطة',
+    'alert.mda': 'نجمة داود الحمراء',
+    'alert.fire': 'إطفاء',
+    'alert.homeFrontCommand': 'الجبهة الداخلية',
+
+    // Route Risk
+    'risk.none': 'لا توجد تنبيهات حديثة',
+    'risk.low': 'تنبيهات قديمة على المسار',
+    'risk.moderate': 'تنبيهات حديثة على المسار',
+    'risk.high': 'تنبيهات فعّالة على المسار!',
+    'risk.alertCount': '{{count}} تنبيهات في {{hours}} ساعات',
+    'risk.lastAlert': 'الأخير: {{time}}',
+    'risk.alerts': 'تنبيهات',
+    'history.1h': 'ساعة',
+    'history.6h': '6 ساعات',
+    'history.24h': '24 ساعة',
+    'history.timeRange': 'النطاق الزمني',
+    'history.ago': 'قبل {{time}}',
+    'history.hoursAgo': 'قبل {{count}} ساعات',
+    'history.minutesAgo': 'قبل {{count}} دقائق',
+
+    // Search History
+    'searchHistory.title': 'عمليات البحث الأخيرة',
+    'searchHistory.clearAll': 'مسح الكل',
+    'searchHistory.clearConfirm': 'مسح كل سجل البحث؟',
+    'searchHistory.deleteAriaLabel': 'حذف البحث من {{origin}} إلى {{dest}}',
+    'searchHistory.itemAriaLabel': 'مسار من {{origin}} إلى {{dest}} بواسطة {{mode}}، {{time}}. اضغط للبحث مجددًا',
+    'searchHistory.to': 'إلى',
+    'searchHistory.showMore': 'عرض المزيد',
+    'searchHistory.showLess': 'عرض أقل',
+    'searchHistory.justNow': 'الآن',
+    'searchHistory.yesterday': 'أمس',
+    'searchHistory.daysAgo': 'قبل {{count}} أيام',
+    'searchHistory.pinAriaLabel': 'تثبيت المسار من {{origin}} إلى {{dest}}',
+    'searchHistory.unpinAriaLabel': 'إلغاء تثبيت المسار من {{origin}} إلى {{dest}}',
+    'searchHistory.shelters': 'ملاجئ',
+    'searchHistory.rename': 'إعادة تسمية',
+    'searchHistory.renamePrompt': 'أدخل اسمًا لهذا المسار (أو اتركه فارغًا للحذف):',
+    'searchHistory.pinned': 'مثبّت',
+
+    // Saved Routes
+    'savedRoutes.save': 'حفظ المسار',
+    'savedRoutes.saved': 'تم الحفظ',
+    'savedRoutes.unsave': 'إلغاء الحفظ',
+
+    // Navigation
+    'nav.navigate': 'انتقل إلى الملجأ',
+    'nav.openGoogleMaps': 'افتح في خرائط Google',
+    'nav.cancel': 'إلغاء',
+    'nav.walkingTo': 'المشي إلى',
+    'nav.locationRequired': 'الموقع مطلوب للتنقل',
+    'nav.calculatingRoute': 'جارٍ حساب المسار...',
+
+    // Bug Report
+    'bugReport.button': 'الإبلاغ عن خطأ',
+    'bugReport.title': 'الإبلاغ عن مشكلة',
+    'bugReport.close': 'إغلاق',
+    'bugReport.categoryLabel': 'الفئة',
+    'bugReport.category.shelter-data': 'بيانات الملجأ',
+    'bugReport.category.routing': 'التوجيه',
+    'bugReport.category.alerts': 'التنبيهات',
+    'bugReport.category.ui': 'واجهة المستخدم',
+    'bugReport.category.other': 'أخرى',
+    'bugReport.descriptionLabel': 'وصف المشكلة',
+    'bugReport.descriptionPlaceholder': 'صِف المشكلة التي واجهتها...',
+    'bugReport.submit': 'إرسال التقرير',
+    'bugReport.cancel': 'إلغاء',
+    'bugReport.thankYou': 'شكرًا على تقريرك!',
+    'bugReport.queuedOffline': 'تم حفظ تقريرك وسيتم إرساله عند الاتصال بالإنترنت.',
+    'bugReport.offlineNote': 'أنت غير متصل — سيتم حفظ التقرير وإرساله لاحقًا.',
+
+    // Errors
+    'error.mapLoad': 'خطأ في تحميل الخريطة',
+    'error.mapLoadDesc': 'تأكد من إعداد مفتاح OpenRouteService في ملف .env',
+    'error.routeNotFound': 'لم يتم العثور على مسار',
+    'error.networkError': 'خطأ في الشبكة — تحقق من اتصالك بالإنترنت',
+    'error.routeSearchFailed': 'خطأ في البحث عن المسار',
+    'error.geolocationUnsupported': 'المتصفح لا يدعم خدمات الموقع',
+    'error.locationDenied': 'تم رفض الوصول إلى الموقع',
+    'error.locationUnavailable': 'تعذّر الحصول على موقعك الحالي',
+
+    // Onboarding
+    'onboarding.welcomeTitle': 'مرحبًا بك في Shelter Route',
+    'onboarding.welcomeDesc': 'يجد هذا التطبيق ملاجئ على طول مسارك وأثناء حالات الطوارئ، لتعرف دائمًا إلى أين تتوجه.',
+    'onboarding.locationTitle': 'خدمات الموقع',
+    'onboarding.locationDesc': 'يساعد موقعك في العثور على ملاجئ قريبة بشكل فوري.',
+    'onboarding.grantLocation': 'السماح بالموقع',
+    'onboarding.locationGranted': 'تم السماح بالموقع!',
+    'onboarding.emergencyTitle': 'زر الطوارئ',
+    'onboarding.emergencyDesc': 'اضغط على الزر الأحمر أثناء الإنذار للعثور على أقرب ملجأ.',
+    'onboarding.next': 'التالي',
+    'onboarding.skip': 'تخطي',
+    'onboarding.getStarted': 'لنبدأ',
+    'onboarding.step': 'الخطوة {{current}} من {{total}}',
+
+    // Saved Locations
+    'savedLocations.title': 'ملاجئي',
+    'savedLocations.tapToFind': 'اضغط للعثور على ملاجئ قريبة',
+    'savedLocations.remove': 'إزالة',
+    'savedLocations.addCurrent': 'حفظ الموقع الحالي',
+    'savedLocations.namePlaceholder': 'اسم الموقع...',
+    'savedLocations.save': 'حفظ',
+    'savedLocations.savedPoint': 'موقع محفوظ',
+    'savedLocations.label.home': 'المنزل',
+    'savedLocations.label.work': 'العمل',
+    'savedLocations.label.school': 'المدرسة',
+    'savedLocations.label.other': 'آخر',
+    'savedLocations.maxReached': 'الحد الأقصى 5 مواقع محفوظة',
+
+    // Shelter Score
+    'shelterScore.title': 'تقييم الملاجئ',
+    'shelterScore.grade': 'الدرجة',
+    'shelterScore.checkScore': 'تحقق من تقييم الملاجئ',
+    'shelterScore.hideScore': 'إخفاء تقييم الملاجئ',
+    'shelterScore.nearbyShelters': 'ملاجئ قريبة',
+    'shelterScore.nearestWalkTime': 'المشي إلى الأقرب',
+    'shelterScore.accessibleShelters': 'ملاجئ يسهل الوصول إليها',
+    'shelterScore.nearestDistance': 'أقرب مسافة',
+    'shelterScore.share': 'مشاركة التقييم',
+    'shelterScore.shareText': 'تقييم الملاجئ: {{grade}} ({{score}}/100) - {{count}} ملاجئ بالقرب من {{location}}',
+    'shelterScore.richShareText': '\u{1F3E0} تقييم الملاجئ: {{grade}} ({{score}}/100) - {{count}} ملاجئ ضمن 200 متر | تحقق من تقييمك في Shelter Route',
+
+    // Family Safety
+    'family.title': 'شبكة أمان العائلة',
+    'family.description': 'أنشئ مجموعة عائلية لمشاركة حالة السلامة مع عائلتك.',
+    'family.localNote': 'نسخة محلية — المزامنة في الوقت الفعلي ستتطلب خادمًا في المستقبل.',
+    'family.namePlaceholder': 'اسمك...',
+    'family.codePlaceholder': 'رمز المجموعة (6 أحرف)',
+    'family.createGroup': 'إنشاء مجموعة',
+    'family.joinGroup': 'الانضمام لمجموعة',
+    'family.join': 'انضمام',
+    'family.cancel': 'إلغاء',
+    'family.groupCode': 'رمز المجموعة',
+    'family.members': 'الأعضاء',
+    'family.you': 'أنت',
+    'family.statusSafe': 'بأمان',
+    'family.statusUnknown': 'غير معروف',
+    'family.imSafe': 'أنا بأمان!',
+    'family.markedSafe': 'تم تحديدك كآمن',
+    'family.shareWithFamily': 'مشاركة مع العائلة',
+    'family.linkCopied': 'تم نسخ الرابط!',
+    'family.leaveGroup': 'مغادرة المجموعة',
+    'family.shareTitle': 'انضم لمجموعة السلامة الخاصة بي',
+    'family.shareText': 'انضم لمجموعة سلامة عائلتي على Shelter Route',
+
+    // In-app Navigation
+    'nav.directions': 'التنقل إلى الملجأ',
+    'nav.stop': 'إيقاف التنقل',
+    'nav.arriving': 'الوصول إلى الملجأ!',
+    'nav.calculating': 'جارٍ حساب المسار...',
+
+    // Safety Dashboard
+    'dashboard.title': 'لوحة السلامة الشخصية',
+    'dashboard.routesAnalyzed': 'المسارات المحللة',
+    'dashboard.avgShelters': 'متوسط الملاجئ لكل مسار',
+    'dashboard.emergencyActivations': 'تفعيلات الطوارئ',
+    'dashboard.recentRoutes': 'المسارات الأخيرة',
+    'dashboard.shelters': 'ملاجئ',
+  },
+  ru: {
+    // App Header
+    'header.title': 'Shelter Route',
+    'header.subtitle': 'Найдите укрытия по вашему маршруту',
+
+    // Data freshness
+    'data.updatedToday': 'Данные: сегодня',
+    'data.updatedDaysAgo': 'Данные: {days} дн. назад',
+    'data.stale': 'Данные могут быть устаревшими',
+
+    // Search Panel
+    'search.ariaLabel': 'Поиск маршрута и укрытий',
+    'search.panelCollapse': 'Свернуть панель',
+    'search.panelExpand': 'Развернуть панель',
+    'search.showMap': 'Показать карту',
+    'search.showDetails': 'Найдены укрытия — показать детали',
+    'search.planRoute': 'Спланировать маршрут',
+    'search.sectionRoute': 'Планирование маршрута',
+    'search.sectionTransport': 'Способ передвижения',
+    'search.placeholder.origin': 'Начальная точка...',
+    'search.placeholder.dest': 'Пункт назначения...',
+    'search.button': 'Найти маршрут',
+    'search.button.ariaEnabled': 'Найти маршрут',
+    'search.button.ariaDisabled': 'Введите начальную точку и пункт назначения для поиска',
+    'search.searching': 'Поиск маршрута...',
+    'search.myLocation': 'Моё текущее местоположение',
+    'search.sheltersNearMe': 'Укрытия рядом со мной',
+    'search.planSafeRoute': 'Спланировать безопасный маршрут',
+
+    // Emergency
+    'emergency.findShelter': 'Найти ближайшее укрытие',
+    'emergency.bannerTitle': 'Режим ЧС',
+    'emergency.locating': 'Определение местоположения...',
+    'emergency.nearbyShelters': 'Укрытия рядом с вами',
+    'emergency.exit': 'Назад',
+    'emergency.exitAriaLabel': 'Выйти из режима ЧС',
+    'emergency.useMapCenter': 'Использовать центр карты',
+    'emergency.locationPermissionHint': 'Вы можете включить геолокацию в настройках устройства',
+    'emergency.navigateNow': 'Перейти к ближайшему укрытию',
+    'emergency.walkingTime': 'Время пешком',
+
+    // Route Info
+    'route.details': 'Детали маршрута',
+    'route.alternatives': 'Альтернативные маршруты',
+    'route.optionLabel': 'Маршрут',
+    'route.sheltersAlongRoute': 'Общественные укрытия вдоль маршрута',
+    'route.sheltersLabel': 'укрытия',
+
+    // Shelters
+    'shelters.noSheltersFound': 'Укрытия не найдены в радиусе 200 метров от маршрута',
+    'shelters.nearYou': 'Укрытия рядом с вами',
+    'shelters.alongRoute': 'Укрытия на маршруте',
+    'shelters.meter': 'м',
+    'shelters.meters': 'метров',
+    'shelters.fromRoute': 'от маршрута',
+    'shelters.fromYou': 'от вас',
+    'shelters.publicShelter': 'Общественное укрытие',
+    'shelters.navigateToShelter': 'Перейти к укрытию',
+    'shelters.loading': 'Загрузка',
+    'shelters.distanceMeters': 'м',
+    'search.button.tooltip': 'Введите начальную точку и пункт назначения',
+
+    // Location
+    'location.useMyLocation': 'Использовать моё местоположение',
+    'location.locating': 'Определение...',
+
+    // Travel modes
+    'travel.walking': 'Пешком',
+    'travel.bicycling': 'Велосипед',
+    'travel.driving': 'Автомобиль',
+
+    // Hotline
+    'hotline.label': 'Командование тыла: 104',
+    'hotline.ariaLabel': 'Позвонить в Командование тыла 104',
+
+    // Map
+    'map.loading': 'Загрузка карты...',
+    'map.loadingAriaLabel': 'Загрузка карты',
+    'map.ariaLabel': 'Карта укрытий',
+    'map.yourLocation': 'Ваше местоположение',
+    'map.heatMapToggle': 'История тревог',
+    'map.heatMapLegendTitle': 'Частота тревог',
+    'map.heatMapHigh': 'Высокая (недавно)',
+    'map.heatMapMedium': 'Средняя',
+    'map.heatMapLow': 'Низкая',
+
+    // Theme
+    'theme.toggleDark': 'Тёмная тема',
+    'theme.toggleLight': 'Светлая тема',
+    'theme.toggleHighContrast': 'Высокая контрастность',
+
+    // Share
+    'share.button': 'Поделиться маршрутом',
+    'share.copied': 'Ссылка скопирована!',
+    'share.title': 'Маршрут укрытий',
+    'share.text': 'Маршрут с {{count}} укрытиями',
+    'share.richText': '\u{1F6E1}\uFE0F Найдено {{count}} укрытий на маршруте от {{origin}} до {{destination}} | Shelter Route',
+    'share.sharedLocation': 'Общая геолокация',
+
+    // Offline / SW
+    'offline.indicator': 'Нет подключения к интернету — автономный режим',
+    'sw.updateAvailable': 'Доступна новая версия',
+    'sw.updateButton': 'Обновить',
+
+    // Sorting
+    'sort.label': 'Сортировать по',
+    'sort.distance': 'Расстояние',
+    'sort.walkingTime': 'Время пешком',
+
+    // Walking time
+    'shelters.walkingTime': '~{{minutes}} мин. пешком',
+
+    // Community reports
+    'report.title': 'Сообщить о состоянии укрытия',
+    'report.reportStatus': 'Сообщить о статусе',
+    'report.thanks': 'Спасибо за сообщение!',
+    'report.open': 'Открыто',
+    'report.locked': 'Заперто',
+    'report.crowded': 'Многолюдно',
+    'report.empty': 'Пусто',
+    'report.damaged': 'Повреждено',
+    'report.keyRequired': 'Нужен ключ',
+
+    // Accessibility
+    'accessibility.filterLabel': 'Только доступные',
+    'accessibility.accessible': 'Доступно для инвалидных колясок',
+    'accessibility.notAccessible': 'Недоступно',
+    'accessibility.hasElevator': 'Лифт',
+    'accessibility.floor': 'Этаж {{level}}',
+    'accessibility.groundFloor': 'Первый этаж',
+
+    // Routes (alternatives)
+    'routes.alternativeRoutes': 'Альтернативные маршруты',
+    'routes.selectRoute': 'Выбрать маршрут',
+    'routes.route': 'Маршрут',
+    'routes.mostShelters': 'Больше всего укрытий',
+    'routes.fastest': 'Самый быстрый',
+
+    // Capacity
+    'capacity.title': 'Вместимость',
+    'capacity.occupancy': 'Заполненность',
+    'capacity.available': 'Свободно',
+    'capacity.full': 'Заполнено',
+    'capacity.low': 'Низкая заполненность',
+    'capacity.medium': 'Средняя заполненность',
+    'capacity.high': 'Высокая заполненность',
+    'capacity.unknown': 'Вместимость неизвестна',
+    'capacity.of': 'из',
+    'capacity.lastUpdated': 'Обновлено',
+    'capacity.legend': 'Обозначения вместимости',
+    'capacity.legendLow': 'Свободно (менее 50%)',
+    'capacity.legendMedium': 'Средняя заполненность (50%-80%)',
+    'capacity.legendHigh': 'Высокая заполненность (более 80%)',
+    'capacity.legendUnknown': 'Неизвестно',
+    'capacity.walkingTime': 'Пешком',
+    'capacity.minutes': 'мин.',
+    'capacity.estimated': 'Приблизительно',
+    'capacity.estimatedTooltip': 'Данные о вместимости приблизительные, не в реальном времени',
+
+    // Search attribution
+    'search.poweredByGoogle': 'Работает на Google',
+
+    // Units (duration & distance)
+    'units.lessThanMinute': 'Менее минуты',
+    'units.minute': '{{n}} мин.',
+    'units.minutes': '{{n}} мин.',
+    'units.hour': '{{n}} ч.',
+    'units.hourMinutes': '{{n}} ч. {{m}} мин.',
+    'units.hoursMinutes': '{{n}} ч. {{m}} мин.',
+    'units.hours': '{{n}} ч.',
+    'units.meters': '{{n}} м',
+    'units.km': '{{n}} км',
+
+    // OREF Alerts
+    'alert.active': 'Активная тревога!',
+    'alert.title': 'Ракетная тревога',
+    'alert.countdown': 'Время до укрытия:',
+    'alert.findShelter': 'Найти укрытие сейчас',
+    'alert.dismiss': 'Закрыть',
+    'alert.region': 'Тревога в районе:',
+    'alert.seconds': 'секунд',
+    'alert.expired': 'Немедленно в укрытие!',
+    'alert.settings': 'Уведомления о тревогах',
+    'alert.staySheltered': 'Оставайтесь в укрытии',
+    'alert.remainInShelter': 'Оставайтесь в укрытии не менее 10 минут',
+    'alert.minutesRemaining': 'минут осталось',
+    'alert.imSafe': 'Я в безопасности',
+    'alert.needHelp': 'Нужна помощь?',
+    'alert.police': 'Полиция',
+    'alert.mda': 'Скорая помощь',
+    'alert.fire': 'Пожарная служба',
+    'alert.homeFrontCommand': 'Командование тыла',
+
+    // Route Risk
+    'risk.none': 'Нет недавних тревог',
+    'risk.low': 'Старые тревоги на маршруте',
+    'risk.moderate': 'Недавние тревоги на маршруте',
+    'risk.high': 'Активные тревоги на маршруте!',
+    'risk.alertCount': '{{count}} тревог за {{hours}} ч.',
+    'risk.lastAlert': 'Последняя: {{time}}',
+    'risk.alerts': 'тревоги',
+    'history.1h': '1 ч.',
+    'history.6h': '6 ч.',
+    'history.24h': '24 ч.',
+    'history.timeRange': 'Временной диапазон',
+    'history.ago': '{{time}} назад',
+    'history.hoursAgo': '{{count}} ч. назад',
+    'history.minutesAgo': '{{count}} мин. назад',
+
+    // Search History
+    'searchHistory.title': 'Недавние поиски',
+    'searchHistory.clearAll': 'Очистить всё',
+    'searchHistory.clearConfirm': 'Очистить всю историю поиска?',
+    'searchHistory.deleteAriaLabel': 'Удалить поиск от {{origin}} до {{dest}}',
+    'searchHistory.itemAriaLabel': 'Маршрут от {{origin}} до {{dest}}, {{mode}}, {{time}}. Нажмите для повторного поиска',
+    'searchHistory.to': 'до',
+    'searchHistory.showMore': 'Показать ещё',
+    'searchHistory.showLess': 'Показать меньше',
+    'searchHistory.justNow': 'Только что',
+    'searchHistory.yesterday': 'Вчера',
+    'searchHistory.daysAgo': '{{count}} дн. назад',
+    'searchHistory.pinAriaLabel': 'Закрепить маршрут от {{origin}} до {{dest}}',
+    'searchHistory.unpinAriaLabel': 'Открепить маршрут от {{origin}} до {{dest}}',
+    'searchHistory.shelters': 'укрытия',
+    'searchHistory.rename': 'Переименовать',
+    'searchHistory.renamePrompt': 'Введите название маршрута (или оставьте пустым для удаления):',
+    'searchHistory.pinned': 'Закреплено',
+
+    // Saved Routes
+    'savedRoutes.save': 'Сохранить маршрут',
+    'savedRoutes.saved': 'Сохранено',
+    'savedRoutes.unsave': 'Отменить сохранение',
+
+    // Navigation
+    'nav.navigate': 'Навигация к укрытию',
+    'nav.openGoogleMaps': 'Открыть в Google Maps',
+    'nav.cancel': 'Отмена',
+    'nav.walkingTo': 'Идём к',
+    'nav.locationRequired': 'Для навигации требуется местоположение',
+    'nav.calculatingRoute': 'Расчёт маршрута...',
+
+    // Bug Report
+    'bugReport.button': 'Сообщить об ошибке',
+    'bugReport.title': 'Сообщить о проблеме',
+    'bugReport.close': 'Закрыть',
+    'bugReport.categoryLabel': 'Категория',
+    'bugReport.category.shelter-data': 'Данные укрытий',
+    'bugReport.category.routing': 'Маршрутизация',
+    'bugReport.category.alerts': 'Тревоги',
+    'bugReport.category.ui': 'Интерфейс',
+    'bugReport.category.other': 'Другое',
+    'bugReport.descriptionLabel': 'Описание проблемы',
+    'bugReport.descriptionPlaceholder': 'Опишите проблему, с которой вы столкнулись...',
+    'bugReport.submit': 'Отправить отчёт',
+    'bugReport.cancel': 'Отмена',
+    'bugReport.thankYou': 'Спасибо за ваш отчёт!',
+    'bugReport.queuedOffline': 'Ваш отчёт сохранён и будет отправлен при подключении к интернету.',
+    'bugReport.offlineNote': 'Вы не в сети — отчёт будет сохранён и отправлен позже.',
+
+    // Errors
+    'error.mapLoad': 'Ошибка загрузки карты',
+    'error.mapLoadDesc': 'Убедитесь, что ключ OpenRouteService настроен в файле .env',
+    'error.routeNotFound': 'Маршрут не найден',
+    'error.networkError': 'Ошибка сети — проверьте подключение к интернету',
+    'error.routeSearchFailed': 'Ошибка поиска маршрута',
+    'error.geolocationUnsupported': 'Ваш браузер не поддерживает службы геолокации',
+    'error.locationDenied': 'Доступ к местоположению отклонён',
+    'error.locationUnavailable': 'Не удалось определить ваше местоположение',
+
+    // Onboarding
+    'onboarding.welcomeTitle': 'Добро пожаловать в Shelter Route',
+    'onboarding.welcomeDesc': 'Это приложение находит укрытия на вашем маршруте и в чрезвычайных ситуациях, чтобы вы всегда знали, куда бежать.',
+    'onboarding.locationTitle': 'Службы геолокации',
+    'onboarding.locationDesc': 'Ваше местоположение помогает мгновенно находить ближайшие укрытия.',
+    'onboarding.grantLocation': 'Разрешить геолокацию',
+    'onboarding.locationGranted': 'Геолокация разрешена!',
+    'onboarding.emergencyTitle': 'Кнопка экстренной помощи',
+    'onboarding.emergencyDesc': 'Нажмите красную кнопку во время тревоги, чтобы найти ближайшее укрытие.',
+    'onboarding.next': 'Далее',
+    'onboarding.skip': 'Пропустить',
+    'onboarding.getStarted': 'Начать',
+    'onboarding.step': 'Шаг {{current}} из {{total}}',
+
+    // Saved Locations
+    'savedLocations.title': 'Мои укрытия',
+    'savedLocations.tapToFind': 'Нажмите для поиска ближайших укрытий',
+    'savedLocations.remove': 'Удалить',
+    'savedLocations.addCurrent': 'Сохранить текущее местоположение',
+    'savedLocations.namePlaceholder': 'Название места...',
+    'savedLocations.save': 'Сохранить',
+    'savedLocations.savedPoint': 'Сохранённое место',
+    'savedLocations.label.home': 'Дом',
+    'savedLocations.label.work': 'Работа',
+    'savedLocations.label.school': 'Школа',
+    'savedLocations.label.other': 'Другое',
+    'savedLocations.maxReached': 'Максимум 5 сохранённых мест',
+
+    // Shelter Score
+    'shelterScore.title': 'Рейтинг укрытий',
+    'shelterScore.grade': 'Оценка',
+    'shelterScore.checkScore': 'Проверить рейтинг укрытий',
+    'shelterScore.hideScore': 'Скрыть рейтинг укрытий',
+    'shelterScore.nearbyShelters': 'Укрытия поблизости',
+    'shelterScore.nearestWalkTime': 'Пешком до ближайшего',
+    'shelterScore.accessibleShelters': 'Доступные укрытия',
+    'shelterScore.nearestDistance': 'Расстояние до ближайшего',
+    'shelterScore.share': 'Поделиться рейтингом',
+    'shelterScore.shareText': 'Мой рейтинг укрытий: {{grade}} ({{score}}/100) - {{count}} укрытий рядом с {{location}}',
+    'shelterScore.richShareText': '\u{1F3E0} Мой рейтинг укрытий: {{grade}} ({{score}}/100) - {{count}} укрытий в радиусе 200м | Проверьте свой на Shelter Route',
+
+    // Family Safety
+    'family.title': 'Сеть безопасности семьи',
+    'family.description': 'Создайте семейную группу для обмена статусом безопасности.',
+    'family.localNote': 'Локальная версия — синхронизация в реальном времени потребует сервера в будущем.',
+    'family.namePlaceholder': 'Ваше имя...',
+    'family.codePlaceholder': 'Код группы (6 символов)',
+    'family.createGroup': 'Создать группу',
+    'family.joinGroup': 'Присоединиться к группе',
+    'family.join': 'Присоединиться',
+    'family.cancel': 'Отмена',
+    'family.groupCode': 'Код группы',
+    'family.members': 'Участники',
+    'family.you': 'Вы',
+    'family.statusSafe': 'В безопасности',
+    'family.statusUnknown': 'Неизвестно',
+    'family.imSafe': 'Я в безопасности!',
+    'family.markedSafe': 'Отмечен как безопасный',
+    'family.shareWithFamily': 'Поделиться с семьёй',
+    'family.linkCopied': 'Ссылка скопирована!',
+    'family.leaveGroup': 'Покинуть группу',
+    'family.shareTitle': 'Присоединяйтесь к моей группе безопасности',
+    'family.shareText': 'Присоединяйтесь к семейной группе безопасности на Shelter Route',
+
+    // In-app Navigation
+    'nav.directions': 'Навигация к укрытию',
+    'nav.stop': 'Остановить навигацию',
+    'nav.arriving': 'Прибытие к укрытию!',
+    'nav.calculating': 'Расчёт маршрута...',
+
+    // Safety Dashboard
+    'dashboard.title': 'Личная панель безопасности',
+    'dashboard.routesAnalyzed': 'Маршрутов проанализировано',
+    'dashboard.avgShelters': 'Среднее укрытий на маршрут',
+    'dashboard.emergencyActivations': 'Активаций экстренного режима',
+    'dashboard.recentRoutes': 'Последние маршруты',
+    'dashboard.shelters': 'укрытий',
   },
 } as const;
 
