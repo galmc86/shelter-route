@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 
-const SW_UPDATE_INTERVAL = 60 * 60 * 1000; // 60 minutes
+const SW_UPDATE_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
 interface ServiceWorkerState {
   isUpdateAvailable: boolean;
