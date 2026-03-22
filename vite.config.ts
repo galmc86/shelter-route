@@ -21,4 +21,15 @@ export default defineConfig({
   define: {
     __SHELTER_DATA_VERSION__: JSON.stringify(shelterDataVersion()),
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('leaflet')) {
+            return 'leaflet';
+          }
+        },
+      },
+    },
+  },
 })
