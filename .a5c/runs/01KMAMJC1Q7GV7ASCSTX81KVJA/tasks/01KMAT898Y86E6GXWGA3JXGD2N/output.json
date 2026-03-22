@@ -1,0 +1,1 @@
+{"success": true, "filesModified": ["index.html", "src/components/SearchPanel.tsx", "src/components/ShelterScore.tsx", "src/i18n/translations.ts"], "summary": "Added OG + Twitter meta tags to index.html. Enriched share text for routes and shelter scores with emoji-prefixed messages in 4 languages."}

@@ -1,0 +1,1 @@
+{"success": true, "filesModified": ["src/components/MapView.tsx", "src/App.tsx"], "summary": "Added L.circle isochrone overlay in emergency mode showing walkable radius. Shelters outside radius dimmed to 0.4 opacity. Dynamic updates as countdown decreases. Clean removal on exit."}

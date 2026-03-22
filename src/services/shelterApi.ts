@@ -1,5 +1,6 @@
 import type { Shelter } from '../types';
-import { resilientFetch } from './fetchClient';
+import { reportError } from './errorReportingService';
+
 
 interface MiklatShelter {
   id: number;
@@ -12,9 +13,68 @@ interface MiklatShelter {
 const STORAGE_KEY = 'shelter-route:shelters';
 const STORAGE_VERSION = 2;
 const GEOCODE_CACHE_KEY = 'shelter-route:geocode-cache';
+const FETCHED_AT_KEY = 'shelter-route:shelters-fetched-at';
+const MAX_CACHE_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 let cachedShelters: Shelter[] | null = null;
 let reverseGeocodeInProgress = false;
+
+// --- Progressive loading state ---
+
+interface ShelterLoadingProgress {
+  loaded: boolean;
+  fromCache: boolean;
+  progress: number; // 0-1
+}
+
+const loadingState: ShelterLoadingProgress = {
+  loaded: false,
+  fromCache: false,
+  progress: 0,
+};
+
+/** Returns the current shelter loading progress. */
+export function getShelterLoadingProgress(): ShelterLoadingProgress {
+  return { ...loadingState };
+}
+
+type SheltersUpdatedCallback = (shelters: Shelter[]) => void;
+let onSheltersUpdatedCallback: SheltersUpdatedCallback | null = null;
+
+/**
+ * Register a callback that fires when fresh shelter data arrives from the
+ * network after the app has already started with cached data.
+ */
+export function onSheltersUpdated(callback: SheltersUpdatedCallback): void {
+  onSheltersUpdatedCallback = callback;
+}
+
+const STORAGE_HASH_KEY = 'shelter-route:shelters-hash';
+
+function computeSimpleHash(data: string): string {
+  let hash = 0;
+  for (let i = 0; i < data.length; i++) {
+    const char = data.charCodeAt(i);
+    hash = ((hash << 5) - hash + char) | 0;
+  }
+  return hash.toString(36);
+}
+
+function loadStoredHash(): string | null {
+  try {
+    return localStorage.getItem(STORAGE_HASH_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function saveStoredHash(hash: string): void {
+  try {
+    localStorage.setItem(STORAGE_HASH_KEY, hash);
+  } catch {
+    // Storage full or unavailable — ignore
+  }
+}
 
 function loadFromLocalStorage(): Shelter[] | null {
   try {
@@ -34,8 +94,40 @@ function saveToLocalStorage(shelters: Shelter[]) {
       STORAGE_KEY,
       JSON.stringify({ version: STORAGE_VERSION, data: shelters })
     );
+    localStorage.setItem(FETCHED_AT_KEY, String(Date.now()));
   } catch {
     // Storage full or unavailable — ignore
+  }
+}
+
+/**
+ * Returns how many days old the cached shelter data is, or null if no cache timestamp exists.
+ */
+export function getShelterDataAge(): number | null {
+  try {
+    const raw = localStorage.getItem(FETCHED_AT_KEY);
+    if (!raw) return null;
+    const fetchedAt = Number(raw);
+    if (isNaN(fetchedAt)) return null;
+    const ageMs = Date.now() - fetchedAt;
+    return Math.floor(ageMs / (24 * 60 * 60 * 1000));
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Returns true if the cached shelter data is older than 30 days.
+ */
+export function isShelterDataStale(): boolean {
+  try {
+    const raw = localStorage.getItem(FETCHED_AT_KEY);
+    if (!raw) return false;
+    const fetchedAt = Number(raw);
+    if (isNaN(fetchedAt)) return false;
+    return Date.now() - fetchedAt > MAX_CACHE_AGE_MS;
+  } catch {
+    return false;
   }
 }
 
@@ -114,14 +206,17 @@ async function reverseGeocodeSingle(
   lon: number
 ): Promise<string | null> {
   const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=he&zoom=18`;
-  const result = await resilientFetch<NominatimResponse>(url, {}, { timeout: 5000, retries: 0 });
-
-  if (!result.ok) {
-    console.warn('[ShelterApi] Reverse geocode failed:', result.error.message);
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    const resp = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeout);
+    if (!resp.ok) return null;
+    const data = await resp.json() as NominatimResponse;
+    return extractNameFromNominatim(data);
+  } catch {
     return null;
   }
-
-  return extractNameFromNominatim(result.data);
 }
 
 /** Max network reverse-geocode requests per session to avoid Nominatim rate limits */
@@ -255,7 +350,90 @@ function parseShelters(data: MiklatShelter[]): Shelter[] {
 }
 
 /**
- * Fetch all shelters. Returns immediately with locally enriched names.
+ * Fetch shelter data from the network with progress tracking.
+ * Uses streaming when available to report download progress.
+ */
+async function fetchWithProgress(url: string): Promise<string> {
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}`);
+  }
+
+  const contentLength = response.headers.get('content-length');
+  const total = contentLength ? parseInt(contentLength, 10) : 0;
+
+  // If we can't stream or don't know the size, fall back to simple fetch
+  if (!response.body || !total) {
+    const text = await response.text();
+    loadingState.progress = 1;
+    return text;
+  }
+
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let received = 0;
+
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value);
+    received += value.length;
+    loadingState.progress = Math.min(received / total, 0.99);
+  }
+
+  const decoder = new TextDecoder();
+  const text = chunks.map((c) => decoder.decode(c, { stream: true })).join('') + decoder.decode();
+  loadingState.progress = 1;
+  return text;
+}
+
+/**
+ * Background fetch: downloads fresh shelter data from the network, compares
+ * it against the stored hash, and if different, updates cache and notifies
+ * the app via onSheltersUpdatedCallback.
+ */
+function backgroundRefresh(onReverseGeocodeUpdate?: () => void): void {
+  fetchWithProgress(`/shelters.json?v=${__SHELTER_DATA_VERSION__}`)
+    .then((text) => {
+      const newHash = computeSimpleHash(text);
+      const oldHash = loadStoredHash();
+
+      const json: { shelters: MiklatShelter[] } = JSON.parse(text);
+      const freshShelters = parseShelters(json.shelters);
+
+      if (newHash !== oldHash) {
+        cachedShelters = freshShelters;
+        saveToLocalStorage(freshShelters);
+        saveStoredHash(newHash);
+
+        loadingState.loaded = true;
+        loadingState.fromCache = false;
+
+        // Notify the app that fresh data is available
+        onSheltersUpdatedCallback?.(freshShelters);
+      }
+
+      // Start background reverse-geocoding on the latest data
+      reverseGeocodeGenericShelters(
+        cachedShelters || freshShelters,
+        onReverseGeocodeUpdate
+      );
+    })
+    .catch(() => {
+      // Background refresh failed silently — cached data is still valid
+    });
+}
+
+/**
+ * Fetch all shelters. Uses a progressive loading strategy:
+ *
+ * 1. If data is in localStorage, returns it immediately (cache-first).
+ * 2. Kicks off a background network fetch to check for updates.
+ * 3. If the network version differs, updates the cache and fires
+ *    the `onSheltersUpdated` callback so the UI can refresh.
+ * 4. For first-time users (no cache), fetches from the network with
+ *    progress tracking available via `getShelterLoadingProgress()`.
  *
  * If `onReverseGeocodeUpdate` is provided, shelters with generic names
  * ("מקלט ציבורי") will be reverse-geocoded in the background via Nominatim.
@@ -265,35 +443,55 @@ function parseShelters(data: MiklatShelter[]): Shelter[] {
 export async function fetchAllShelters(
   onReverseGeocodeUpdate?: () => void
 ): Promise<Shelter[]> {
+  // Already loaded in this session — return immediately
   if (cachedShelters) {
-    // Kick off background reverse-geocoding even for cached shelters
-    // (in case previous run was interrupted or new generic shelters exist)
     reverseGeocodeGenericShelters(cachedShelters, onReverseGeocodeUpdate);
     return cachedShelters;
   }
 
-  const result = await resilientFetch<{ shelters: MiklatShelter[] }>(
-    `/shelters.json?v=${__SHELTER_DATA_VERSION__}`,
-    {},
-    { timeout: 15000, retries: 1, retryDelay: 1000 }
-  );
+  // Try localStorage cache first (instant load for returning users)
+  const localData = loadFromLocalStorage();
+  if (localData && localData.length > 0) {
+    cachedShelters = localData;
+    loadingState.loaded = true;
+    loadingState.fromCache = true;
+    loadingState.progress = 1;
 
-  if (result.ok) {
-    cachedShelters = parseShelters(result.data.shelters);
+    // Start background reverse-geocoding on cached data
+    reverseGeocodeGenericShelters(cachedShelters, onReverseGeocodeUpdate);
+
+    // Refresh from network in the background
+    backgroundRefresh(onReverseGeocodeUpdate);
+
+    return cachedShelters;
+  }
+
+  // First-time user: must fetch from network (with progress tracking)
+  try {
+    loadingState.progress = 0;
+    const text = await fetchWithProgress(
+      `/shelters.json?v=${__SHELTER_DATA_VERSION__}`
+    );
+
+    const json: { shelters: MiklatShelter[] } = JSON.parse(text);
+    cachedShelters = parseShelters(json.shelters);
+
     saveToLocalStorage(cachedShelters);
+    saveStoredHash(computeSimpleHash(text));
+
+    loadingState.loaded = true;
+    loadingState.fromCache = false;
+    loadingState.progress = 1;
 
     // Start background reverse-geocoding for generic names
     reverseGeocodeGenericShelters(cachedShelters, onReverseGeocodeUpdate);
 
     return cachedShelters;
-  }
+  } catch (err) {
+    reportError('shelter-load', 'Failed to fetch shelters', String(err));
+    throw new Error('שגיאה בטעינת מקלטים. בדוק את חיבור האינטרנט.', {
+      cause: err,
+    });
 
-  // Fallback to localStorage cache
-  const cached = loadFromLocalStorage();
-  if (cached && cached.length > 0) {
-    cachedShelters = cached;
-    return cachedShelters;
   }
-  console.error('Failed to fetch shelters:', result.error.message);
-  throw new Error('שגיאה בטעינת מקלטים. בדוק את חיבור האינטרנט.', { cause: result.error });
 }

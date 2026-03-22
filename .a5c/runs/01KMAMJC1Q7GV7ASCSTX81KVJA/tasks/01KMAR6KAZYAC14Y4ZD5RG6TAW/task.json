@@ -1,0 +1,29 @@
+{
+  "schemaVersion": "2026.01.tasks-v1",
+  "effectId": "01KMAR6KAZYAC14Y4ZD5RG6TAW",
+  "taskId": "implement-item",
+  "invocationKey": "shelter-improvements:S000027:implement-item",
+  "stepId": "S000027",
+  "kind": "agent",
+  "title": "Item 27: Add Post-Alert Debrief Screen",
+  "labels": [
+    "agent",
+    "implementation",
+    "item-27"
+  ],
+  "io": {
+    "inputJsonPath": "tasks/01KMAR6KAZYAC14Y4ZD5RG6TAW/input.json",
+    "outputJsonPath": "tasks/01KMAR6KAZYAC14Y4ZD5RG6TAW/output.json"
+  },
+  "inputs": {
+    "description": "Add a post-alert guidance screen when the countdown expires. In AlertBanner.tsx: (1) When isExpired is true, instead of just showing \"expired\" text, transition to a \"Stay Sheltered\" state showing: \"Remain in shelter for at least 10 minutes\" with a new 10-minute countdown, (2) Add a \"I'm Safe\" button that dismisses the alert and could be used for future family safety features, (3) Add a \"Need Help?\" section with emergency hotline numbers: 100 (Police), 101 (Magen David Adom), 102 (Fire), 104 (Home Front Command), (4) Add translations for all new strings, (5) Style with a calmer color scheme (blue/green instead of red) to signal reduced urgency.",
+    "files": [
+      "src/components/AlertBanner.tsx",
+      "src/App.css",
+      "src/i18n/translations.ts"
+    ],
+    "itemNumber": 27,
+    "projectRoot": "/Users/gal.machluf/projects/shelter-finder/.claude/worktrees/priceless-kepler",
+    "title": "Add Post-Alert Debrief Screen"
+  }
+}

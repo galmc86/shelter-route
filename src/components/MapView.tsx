@@ -1,5 +1,6 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
+import './MapView.css';
 import L from 'leaflet';
 import 'leaflet.markercluster';
 import 'leaflet.markercluster/dist/MarkerCluster.css';
@@ -7,21 +8,24 @@ import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import { useLanguage, LanguageProvider } from '../i18n';
 import type { Language, TranslationKey } from '../i18n';
 import { translations } from '../i18n/translations';
-import type { RouteInfo, RouteOption, LocationPoint } from '../types';
+import { useRouteContext } from '../contexts/RouteContext';
+import { useEmergencyContext } from '../contexts/EmergencyContext';
+import { useShelterContext } from '../contexts/ShelterContext';
+import { useAlertHistory } from '../hooks/useAlertHistory';
+import { getHeatMapData, type HeatMapCell } from '../services/alertHistoryService';
+import type { RouteOption, LocationPoint } from '../types';
 import type { ShelterWithDistance } from '../hooks/useShelters';
 import type { CapacityData } from '../services/capacityService';
 import { ShelterPopup } from './ShelterPopup';
 interface MapViewProps {
-  isLoaded: boolean;
-  routeInfo: RouteInfo | null;
   routes?: RouteOption[];
-  selectedRouteIndex?: number;
   onSelectRoute?: (index: number) => void;
-  shelters: ShelterWithDistance[];
-  onShelterClick?: (shelter: ShelterWithDistance) => void;
-  selectedShelterId?: string | null;
   userLocation?: LocationPoint | null;
-  capacityMap?: Map<string, CapacityData>;
+  onMapReady?: (map: L.Map) => void;
+  emergencyCountdown?: number;
+  navigationRoute?: RouteOption | null;
+  navigatingToShelter?: ShelterWithDistance | null;
+  onNavigateToShelter?: (shelter: ShelterWithDistance) => void;
 }
 
 const ISRAEL_CENTER: L.LatLngExpression = [31.5, 34.8];
@@ -100,6 +104,21 @@ function tRaw(lang: Language, key: TranslationKey): string {
   return translations[lang][key] ?? key;
 }
 
+/** Map a heat-map cell intensity (0-1) to a color and fill opacity. */
+function heatMapCellStyle(intensity: number): { color: string; fillOpacity: number } {
+  if (intensity >= 0.66) return { color: '#D32F2F', fillOpacity: 0.6 };
+  if (intensity >= 0.33) return { color: '#F57C00', fillOpacity: 0.4 };
+  return { color: '#FBC02D', fillOpacity: 0.2 };
+}
+
+/** Compute circleMarker radius based on current zoom level. */
+function heatMapRadius(zoom: number): number {
+  if (zoom >= 14) return 30;
+  if (zoom >= 12) return 22;
+  if (zoom >= 10) return 16;
+  return 10;
+}
+
 // Removed: buildShelterPopupHtml — replaced by ShelterPopup React component
 
 /**
@@ -111,11 +130,13 @@ function ShelterPopupWithLanguage({
   hasRoute,
   capacityData,
   lang,
+  onNavigate,
 }: {
   shelter: ShelterWithDistance;
   hasRoute: boolean;
   capacityData?: CapacityData;
   lang: Language;
+  onNavigate?: (shelter: ShelterWithDistance) => void;
 }) {
   const { setLanguage } = useLanguage();
   // Sync language on mount (LanguageProvider defaults to 'he')
@@ -128,12 +149,13 @@ function ShelterPopupWithLanguage({
       shelter={shelter}
       hasRoute={hasRoute}
       capacityData={capacityData}
+      onNavigate={onNavigate}
     />
   );
 }
 
 function buildUserLocationPopupElement(lang: Language): HTMLElement {
-  const dir = lang === 'he' ? 'rtl' : 'ltr';
+  const dir = lang === 'en' || lang === 'ru' ? 'ltr' : 'rtl';
   const label = tRaw(lang, 'map.yourLocation');
   const wrapper = document.createElement('div');
   wrapper.style.direction = dir;
@@ -147,17 +169,18 @@ function buildUserLocationPopupElement(lang: Language): HTMLElement {
 }
 
 export function MapView({
-  isLoaded,
-  routeInfo,
   routes,
-  selectedRouteIndex = 0,
   onSelectRoute,
-  shelters,
-  onShelterClick,
-  selectedShelterId,
   userLocation,
-  capacityMap,
+  onMapReady,
+  emergencyCountdown,
+  navigationRoute,
+  navigatingToShelter,
+  onNavigateToShelter,
 }: MapViewProps) {
+  const { routeInfo, selectedRouteIndex, nearbyShelters: shelters } = useRouteContext();
+  const { emergencyMode } = useEmergencyContext();
+  const { isLoaded, selectedShelterId, onShelterClick, capacityMap } = useShelterContext();
   const { language, t } = useLanguage();
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -166,7 +189,30 @@ export function MapView({
   const routePickerRef = useRef<L.Control | null>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
   const userMarkerRef = useRef<L.Marker | null>(null);
+
   const popupRootsRef = useRef<Map<string, Root>>(new Map());
+  const isochroneCircleRef = useRef<L.Circle | null>(null);
+  const walkingRadiusRef = useRef<number>(0);
+  const heatMapLayerRef = useRef<L.LayerGroup | null>(null);
+  const heatMapControlRef = useRef<L.Control | null>(null);
+  const heatMapLegendRef = useRef<L.Control | null>(null);
+  const [heatMapVisible, setHeatMapVisible] = useState(false);
+  const navigationLayerRef = useRef<L.Polyline | null>(null);
+
+  // Fetch alert history for heat map (supplementary — tolerates duplicate fetch)
+  const { alerts: geocodedAlerts } = useAlertHistory(routeInfo);
+
+  const toggleHeatMap = useCallback(() => {
+    setHeatMapVisible((prev) => !prev);
+  }, []);
+
+  // Use a ref for onNavigateToShelter so the shelter markers useEffect
+  // doesn't re-run (recreating all markers and closing popups) when
+  // the callback reference changes due to parent state updates.
+  const onNavigateRef = useRef(onNavigateToShelter);
+  useEffect(() => {
+    onNavigateRef.current = onNavigateToShelter;
+  }, [onNavigateToShelter]);
 
   // Initialize map
   useEffect(() => {
@@ -190,7 +236,12 @@ export function MapView({
       maxZoom: 19,
     }).addTo(map);
 
+    // Custom pane for navigation polyline so it always renders above route polylines
+    map.createPane('navigationPane');
+    map.getPane('navigationPane')!.style.zIndex = '650';
+
     mapInstanceRef.current = map;
+    onMapReady?.(map);
     markersLayerRef.current = L.markerClusterGroup({
       maxClusterRadius: 40,
       spiderfyOnMaxZoom: true,
@@ -211,7 +262,7 @@ export function MapView({
       mapInstanceRef.current = null;
       markersLayerRef.current = null;
     };
-  }, [isLoaded]);
+  }, [isLoaded]); // eslint-disable-line react-hooks/exhaustive-deps -- onMapReady is stable (useCallback with no deps), only needs to run on map init
 
   // Update routes (selected + alternatives)
   useEffect(() => {
@@ -285,7 +336,7 @@ export function MapView({
 
       // Add floating route picker overlay when alternatives exist
       if (hasAlternatives) {
-        const dir = language === 'he' ? 'rtl' : 'ltr';
+        const dir = language === 'en' ? 'ltr' : 'rtl';
         const RoutePicker = L.Control.extend({
           onAdd() {
             const container = L.DomUtil.create('div', 'route-picker-overlay');
@@ -371,6 +422,49 @@ export function MapView({
     }
   }, [userLocation, language]);
 
+  // Walking-time isochrone circle in emergency mode
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+
+    // Remove existing circle if conditions no longer apply
+    if (!emergencyMode || !emergencyCountdown || !userLocation) {
+      if (isochroneCircleRef.current) {
+        isochroneCircleRef.current.remove();
+        isochroneCircleRef.current = null;
+        walkingRadiusRef.current = 0;
+      }
+      return;
+    }
+
+    // Calculate walking distance radius: (seconds * 5000/3600) * 0.8 meters
+    const radius = (emergencyCountdown * 5000 / 3600) * 0.8;
+    walkingRadiusRef.current = radius;
+
+    if (isochroneCircleRef.current) {
+      // Update existing circle
+      isochroneCircleRef.current.setLatLng([userLocation.lat, userLocation.lng]);
+      isochroneCircleRef.current.setRadius(radius);
+    } else {
+      // Create new circle
+      isochroneCircleRef.current = L.circle([userLocation.lat, userLocation.lng], {
+        radius,
+        fillColor: '#4CAF50',
+        fillOpacity: 0.15,
+        color: '#4CAF50',
+        weight: 2,
+      }).addTo(map);
+    }
+
+    return () => {
+      if (isochroneCircleRef.current) {
+        isochroneCircleRef.current.remove();
+        isochroneCircleRef.current = null;
+        walkingRadiusRef.current = 0;
+      }
+    };
+  }, [emergencyMode, emergencyCountdown, userLocation]);
+
   // Fit bounds to show user + nearest shelters in emergency mode
   useEffect(() => {
     const map = mapInstanceRef.current;
@@ -386,6 +480,153 @@ export function MapView({
     }
   }, [userLocation, shelters, routeInfo]);
 
+
+  // Heat map toggle button (always present on the map)
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+
+    // Remove previous control if it exists
+    if (heatMapControlRef.current) {
+      map.removeControl(heatMapControlRef.current);
+      heatMapControlRef.current = null;
+    }
+
+    const dir = language === 'en' || language === 'ru' ? 'ltr' : 'rtl';
+    const HeatMapToggle = L.Control.extend({
+      onAdd() {
+        const container = L.DomUtil.create('div', 'heatmap-toggle-control');
+        container.setAttribute('dir', dir);
+        L.DomEvent.disableClickPropagation(container);
+
+        const btn = document.createElement('button');
+        btn.className = 'heatmap-toggle-btn' + (heatMapVisible ? ' heatmap-toggle-active' : '');
+        btn.textContent = tRaw(language, 'map.heatMapToggle');
+        btn.setAttribute('aria-pressed', String(heatMapVisible));
+        btn.addEventListener('click', toggleHeatMap);
+        container.appendChild(btn);
+        return container;
+      },
+    });
+
+    heatMapControlRef.current = new HeatMapToggle({ position: 'topright' });
+    heatMapControlRef.current.addTo(map);
+
+    return () => {
+      if (heatMapControlRef.current) {
+        map.removeControl(heatMapControlRef.current);
+        heatMapControlRef.current = null;
+      }
+    };
+  }, [language, heatMapVisible, toggleHeatMap]);
+
+  // Heat map circle markers & legend
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+
+    // Clear previous heat map layers
+    if (heatMapLayerRef.current) {
+      heatMapLayerRef.current.clearLayers();
+      map.removeLayer(heatMapLayerRef.current);
+      heatMapLayerRef.current = null;
+    }
+    if (heatMapLegendRef.current) {
+      map.removeControl(heatMapLegendRef.current);
+      heatMapLegendRef.current = null;
+    }
+
+    if (!heatMapVisible || geocodedAlerts.length === 0) return;
+
+    const cells = getHeatMapData(geocodedAlerts);
+    if (cells.length === 0) return;
+
+    const layerGroup = L.layerGroup();
+    const currentZoom = map.getZoom();
+
+    cells.forEach((cell: HeatMapCell) => {
+      const style = heatMapCellStyle(cell.intensity);
+      L.circleMarker([cell.lat, cell.lng], {
+        radius: heatMapRadius(currentZoom),
+        color: style.color,
+        fillColor: style.color,
+        fillOpacity: style.fillOpacity,
+        weight: 1,
+        opacity: 0.5,
+        pane: 'overlayPane', // below markers (markerPane)
+      }).addTo(layerGroup);
+    });
+
+    layerGroup.addTo(map);
+    heatMapLayerRef.current = layerGroup;
+
+    // Update radii on zoom change
+    const onZoom = () => {
+      const zoom = map.getZoom();
+      const radius = heatMapRadius(zoom);
+      layerGroup.eachLayer((layer) => {
+        if (layer instanceof L.CircleMarker) {
+          layer.setRadius(radius);
+        }
+      });
+    };
+    map.on('zoomend', onZoom);
+
+    // Add legend
+    const dir = language === 'en' || language === 'ru' ? 'ltr' : 'rtl';
+    const HeatMapLegend = L.Control.extend({
+      onAdd() {
+        const container = L.DomUtil.create('div', 'heatmap-legend');
+        container.setAttribute('dir', dir);
+        L.DomEvent.disableClickPropagation(container);
+
+        const title = document.createElement('div');
+        title.className = 'heatmap-legend-title';
+        title.textContent = tRaw(language, 'map.heatMapLegendTitle');
+        container.appendChild(title);
+
+        const items: Array<{ color: string; label: TranslationKey }> = [
+          { color: '#D32F2F', label: 'map.heatMapHigh' },
+          { color: '#F57C00', label: 'map.heatMapMedium' },
+          { color: '#FBC02D', label: 'map.heatMapLow' },
+        ];
+
+        items.forEach(({ color, label }) => {
+          const row = document.createElement('div');
+          row.className = 'heatmap-legend-item';
+
+          const swatch = document.createElement('span');
+          swatch.className = 'heatmap-legend-swatch';
+          swatch.style.background = color;
+
+          const text = document.createElement('span');
+          text.textContent = tRaw(language, label);
+
+          row.appendChild(swatch);
+          row.appendChild(text);
+          container.appendChild(row);
+        });
+
+        return container;
+      },
+    });
+
+    heatMapLegendRef.current = new HeatMapLegend({ position: 'bottomright' });
+    heatMapLegendRef.current.addTo(map);
+
+    return () => {
+      map.off('zoomend', onZoom);
+      if (heatMapLayerRef.current) {
+        heatMapLayerRef.current.clearLayers();
+        map.removeLayer(heatMapLayerRef.current);
+        heatMapLayerRef.current = null;
+      }
+      if (heatMapLegendRef.current) {
+        map.removeControl(heatMapLegendRef.current);
+        heatMapLegendRef.current = null;
+      }
+    };
+  }, [heatMapVisible, geocodedAlerts, language]);
 
   // Update shelter markers
   useEffect(() => {
@@ -428,9 +669,21 @@ export function MapView({
         markerIcon = isSelected ? selectedShelterIcon : shelterIcon;
       }
 
+      // Determine if shelter is outside the isochrone walking radius
+      let markerOpacity = 1;
+      if (emergencyMode && userLocation && walkingRadiusRef.current > 0) {
+        const shelterLatLng = L.latLng(shelter.lat, shelter.lon);
+        const userLatLng = L.latLng(userLocation.lat, userLocation.lng);
+        const distToShelter = userLatLng.distanceTo(shelterLatLng);
+        if (distToShelter > walkingRadiusRef.current) {
+          markerOpacity = 0.4;
+        }
+      }
+
       const marker = L.marker([shelter.lat, shelter.lon], {
         icon: markerIcon,
         title: shelter.name,
+        opacity: markerOpacity,
       });
 
       // Create a container element for the React popup
@@ -459,6 +712,7 @@ export function MapView({
               hasRoute={!!routeInfo}
               capacityData={currentCapData}
               lang={language}
+              onNavigate={(s) => onNavigateRef.current?.(s)}
             />
           </LanguageProvider>
         );
@@ -487,14 +741,52 @@ export function MapView({
       }
     });
 
-    // Cleanup on unmount
+    // Capture ref value for cleanup
+    const currentPopupRoots = popupRootsRef.current;
     return () => {
-      popupRoots.forEach((root) => {
+      currentPopupRoots.forEach((root) => {
         root.unmount();
       });
-      popupRoots.clear();
+      currentPopupRoots.clear();
     };
-  }, [shelters, selectedShelterId, onShelterClick, routeInfo, language, capacityMap]);
+  }, [shelters, selectedShelterId, onShelterClick, onNavigateToShelter, routeInfo, language, capacityMap, emergencyMode, userLocation]);
+
+  // Render navigation polyline (walking to shelter)
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+
+    // Clean up previous navigation polyline
+    if (navigationLayerRef.current) {
+      navigationLayerRef.current.remove();
+      navigationLayerRef.current = null;
+    }
+
+    if (!navigationRoute || !navigatingToShelter) return;
+
+    if (navigationRoute.path.length < 2) return;
+
+    const latLngs: L.LatLngExpression[] = navigationRoute.path.map((p) => [p.lat, p.lng]);
+    const polyline = L.polyline(latLngs, {
+      color: '#10B981',
+      weight: 6,
+      opacity: 0.9,
+      dashArray: '12 8',
+      pane: 'navigationPane',
+    }).addTo(map);
+    navigationLayerRef.current = polyline;
+
+    // Fit bounds to navigation route
+    const bounds = L.latLngBounds(latLngs);
+    map.fitBounds(bounds, { padding: [50, 50], maxZoom: 16 });
+
+    return () => {
+      if (navigationLayerRef.current) {
+        navigationLayerRef.current.remove();
+        navigationLayerRef.current = null;
+      }
+    };
+  }, [navigationRoute, navigatingToShelter]);
 
   if (!isLoaded) {
     return (

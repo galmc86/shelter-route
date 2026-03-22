@@ -1,20 +1,42 @@
-import React, { useState, useCallback, Suspense } from 'react';
+import React, { useState, useCallback, Suspense, useMemo, type ChangeEvent } from 'react';
 import { useLanguage } from '../i18n';
+import './AppHeader.css';
 import { useTheme } from '../theme';
+import { getShelterDataAge, isShelterDataStale } from '../services/shelterApi';
+import type { Language } from '../i18n/translations';
 
 const BugReportForm = React.lazy(() => import('./BugReportForm').then(m => ({ default: m.BugReportForm })));
+
+const languageLabels: Record<Language, string> = {
+  he: 'עברית',
+  en: 'English',
+  ar: 'العربية',
+  ru: 'Русский',
+};
 
 export function AppHeader() {
   const { language, setLanguage, t } = useLanguage();
   const { theme, toggleTheme } = useTheme();
   const [bugReportOpen, setBugReportOpen] = useState(false);
 
-  const toggleLanguage = () => {
-    setLanguage(language === 'he' ? 'en' : 'he');
-  };
+  const handleLanguageChange = useCallback(
+    (e: ChangeEvent<HTMLSelectElement>) => {
+      setLanguage(e.target.value as Language);
+    },
+    [setLanguage]
+  );
 
   const handleOpenBugReport = useCallback(() => setBugReportOpen(true), []);
   const handleCloseBugReport = useCallback(() => setBugReportOpen(false), []);
+
+  const dataAgeLabel = useMemo(() => {
+    const days = getShelterDataAge();
+    if (days === null) return null;
+    if (days === 0) return t('data.updatedToday');
+    return t('data.updatedDaysAgo').replace('{days}', String(days));
+  }, [t]);
+
+  const stale = useMemo(() => isShelterDataStale(), []);
 
   const themeAriaLabel =
     theme === 'light'
@@ -35,6 +57,14 @@ export function AppHeader() {
         <div>
           <h1 className="header-title">{t('header.title')}</h1>
           <span className="header-subtitle">{t('header.subtitle')}</span>
+          {dataAgeLabel && (
+            <span
+              className={`header-data-age${stale ? ' header-data-age--stale' : ''}`}
+              title={stale ? t('data.stale') : undefined}
+            >
+              {stale ? t('data.stale') : dataAgeLabel}
+            </span>
+          )}
         </div>
         <div className="header-actions">
           <button
@@ -72,13 +102,18 @@ export function AppHeader() {
               </svg>
             )}
           </button>
-          <button
-            className="lang-toggle-btn"
-            onClick={toggleLanguage}
-            aria-label={language === 'he' ? 'Switch to English' : 'החלף לעברית'}
+          <select
+            className="lang-select"
+            value={language}
+            onChange={handleLanguageChange}
+            aria-label="Select language"
           >
-            {language === 'he' ? 'EN' : 'עב'}
-          </button>
+            {(Object.keys(languageLabels) as Language[]).map((lang) => (
+              <option key={lang} value={lang}>
+                {languageLabels[lang]}
+              </option>
+            ))}
+          </select>
         </div>
       </header>
       <Suspense fallback={null}>

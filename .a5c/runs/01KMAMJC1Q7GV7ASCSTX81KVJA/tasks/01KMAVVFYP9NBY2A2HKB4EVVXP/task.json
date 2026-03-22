@@ -1,0 +1,31 @@
+{
+  "schemaVersion": "2026.01.tasks-v1",
+  "effectId": "01KMAVVFYP9NBY2A2HKB4EVVXP",
+  "taskId": "implement-item",
+  "invocationKey": "shelter-improvements:S000039:implement-item",
+  "stepId": "S000039",
+  "kind": "agent",
+  "title": "Item 28: Add Personal Safety Dashboard",
+  "labels": [
+    "agent",
+    "implementation",
+    "item-28"
+  ],
+  "io": {
+    "inputJsonPath": "tasks/01KMAVVFYP9NBY2A2HKB4EVVXP/input.json",
+    "outputJsonPath": "tasks/01KMAVVFYP9NBY2A2HKB4EVVXP/output.json"
+  },
+  "inputs": {
+    "description": "Create a personal safety dashboard showing safety analytics. (1) Create src/services/safetyAnalyticsService.ts: track and store in localStorage: routes searched, shelters found per route, alerts received, emergency mode activations, average time-to-shelter estimates, (2) Create src/components/SafetyDashboard.tsx: a panel/page showing: \"Routes analyzed this week\", \"Average shelters per route\", \"Alerts in your area (last 7 days)\", \"Your shelter coverage score\", simple recommendations like \"Your Monday commute has fewer shelters - consider this alternative\", (3) Add a dashboard icon/tab in the header or as a collapsible section, (4) Visualize data with simple CSS-based charts (bar chart for weekly activity), (5) Add translations. Keep it lightweight and informational.",
+    "files": [
+      "src/services/safetyAnalyticsService.ts",
+      "src/components/SafetyDashboard.tsx",
+      "src/App.tsx",
+      "src/i18n/translations.ts",
+      "src/App.css"
+    ],
+    "itemNumber": 28,
+    "projectRoot": "/Users/gal.machluf/projects/shelter-finder/.claude/worktrees/priceless-kepler",
+    "title": "Add Personal Safety Dashboard"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "schemaVersion": "2026.01.results-v1",
+  "effectId": "01KMAMPDTT79JXYGPGD5DX8J3T",
+  "taskId": "implement-item",
+  "invocationKey": "shelter-improvements:S000002:implement-item",
+  "status": "ok",
+  "result": {
+    "filesModified": [
+      "src/App.css"
+    ],
+    "success": true,
+    "summary": "Modified .emergency-fab.fab-panel-expanded rule to keep the emergency button visible when the mobile panel is expanded. Changed opacity from 0 to 1, pointer-events from none to auto, transform from scale(0.8) to scale(1), added z-index:1002, repositioned bottom to calc(75vh + 8px) so FAB sits above the expanded panel."
+  },
+  "startedAt": "2026-03-22T11:27:00.567Z",
+  "finishedAt": "2026-03-22T11:27:00.567Z",
+  "value": {
+    "filesModified": [
+      "src/App.css"
+    ],
+    "success": true,
+    "summary": "Modified .emergency-fab.fab-panel-expanded rule to keep the emergency button visible when the mobile panel is expanded. Changed opacity from 0 to 1, pointer-events from none to auto, transform from scale(0.8) to scale(1), added z-index:1002, repositioned bottom to calc(75vh + 8px) so FAB sits above the expanded panel."
+  }
+}

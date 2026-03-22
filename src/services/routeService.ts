@@ -1,4 +1,5 @@
 import type { RouteOption, TravelMode, LatLng, LatLngBounds } from '../types';
+import { reportError } from './errorReportingService';
 import { translations } from '../i18n/translations';
 import type { TranslationKey } from '../i18n/translations';
 import { resilientFetch } from './fetchClient';
@@ -211,6 +212,7 @@ export async function computeRoutes(
   }
 
   if (!successResult) {
+    reportError('route-api', 'All route strategies failed', lastErrorMessage || 'unknown error');
     throw new Error(lastErrorMessage || t('error.networkError'));
   }
 
@@ -227,4 +229,29 @@ export async function computeRoutes(
   }
 
   return routes;
+}
+
+/** Lightweight walking route fetch for in-app navigation (no alternatives, no retries). */
+export async function computeWalkingRoute(
+  origin: LatLng,
+  destination: LatLng
+): Promise<{ path: LatLng[]; distanceMeters: number; durationSeconds: number }> {
+  const profile = 'foot-walking';
+  const apiKey = import.meta.env.VITE_ORS_API_KEY;
+
+  const result = await fetchRoutes(origin, destination, profile, apiKey);
+
+  if (!result.ok) {
+    throw new Error(result.error.message ?? 'Walking route request failed');
+  }
+
+  const data = result.data;
+  const routes = data.routes;
+  if (!routes || routes.length === 0) throw new Error('No walking route found');
+
+  const route = routes[0];
+  const path = decodePolyline(route.geometry);
+  const duration = sanitizeDuration(route.summary.duration, route.summary.distance, 'WALKING');
+
+  return { path, distanceMeters: route.summary.distance, durationSeconds: duration };
 }

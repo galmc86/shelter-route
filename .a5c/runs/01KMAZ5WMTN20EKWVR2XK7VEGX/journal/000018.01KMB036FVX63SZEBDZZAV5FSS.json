@@ -1,0 +1,20 @@
+{
+  "type": "EFFECT_REQUESTED",
+  "recordedAt": "2026-03-22T14:44:56.956Z",
+  "data": {
+    "effectId": "01KMB036FD8XFKBJCPHGTR7J7K",
+    "invocationKey": "polish-and-pr:S000006:commit-and-pr",
+    "invocationHash": "76558411e9d3c0f3f07a401f2d6881c2448cc65506b44d6e25cf16a8c14e1586",
+    "stepId": "S000006",
+    "taskId": "commit-and-pr",
+    "kind": "agent",
+    "label": "agent",
+    "taskDefRef": "tasks/01KMB036FD8XFKBJCPHGTR7J7K/task.json",
+    "labels": [
+      "agent",
+      "git",
+      "pr"
+    ]
+  },
+  "checksum": "25f418ae12b0c7c959f922debc4276fa6cbd262a04904cf82dc644ab99ebab54"
+}

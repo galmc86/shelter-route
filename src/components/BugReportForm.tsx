@@ -70,7 +70,7 @@ export function BugReportForm({ open, onClose }: BugReportFormProps) {
     <div className="bug-report-overlay" onClick={onClose}>
       <div
         className="bug-report-dialog"
-        dir={language === 'he' ? 'rtl' : 'ltr'}
+        dir={language === 'en' || language === 'ru' ? 'ltr' : 'rtl'}
         role="dialog"
         aria-modal="true"
         aria-label={t('bugReport.title')}

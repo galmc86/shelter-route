@@ -1,0 +1,30 @@
+{
+  "schemaVersion": "2026.01.tasks-v1",
+  "effectId": "01KMAQJYJGV6DSPH01MT2MG4D6",
+  "taskId": "implement-item",
+  "invocationKey": "shelter-improvements:S000023:implement-item",
+  "stepId": "S000023",
+  "kind": "agent",
+  "title": "Item 10: Implement Push Notifications via Service Worker",
+  "labels": [
+    "agent",
+    "implementation",
+    "item-10"
+  ],
+  "io": {
+    "inputJsonPath": "tasks/01KMAQJYJGV6DSPH01MT2MG4D6/input.json",
+    "outputJsonPath": "tasks/01KMAQJYJGV6DSPH01MT2MG4D6/output.json"
+  },
+  "inputs": {
+    "description": "Add Web Push notification support to the service worker so users get alerted even when the app tab is not active. (1) In public/sw.js, add a 'push' event listener that displays a notification with the alert region name and countdown time, (2) Create src/services/pushNotificationService.ts that handles: requesting notification permission, subscribing to push (for now using a local simulation since there's no push server), showing local notifications via the Notification API as a fallback, (3) In useOrefAlerts.ts, when an alert is received and the document is not visible (document.hidden), trigger a local notification using the Notification API, (4) Add a notification permission request to the onboarding flow, (5) Add user preference toggle in settings for notifications. This is a local notification implementation - full Web Push with a server can be added later.",
+    "files": [
+      "public/sw.js",
+      "src/services/pushNotificationService.ts",
+      "src/hooks/useOrefAlerts.ts",
+      "src/components/Onboarding.tsx"
+    ],
+    "itemNumber": 10,
+    "projectRoot": "/Users/gal.machluf/projects/shelter-finder/.claude/worktrees/priceless-kepler",
+    "title": "Implement Push Notifications via Service Worker"
+  }
+}

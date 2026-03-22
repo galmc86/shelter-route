@@ -1,0 +1,28 @@
+{
+  "schemaVersion": "2026.01.tasks-v1",
+  "effectId": "01KMATCWQ15SME66FEARN6141M",
+  "taskId": "quality-gate",
+  "invocationKey": "shelter-improvements:S000036:quality-gate",
+  "stepId": "S000036",
+  "kind": "shell",
+  "title": "Quality Gate - Phase 4",
+  "labels": [
+    "phase-4",
+    "quality-gate",
+    "shell"
+  ],
+  "io": {
+    "outputJsonPath": "tasks/01KMATCWQ15SME66FEARN6141M/output.json"
+  },
+  "inputs": {
+    "checks": [
+      "lint",
+      "typecheck",
+      "test",
+      "build"
+    ],
+    "phase": 4,
+    "projectRoot": "/Users/gal.machluf/projects/shelter-finder/.claude/worktrees/priceless-kepler",
+    "title": "Phase 4 Growth Features Quality Gate"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "type": "EFFECT_REQUESTED",
+  "recordedAt": "2026-03-22T11:57:17.308Z",
+  "data": {
+    "effectId": "01KMAPG6KD1FG1HQ1CEZJXADWJ",
+    "invocationKey": "shelter-improvements:S000014:implement-item",
+    "invocationHash": "d7ae314f5dde1d7b362d5483fd7fcd24ac2adedee07d45ed3ffd7be323ddf38c",
+    "stepId": "S000014",
+    "taskId": "implement-item",
+    "kind": "agent",
+    "label": "agent",
+    "taskDefRef": "tasks/01KMAPG6KD1FG1HQ1CEZJXADWJ/task.json",
+    "labels": [
+      "agent",
+      "implementation",
+      "item-13"
+    ]
+  },
+  "checksum": "30c2b47ead812b99d0cb01c957759bf6a5c2ae7df807422c86a15c6efccc73ed"
+}

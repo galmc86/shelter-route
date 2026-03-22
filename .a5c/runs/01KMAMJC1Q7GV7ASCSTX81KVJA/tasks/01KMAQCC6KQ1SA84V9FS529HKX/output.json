@@ -1,0 +1,1 @@
+{"success": true, "lint": "0 errors, 1 pre-existing warning", "typecheck": "clean", "tests": "97 passed, 36 pre-existing failures", "build": "success", "summary": "Phase 2 quality gate passed after fixing 2 lint errors (react-refresh export, setState in effect)."}

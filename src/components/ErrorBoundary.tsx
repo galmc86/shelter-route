@@ -1,4 +1,6 @@
-import React, { Component, type ReactNode } from 'react';
+import { Component, type ReactNode } from 'react';
+import type { ErrorInfo } from 'react';
+import { reportError } from '../services/errorReportingService';
 
 interface ErrorBoundaryProps {
   fallback?: ReactNode;
@@ -8,6 +10,21 @@ interface ErrorBoundaryProps {
 interface ErrorBoundaryState {
   hasError: boolean;
   error: Error | null;
+}
+
+const EMERGENCY_NUMBERS = [
+  { number: '100', labelHe: '\u05DE\u05E9\u05D8\u05E8\u05D4', labelEn: 'Police' },
+  { number: '101', labelHe: '\u05DE\u05D3"\u05D0 / \u05D0\u05DE\u05D1\u05D5\u05DC\u05E0\u05E1', labelEn: 'Ambulance / MDA' },
+  { number: '102', labelHe: '\u05DB\u05D1\u05D0\u05D9 \u05D0\u05E9', labelEn: 'Fire' },
+  { number: '104', labelHe: '\u05E4\u05D9\u05E7\u05D5\u05D3 \u05D4\u05E2\u05D5\u05E8\u05E3', labelEn: 'Home Front Command' },
+];
+
+function getIsHebrew(): boolean {
+  const lang = document.documentElement.lang;
+  if (lang && lang.startsWith('he')) return true;
+  const dir = document.documentElement.dir || document.documentElement.getAttribute('dir');
+  if (dir === 'rtl') return true;
+  return false;
 }
 
 export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
@@ -20,35 +37,70 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
+  componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
+    console.error('[ErrorBoundary] Uncaught error:', error);
+    console.error('[ErrorBoundary] Component stack:', errorInfo.componentStack);
+    reportError('render-error', error.message, errorInfo.componentStack ?? undefined);
   }
 
   handleReset = (): void => {
     this.setState({ hasError: false, error: null });
   };
 
-  render(): ReactNode {
-    if (this.state.hasError) {
-      if (this.props.fallback) {
-        return this.props.fallback;
-      }
+  handleReload = (): void => {
+    window.location.reload();
+  };
 
-      return (
-        <div className="error-boundary-fallback" role="alert">
-          <div className="error-boundary-icon">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="#E53935">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
-            </svg>
-          </div>
-          <p>{this.state.error?.message || 'An error occurred'}</p>
-          <button className="error-boundary-retry" onClick={this.handleReset}>
-            Try again
-          </button>
-        </div>
-      );
+  render(): ReactNode {
+    if (!this.state.hasError) {
+      return this.props.children;
     }
 
-    return this.props.children;
+    if (this.props.fallback) {
+      return this.props.fallback;
+    }
+
+    const isHebrew = getIsHebrew();
+
+    return (
+      <div className="error-boundary" dir={isHebrew ? 'rtl' : 'ltr'}>
+        <div className="error-boundary-content">
+          <h1 className="error-boundary-title">Shelter Route</h1>
+          <p className="error-boundary-message">
+            {isHebrew
+              ? '\u05D0\u05D9\u05E8\u05E2\u05D4 \u05E9\u05D2\u05D9\u05D0\u05D4 \u05D1\u05D0\u05E4\u05DC\u05D9\u05E7\u05E6\u05D9\u05D4. \u05D0\u05E0\u05D0 \u05E0\u05E1\u05D4 \u05DC\u05D8\u05E2\u05D5\u05DF \u05DE\u05D7\u05D3\u05E9.'
+              : 'An error occurred in the application. Please try reloading.'}
+          </p>
+
+          <div className="error-boundary-emergency">
+            <h2 className="error-boundary-emergency-title">
+              {isHebrew ? '\u05DE\u05E1\u05E4\u05E8\u05D9 \u05D7\u05D9\u05E8\u05D5\u05DD' : 'Emergency Numbers'}
+            </h2>
+            <ul className="error-boundary-numbers">
+              {EMERGENCY_NUMBERS.map(({ number, labelHe, labelEn }) => (
+                <li key={number} className="error-boundary-number-item">
+                  <a href={`tel:${number}`} className="error-boundary-number-link">
+                    <span className="error-boundary-number">{number}</span>
+                    <span className="error-boundary-label">
+                      {isHebrew ? labelHe : labelEn}
+                    </span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <button
+            className="error-boundary-reload"
+            onClick={this.handleReload}
+            type="button"
+          >
+            {isHebrew ? '\u05D8\u05E2\u05D9\u05E0\u05D4 \u05DE\u05D7\u05D3\u05E9' : 'Reload'}
+          </button>
+        </div>
+      </div>
+    );
   }
 }
+
+export default ErrorBoundary;

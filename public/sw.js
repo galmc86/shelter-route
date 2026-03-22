@@ -219,6 +219,40 @@ async function fetchAndCache(request, cache) {
   }
 }
 
+// Push notification handler — displays alert notification
+self.addEventListener('push', (event) => {
+  const data = event.data ? event.data.json() : {};
+  const title = data.title || 'Shelter Route Alert';
+  const options = {
+    body: data.body || 'Alert in your area — seek shelter immediately!',
+    icon: '/icons/icon-192.svg',
+    badge: '/icons/icon-192.svg',
+    tag: data.tag || 'shelter-route-alert',
+    requireInteraction: true,
+    silent: false,
+  };
+
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+// Handle notification click — focus or open the app
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      // Focus an existing app window if one exists
+      for (const client of clientList) {
+        if (client.url.includes(self.location.origin) && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      // Otherwise open a new window
+      return self.clients.openWindow('/');
+    })
+  );
+});
+
 // Notify clients about SW updates
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') {

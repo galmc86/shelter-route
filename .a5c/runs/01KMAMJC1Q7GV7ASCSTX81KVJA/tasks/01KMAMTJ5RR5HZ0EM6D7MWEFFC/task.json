@@ -1,0 +1,28 @@
+{
+  "schemaVersion": "2026.01.tasks-v1",
+  "effectId": "01KMAMTJ5RR5HZ0EM6D7MWEFFC",
+  "taskId": "implement-item",
+  "invocationKey": "shelter-improvements:S000003:implement-item",
+  "stepId": "S000003",
+  "kind": "agent",
+  "title": "Item 3: Add Audio Alert Using Web Audio API",
+  "labels": [
+    "agent",
+    "implementation",
+    "item-3"
+  ],
+  "io": {
+    "inputJsonPath": "tasks/01KMAMTJ5RR5HZ0EM6D7MWEFFC/input.json",
+    "outputJsonPath": "tasks/01KMAMTJ5RR5HZ0EM6D7MWEFFC/output.json"
+  },
+  "inputs": {
+    "description": "Add an audible alarm when OREF alerts are received. Currently src/App.tsx line 113 only uses navigator.vibrate. Add: (1) a Web Audio API-based alarm sound that plays a repeating urgent tone (alternating 800Hz and 600Hz sine waves, 200ms each), (2) continuous vibration pattern [200,100,200,100,400] that repeats while alert is active, (3) stop audio+vibration when alert is dismissed or expires, (4) respect a user preference for silent mode stored in localStorage. Create a new utility src/utils/alertSound.ts with functions: playAlertSound(), stopAlertSound(), isAlertSoundPlaying(). Import and use in the alert effect in App.tsx.",
+    "files": [
+      "src/App.tsx",
+      "src/utils/alertSound.ts"
+    ],
+    "itemNumber": 3,
+    "projectRoot": "/Users/gal.machluf/projects/shelter-finder/.claude/worktrees/priceless-kepler",
+    "title": "Add Audio Alert Using Web Audio API"
+  }
+}

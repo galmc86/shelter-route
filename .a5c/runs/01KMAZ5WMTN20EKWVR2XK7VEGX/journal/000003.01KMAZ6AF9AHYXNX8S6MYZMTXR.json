@@ -1,0 +1,19 @@
+{
+  "type": "EFFECT_REQUESTED",
+  "recordedAt": "2026-03-22T14:29:10.761Z",
+  "data": {
+    "effectId": "01KMAZ6AEW7986Y94XF50FXEVR",
+    "invocationKey": "polish-and-pr:S000001:fix-tests",
+    "invocationHash": "a2f62c033ec11375937b03b4ffdf13787be3932c58982fab3f23163688faa609",
+    "stepId": "S000001",
+    "taskId": "fix-tests",
+    "kind": "agent",
+    "label": "agent",
+    "taskDefRef": "tasks/01KMAZ6AEW7986Y94XF50FXEVR/task.json",
+    "labels": [
+      "agent",
+      "fix-tests"
+    ]
+  },
+  "checksum": "e73c72ecd977e88255290a374900ab3922c9a28cde612a99240e268980b5f9dd"
+}

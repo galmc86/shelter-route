@@ -1,0 +1,25 @@
+{
+  "schemaVersion": "2026.01.results-v1",
+  "effectId": "01KMAPKP2QTQY2K0HGNHJGR0D8",
+  "taskId": "implement-item",
+  "invocationKey": "shelter-improvements:S000015:implement-item",
+  "status": "ok",
+  "result": {
+    "filesModified": [
+      "src/hooks/useCurrentLocation.ts",
+      "src/App.tsx"
+    ],
+    "success": true,
+    "summary": "Added continuous parameter to useCurrentLocation. Uses watchPosition when true (emergency mode), getCurrentPosition when false. Proper clearWatch cleanup. Wired emergencyMode as continuous flag in App.tsx."
+  },
+  "startedAt": "2026-03-22T12:00:21.249Z",
+  "finishedAt": "2026-03-22T12:00:21.249Z",
+  "value": {
+    "filesModified": [
+      "src/hooks/useCurrentLocation.ts",
+      "src/App.tsx"
+    ],
+    "success": true,
+    "summary": "Added continuous parameter to useCurrentLocation. Uses watchPosition when true (emergency mode), getCurrentPosition when false. Proper clearWatch cleanup. Wired emergencyMode as continuous flag in App.tsx."
+  }
+}

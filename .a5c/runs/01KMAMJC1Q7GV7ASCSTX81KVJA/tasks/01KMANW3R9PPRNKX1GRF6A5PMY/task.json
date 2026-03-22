@@ -1,0 +1,27 @@
+{
+  "schemaVersion": "2026.01.tasks-v1",
+  "effectId": "01KMANW3R9PPRNKX1GRF6A5PMY",
+  "taskId": "__sdk.breakpoint",
+  "invocationKey": "shelter-improvements:S000010:__sdk.breakpoint",
+  "stepId": "S000010",
+  "kind": "breakpoint",
+  "title": "breakpoint",
+  "metadata": {
+    "label": "breakpoint",
+    "payload": {
+      "context": {},
+      "question": "Phase 1 (Safety-Critical Fixes) is complete. Review the 8 items implemented and quality gate results. Approve to continue to Phase 2?",
+      "title": "Phase 1 Complete - Safety-Critical Fixes"
+    },
+    "requestedAt": "2026-03-22T11:46:19.017Z"
+  },
+  "inputs": {
+    "label": "breakpoint",
+    "payload": {
+      "context": {},
+      "question": "Phase 1 (Safety-Critical Fixes) is complete. Review the 8 items implemented and quality gate results. Approve to continue to Phase 2?",
+      "title": "Phase 1 Complete - Safety-Critical Fixes"
+    },
+    "requestedAt": "2026-03-22T11:46:19.017Z"
+  }
+}

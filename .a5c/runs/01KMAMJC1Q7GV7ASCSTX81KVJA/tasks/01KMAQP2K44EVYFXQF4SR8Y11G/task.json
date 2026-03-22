@@ -1,0 +1,32 @@
+{
+  "schemaVersion": "2026.01.tasks-v1",
+  "effectId": "01KMAQP2K44EVYFXQF4SR8Y11G",
+  "taskId": "implement-item",
+  "invocationKey": "shelter-improvements:S000024:implement-item",
+  "stepId": "S000024",
+  "kind": "agent",
+  "title": "Item 18: Add Basic Error Reporting Service",
+  "labels": [
+    "agent",
+    "implementation",
+    "item-18"
+  ],
+  "io": {
+    "inputJsonPath": "tasks/01KMAQP2K44EVYFXQF4SR8Y11G/input.json",
+    "outputJsonPath": "tasks/01KMAQP2K44EVYFXQF4SR8Y11G/output.json"
+  },
+  "inputs": {
+    "description": "Create a lightweight error reporting service that tracks critical failures. Create src/services/errorReportingService.ts: (1) Track errors in an in-memory buffer (last 50 errors), (2) Categorize errors: 'alert-polling', 'geolocation', 'route-api', 'shelter-load', 'render-error', (3) Log to console in development, (4) Expose getErrorReport() that returns the buffer for debugging, (5) Add a \"Debug Info\" section to the BugReportForm that auto-includes recent errors, (6) Wire error tracking into: orefAlertService (polling failures), routeService (API failures), shelterApi (load failures), ErrorBoundary (render crashes), useCurrentLocation (geolocation failures). Keep it simple - no external service dependency for now.",
+    "files": [
+      "src/services/errorReportingService.ts",
+      "src/services/orefAlertService.ts",
+      "src/services/routeService.ts",
+      "src/services/shelterApi.ts",
+      "src/components/ErrorBoundary.tsx",
+      "src/hooks/useCurrentLocation.ts"
+    ],
+    "itemNumber": 18,
+    "projectRoot": "/Users/gal.machluf/projects/shelter-finder/.claude/worktrees/priceless-kepler",
+    "title": "Add Basic Error Reporting Service"
+  }
+}

@@ -11,5 +11,23 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
     exclude: ['**/node_modules/**', '**/.claude/**', '**/e2e/**'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'text-summary'],
+      thresholds: {
+        'src/services/**': {
+          statements: 60,
+          branches: 60,
+          functions: 60,
+          lines: 60,
+        },
+        'src/hooks/**': {
+          statements: 15,
+          branches: 10,
+          functions: 15,
+          lines: 15,
+        },
+      },
+    },
   },
 })

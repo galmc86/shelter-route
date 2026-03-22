@@ -1,4 +1,4 @@
-import type { SearchHistoryEntry, LatLng, TravelMode } from '../types';
+import type { SearchHistoryEntry, SavedRouteData, LatLng, TravelMode } from '../types';
 
 const STORAGE_KEY = 'shelter-route:search-history';
 const STORAGE_VERSION = 1;
@@ -134,6 +134,25 @@ export function renameEntry(
   const trimmed = label.trim();
   return entries.map((e) =>
     e.id === id ? { ...e, label: trimmed || undefined } : e
+  );
+}
+
+export function saveRouteData(
+  entries: SearchHistoryEntry[],
+  id: string,
+  routeData: SavedRouteData
+): SearchHistoryEntry[] {
+  return entries.map((e) =>
+    e.id === id ? { ...e, routeData } : e
+  );
+}
+
+export function unsaveRouteData(
+  entries: SearchHistoryEntry[],
+  id: string
+): SearchHistoryEntry[] {
+  return entries.map((e) =>
+    e.id === id ? { ...e, routeData: undefined } : e
   );
 }
 

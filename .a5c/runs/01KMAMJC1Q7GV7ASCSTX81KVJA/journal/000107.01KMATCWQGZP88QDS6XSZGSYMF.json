@@ -1,0 +1,20 @@
+{
+  "type": "EFFECT_REQUESTED",
+  "recordedAt": "2026-03-22T13:05:23.184Z",
+  "data": {
+    "effectId": "01KMATCWQ15SME66FEARN6141M",
+    "invocationKey": "shelter-improvements:S000036:quality-gate",
+    "invocationHash": "f07d8a5b0f896306dde2eba7b7886002b8f70e5c0b7736bbbdcf838aa915aab4",
+    "stepId": "S000036",
+    "taskId": "quality-gate",
+    "kind": "shell",
+    "label": "shell",
+    "taskDefRef": "tasks/01KMATCWQ15SME66FEARN6141M/task.json",
+    "labels": [
+      "shell",
+      "quality-gate",
+      "phase-4"
+    ]
+  },
+  "checksum": "86edf88850f81f735623483cc4a22329f73602f8d528c9263391e836bd5062fd"
+}

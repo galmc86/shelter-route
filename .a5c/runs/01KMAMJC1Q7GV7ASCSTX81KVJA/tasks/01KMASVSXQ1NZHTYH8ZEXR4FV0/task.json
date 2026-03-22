@@ -1,0 +1,31 @@
+{
+  "schemaVersion": "2026.01.tasks-v1",
+  "effectId": "01KMASVSXQ1NZHTYH8ZEXR4FV0",
+  "taskId": "implement-item",
+  "invocationKey": "shelter-improvements:S000034:implement-item",
+  "stepId": "S000034",
+  "kind": "agent",
+  "title": "Item 24: Implement Shelter Score for Any Address",
+  "labels": [
+    "agent",
+    "implementation",
+    "item-24"
+  ],
+  "io": {
+    "inputJsonPath": "tasks/01KMASVSXQ1NZHTYH8ZEXR4FV0/input.json",
+    "outputJsonPath": "tasks/01KMASVSXQ1NZHTYH8ZEXR4FV0/output.json"
+  },
+  "inputs": {
+    "description": "Add a \"Shelter Score\" feature that grades any address A-F based on shelter accessibility. (1) Create src/services/shelterScoreService.ts: compute score based on: number of shelters within 200m, walking time to nearest shelter, shelter diversity (types), accessibility, alert history frequency for the area. Grade: A (excellent, 4+ shelters <100m), B (good, 2-3 shelters <150m), C (adequate, 1+ shelter <200m), D (poor, shelter >200m), F (critical, no shelter within 400m), (2) Create src/components/ShelterScore.tsx: display the score as a large letter grade with a color (green A through red F), breakdown of factors, and a shareable card view, (3) Add a \"Check Shelter Score\" option in the search panel that accepts a single address, (4) Add translations. Make the score card visually appealing for social media sharing.",
+    "files": [
+      "src/services/shelterScoreService.ts",
+      "src/components/ShelterScore.tsx",
+      "src/components/SearchPanel.tsx",
+      "src/i18n/translations.ts",
+      "src/App.css"
+    ],
+    "itemNumber": 24,
+    "projectRoot": "/Users/gal.machluf/projects/shelter-finder/.claude/worktrees/priceless-kepler",
+    "title": "Implement Shelter Score for Any Address"
+  }
+}

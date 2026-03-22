@@ -1,0 +1,27 @@
+{
+  "schemaVersion": "2026.01.results-v1",
+  "effectId": "01KMAPG6KD1FG1HQ1CEZJXADWJ",
+  "taskId": "implement-item",
+  "invocationKey": "shelter-improvements:S000014:implement-item",
+  "status": "ok",
+  "result": {
+    "filesModified": [
+      "src/components/SearchPanel.tsx",
+      "src/App.css",
+      "src/i18n/translations.ts"
+    ],
+    "success": true,
+    "summary": "Added large green 'Navigate to nearest shelter' button at top of emergency mode. Opens Google Maps walking directions. Shows shelter name and walking time. Pulsing animation for visibility. Bilingual."
+  },
+  "startedAt": "2026-03-22T11:59:01.428Z",
+  "finishedAt": "2026-03-22T11:59:01.428Z",
+  "value": {
+    "filesModified": [
+      "src/components/SearchPanel.tsx",
+      "src/App.css",
+      "src/i18n/translations.ts"
+    ],
+    "success": true,
+    "summary": "Added large green 'Navigate to nearest shelter' button at top of emergency mode. Opens Google Maps walking directions. Shows shelter name and walking time. Pulsing animation for visibility. Bilingual."
+  }
+}

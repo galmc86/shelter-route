@@ -1,0 +1,33 @@
+{
+  "schemaVersion": "2026.01.results-v1",
+  "effectId": "01KMASNQ68044BV1XZGYVZDTRD",
+  "taskId": "implement-item",
+  "invocationKey": "shelter-improvements:S000033:implement-item",
+  "status": "ok",
+  "result": {
+    "filesModified": [
+      "src/services/shelterReportsService.ts",
+      "src/components/ShelterReport.tsx",
+      "src/components/ShelterPopup.tsx",
+      "src/components/SearchPanel.tsx",
+      "src/i18n/translations.ts",
+      "src/App.css"
+    ],
+    "success": true,
+    "summary": "Community shelter reports: 6 status options, 24h expiry, colored badges in popup and list, report form with quick-select buttons, 4-language translations."
+  },
+  "startedAt": "2026-03-22T12:55:45.762Z",
+  "finishedAt": "2026-03-22T12:55:45.762Z",
+  "value": {
+    "filesModified": [
+      "src/services/shelterReportsService.ts",
+      "src/components/ShelterReport.tsx",
+      "src/components/ShelterPopup.tsx",
+      "src/components/SearchPanel.tsx",
+      "src/i18n/translations.ts",
+      "src/App.css"
+    ],
+    "success": true,
+    "summary": "Community shelter reports: 6 status options, 24h expiry, colored badges in popup and list, report form with quick-select buttons, 4-language translations."
+  }
+}

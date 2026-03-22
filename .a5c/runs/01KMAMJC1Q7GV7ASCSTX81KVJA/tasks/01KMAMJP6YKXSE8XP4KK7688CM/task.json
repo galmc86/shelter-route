@@ -1,0 +1,28 @@
+{
+  "schemaVersion": "2026.01.tasks-v1",
+  "effectId": "01KMAMJP6YKXSE8XP4KK7688CM",
+  "taskId": "implement-item",
+  "invocationKey": "shelter-improvements:S000001:implement-item",
+  "stepId": "S000001",
+  "kind": "agent",
+  "title": "Item 1: Alert Polling Recovery with Exponential Backoff",
+  "labels": [
+    "agent",
+    "implementation",
+    "item-1"
+  ],
+  "io": {
+    "inputJsonPath": "tasks/01KMAMJP6YKXSE8XP4KK7688CM/input.json",
+    "outputJsonPath": "tasks/01KMAMJP6YKXSE8XP4KK7688CM/output.json"
+  },
+  "inputs": {
+    "description": "Fix the alert polling in src/services/orefAlertService.ts that permanently stops after 3 failures. Implement exponential backoff instead of permanent shutdown. Add a visible health status that can be consumed by UI components. The current code at lines 129-176 has MAX_CONSECUTIVE_FAILURES=3 and clears the interval permanently. Replace with: (1) exponential backoff starting at 5s, doubling up to 60s max, (2) reset backoff on successful poll, (3) add a healthStatus callback to subscribeToAlerts that reports 'connected'|'degraded'|'reconnecting', (4) never permanently stop polling. Also export a getAlertHealthStatus function. Keep the existing API contract but extend it.",
+    "files": [
+      "src/services/orefAlertService.ts",
+      "src/hooks/useOrefAlerts.ts"
+    ],
+    "itemNumber": 1,
+    "projectRoot": "/Users/gal.machluf/projects/shelter-finder/.claude/worktrees/priceless-kepler",
+    "title": "Alert Polling Recovery with Exponential Backoff"
+  }
+}

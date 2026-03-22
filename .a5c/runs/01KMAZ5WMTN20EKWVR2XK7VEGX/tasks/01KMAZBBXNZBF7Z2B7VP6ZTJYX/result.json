@@ -1,0 +1,17 @@
+{
+  "schemaVersion": "2026.01.results-v1",
+  "effectId": "01KMAZBBXNZBF7Z2B7VP6ZTJYX",
+  "taskId": "quality-gate",
+  "invocationKey": "polish-and-pr:S000004:quality-gate",
+  "status": "ok",
+  "result": {
+    "success": true,
+    "summary": "Lint: 0 errors (4 warnings). Typecheck: clean. Build: success. All 147 tests pass."
+  },
+  "startedAt": "2026-03-22T14:32:15.192Z",
+  "finishedAt": "2026-03-22T14:32:15.192Z",
+  "value": {
+    "success": true,
+    "summary": "Lint: 0 errors (4 warnings). Typecheck: clean. Build: success. All 147 tests pass."
+  }
+}
