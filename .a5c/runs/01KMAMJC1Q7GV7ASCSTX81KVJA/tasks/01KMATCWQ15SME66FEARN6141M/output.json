@@ -1,1 +1,0 @@
-{"success": true, "lint": "0 errors, 4 warnings", "typecheck": "clean", "build": "success", "summary": "Phase 4 quality gate passed. Fixed ShelterReport type error, FamilySafety setState-in-effect, SavedLocations unused var."}

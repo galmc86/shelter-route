@@ -1,1 +1,0 @@
-{"success": true, "filesModified": ["src/hooks/useCurrentLocation.ts", "src/App.tsx"], "summary": "Added continuous parameter to useCurrentLocation. Uses watchPosition when true (emergency mode), getCurrentPosition when false. Proper clearWatch cleanup. Wired emergencyMode as continuous flag in App.tsx."}

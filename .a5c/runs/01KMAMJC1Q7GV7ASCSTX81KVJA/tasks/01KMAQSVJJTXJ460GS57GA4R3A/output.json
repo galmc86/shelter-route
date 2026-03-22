@@ -1,1 +1,0 @@
-{"success": true, "filesModified": ["src/services/shelterApi.ts", "src/components/AppHeader.tsx", "src/i18n/translations.ts", "src/App.css"], "summary": "Added shelter data freshness tracking. Timestamp stored on fetch. getShelterDataAge/isShelterDataStale exports. Header shows data age with orange warning when stale (>30 days)."}

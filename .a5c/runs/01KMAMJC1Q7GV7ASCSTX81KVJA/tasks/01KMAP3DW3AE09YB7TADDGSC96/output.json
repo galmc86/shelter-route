@@ -1,1 +1,0 @@
-{"success": true, "filesModified": ["src/components/Onboarding.tsx", "src/App.tsx", "src/App.css", "src/i18n/translations.ts"], "summary": "Created 3-step onboarding overlay: welcome, location permission, emergency button guide. localStorage persistence, bilingual, styled overlay with animations. Wired into App.tsx."}

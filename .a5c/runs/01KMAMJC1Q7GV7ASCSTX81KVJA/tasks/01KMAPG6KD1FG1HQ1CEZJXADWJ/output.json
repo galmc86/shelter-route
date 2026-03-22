@@ -1,1 +1,0 @@
-{"success": true, "filesModified": ["src/components/SearchPanel.tsx", "src/App.css", "src/i18n/translations.ts"], "summary": "Added large green 'Navigate to nearest shelter' button at top of emergency mode. Opens Google Maps walking directions. Shows shelter name and walking time. Pulsing animation for visibility. Bilingual."}

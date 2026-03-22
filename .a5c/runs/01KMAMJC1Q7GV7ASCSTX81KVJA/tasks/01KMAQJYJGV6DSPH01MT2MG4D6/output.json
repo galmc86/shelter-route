@@ -1,1 +1,0 @@
-{"success": true, "filesModified": ["src/services/pushNotificationService.ts", "public/sw.js", "src/hooks/useOrefAlerts.ts"], "summary": "Local push notifications via Notification API. Service worker push/notificationclick handlers. Notifications when tab is hidden. localStorage preference."}
