@@ -28,7 +28,7 @@ export default defineConfig({
           if (id.includes('node_modules/react-dom') || id.includes('node_modules/react/')) {
             return 'vendor-react';
           }
-          if (id.includes('node_modules/leaflet')) {
+          if (id.includes('node_modules/leaflet/')) {
             return 'vendor-leaflet';
           }
           if (id.includes('node_modules/@googlemaps')) {
