@@ -52,9 +52,6 @@ export function SearchPanel({
     isLoadingLocation,
     locationError,
     onGetLocation,
-    nearMeMode,
-    onNearMeClick,
-    onExitNearMe,
     onUseMapCenter,
   } = useEmergencyContext();
 
@@ -529,7 +526,7 @@ export function SearchPanel({
       })()}
 
       {/* Emergency Quick Button */}
-      {!emergencyMode && !nearMeMode && (
+      {!emergencyMode && (
         <button
           className="emergency-quick-btn"
           onClick={onEmergencyClick}
@@ -543,46 +540,8 @@ export function SearchPanel({
         </button>
       )}
 
-      {/* Near Me Mode Banner */}
-      {nearMeMode && !emergencyMode && (
-        <div className="near-me-banner" role="status">
-          <div className="near-me-banner-content">
-            <span className="near-me-banner-icon" aria-hidden="true">{'\uD83D\uDCCD'}</span>
-            <div>
-              <div className="near-me-banner-title">{t('search.sheltersNearMe')}</div>
-              <div className="near-me-banner-subtitle">
-                {isLoadingLocation
-                  ? t('emergency.locating')
-                  : locationError
-                    ? locationError
-                    : `${nearbyShelters.length} ${t('emergency.nearbyShelters')}`}
-              </div>
-            </div>
-          </div>
-          <button
-            className="near-me-exit-btn"
-            onClick={onExitNearMe}
-            aria-label={t('emergency.exit')}
-          >
-            {t('emergency.exit')}
-          </button>
-        </div>
-      )}
-
-      {/* Shelters Near Me Primary CTA */}
-      {!emergencyMode && !nearMeMode && (
-        <button
-          className="near-me-cta-btn"
-          onClick={onNearMeClick}
-          aria-label={t('search.sheltersNearMe')}
-        >
-          <span className="near-me-cta-icon" aria-hidden="true">{'\uD83D\uDCCD'}</span>
-          {t('search.sheltersNearMe')}
-        </button>
-      )}
-
       {/* Shelter Score Toggle - shown in nearMe mode or when shelters are loaded */}
-      {(nearMeMode || nearbyShelters.length > 0) && !emergencyMode && currentLocation && allShelters.length > 0 && (
+      {(nearbyShelters.length > 0) && !emergencyMode && currentLocation && allShelters.length > 0 && (
         <>
           {!showShelterScore ? (
             <button
@@ -615,7 +574,7 @@ export function SearchPanel({
       )}
 
       {/* Saved Locations (hidden in emergency and nearMe mode) */}
-      {!emergencyMode && !nearMeMode && (
+      {!emergencyMode && (
         <SavedLocations
           locations={savedLocations}
           onSelectLocation={handleSavedLocationSelect}
@@ -628,7 +587,7 @@ export function SearchPanel({
       )}
 
       {/* Regular search (hidden in emergency and nearMe mode) */}
-      {!emergencyMode && !nearMeMode && (
+      {!emergencyMode && (
         <>
           {/* Collapsible route planner toggle */}
           <button
@@ -726,7 +685,7 @@ export function SearchPanel({
       )}
 
       {/* Search History — shown when no route is displayed */}
-      {!routeInfo && !emergencyMode && !nearMeMode && historyEntries.length > 0 && (
+      {!routeInfo && !emergencyMode && historyEntries.length > 0 && (
         <SearchHistory
           entries={historyEntries}
           onSelect={handleHistorySelect}
@@ -958,7 +917,7 @@ export function SearchPanel({
               <path d="M12 2L3 7v10l9 5 9-5V7l-9-5z" />
               <path d="M12 6v8M8 10h8" stroke="white" strokeWidth="2" strokeLinecap="round" />
             </svg>
-            {(emergencyMode || nearMeMode) ? t('shelters.nearYou') : `${t('shelters.alongRoute')} (${nearbyShelters.length})`}
+            {emergencyMode ? t('shelters.nearYou') : `${t('shelters.alongRoute')} (${nearbyShelters.length})`}
           </div>
 
           {/* Sort & Filter Controls */}
