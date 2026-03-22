@@ -488,5 +488,6 @@ describe('subscribeToAlerts', () => {
       expect(callback).toHaveBeenCalledWith([], null);
       expect(healthCallback).toHaveBeenCalledWith('connected');
     });
+
   });
 });

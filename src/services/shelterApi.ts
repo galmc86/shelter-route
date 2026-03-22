@@ -1,6 +1,7 @@
 import type { Shelter } from '../types';
 import { reportError } from './errorReportingService';
 
+
 interface MiklatShelter {
   id: number;
   name: string;
@@ -204,11 +205,14 @@ async function reverseGeocodeSingle(
   lat: number,
   lon: number
 ): Promise<string | null> {
+  const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=he&zoom=18`;
   try {
-    const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=he&zoom=18`;
-    const response = await fetch(url);
-    if (!response.ok) return null;
-    const data: NominatimResponse = await response.json();
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    const resp = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeout);
+    if (!resp.ok) return null;
+    const data = await resp.json() as NominatimResponse;
     return extractNameFromNominatim(data);
   } catch {
     return null;
@@ -471,6 +475,7 @@ export async function fetchAllShelters(
 
     const json: { shelters: MiklatShelter[] } = JSON.parse(text);
     cachedShelters = parseShelters(json.shelters);
+
     saveToLocalStorage(cachedShelters);
     saveStoredHash(computeSimpleHash(text));
 
@@ -487,5 +492,6 @@ export async function fetchAllShelters(
     throw new Error('שגיאה בטעינת מקלטים. בדוק את חיבור האינטרנט.', {
       cause: err,
     });
+
   }
 }

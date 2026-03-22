@@ -10,7 +10,7 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
-    exclude: ['**/node_modules/**', '**/.claude/**'],
+    exclude: ['**/node_modules/**', '**/.claude/**', '**/e2e/**'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'text-summary'],

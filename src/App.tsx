@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
-import ErrorBoundary from './components/ErrorBoundary';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { Onboarding } from './components/Onboarding';
 
 function isOnboardingCompleted(): boolean {
@@ -42,6 +42,7 @@ import type { EmergencyContextValue } from './contexts/EmergencyContext';
 import type { ShelterContextValue } from './contexts/ShelterContext';
 import type L from 'leaflet';
 import './App.css';
+
 
 function App() {
   const { language, t } = useLanguage();

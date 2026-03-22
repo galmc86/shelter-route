@@ -269,6 +269,9 @@ export const translations = {
     'error.geolocationUnsupported': 'הדפדפן לא תומך בשירותי מיקום',
     'error.locationDenied': 'גישה למיקום נדחתה',
     'error.locationUnavailable': 'לא ניתן לקבל את המיקום הנוכחי',
+    'error.errorOccurred': 'שגיאה',
+    'error.tryAgain': 'נסה שוב',
+    'error.mapLoadError': 'שגיאה בטעינת המפה',
 
     // Onboarding
     'onboarding.welcomeTitle': 'ברוכים הבאים ל-Shelter Route',
@@ -347,6 +350,7 @@ export const translations = {
     'dashboard.emergencyActivations': 'הפעלות חירום',
     'dashboard.recentRoutes': 'מסלולים אחרונים',
     'dashboard.shelters': 'מקלטים',
+
   },
   en: {
     // App Header
@@ -616,6 +620,9 @@ export const translations = {
     'error.geolocationUnsupported': 'Your browser does not support location services',
     'error.locationDenied': 'Location access denied',
     'error.locationUnavailable': 'Unable to get your current location',
+    'error.errorOccurred': 'An error occurred',
+    'error.tryAgain': 'Try again',
+    'error.mapLoadError': 'Error loading the map',
 
     // Onboarding
     'onboarding.welcomeTitle': 'Welcome to Shelter Route',
@@ -963,6 +970,9 @@ export const translations = {
     'error.geolocationUnsupported': 'المتصفح لا يدعم خدمات الموقع',
     'error.locationDenied': 'تم رفض الوصول إلى الموقع',
     'error.locationUnavailable': 'تعذّر الحصول على موقعك الحالي',
+    'error.errorOccurred': 'حدث خطأ',
+    'error.tryAgain': 'حاول مرة أخرى',
+    'error.mapLoadError': 'خطأ في تحميل الخريطة',
 
     // Onboarding
     'onboarding.welcomeTitle': 'مرحبًا بك في Shelter Route',
@@ -1310,6 +1320,9 @@ export const translations = {
     'error.geolocationUnsupported': 'Ваш браузер не поддерживает службы геолокации',
     'error.locationDenied': 'Доступ к местоположению отклонён',
     'error.locationUnavailable': 'Не удалось определить ваше местоположение',
+    'error.errorOccurred': 'Произошла ошибка',
+    'error.tryAgain': 'Попробовать снова',
+    'error.mapLoadError': 'Ошибка загрузки карты',
 
     // Onboarding
     'onboarding.welcomeTitle': 'Добро пожаловать в Shelter Route',
@@ -1388,6 +1401,7 @@ export const translations = {
     'dashboard.emergencyActivations': 'Активаций экстренного режима',
     'dashboard.recentRoutes': 'Последние маршруты',
     'dashboard.shelters': 'укрытий',
+
   },
 } as const;
 

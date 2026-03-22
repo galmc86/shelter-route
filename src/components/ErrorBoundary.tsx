@@ -1,8 +1,9 @@
-import { Component } from 'react';
-import type { ErrorInfo, ReactNode } from 'react';
+import { Component, type ReactNode } from 'react';
+import type { ErrorInfo } from 'react';
 import { reportError } from '../services/errorReportingService';
 
 interface ErrorBoundaryProps {
+  fallback?: ReactNode;
   children: ReactNode;
 }
 
@@ -26,7 +27,7 @@ function getIsHebrew(): boolean {
   return false;
 }
 
-class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false, error: null };
@@ -42,13 +43,21 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
     reportError('render-error', error.message, errorInfo.componentStack ?? undefined);
   }
 
+  handleReset = (): void => {
+    this.setState({ hasError: false, error: null });
+  };
+
   handleReload = (): void => {
     window.location.reload();
   };
 
-  render() {
+  render(): ReactNode {
     if (!this.state.hasError) {
       return this.props.children;
+    }
+
+    if (this.props.fallback) {
+      return this.props.fallback;
     }
 
     const isHebrew = getIsHebrew();

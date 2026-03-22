@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import type { Shelter } from '../types';
-import type { ShelterWithDistance } from './useShelters';
-import { calculateWalkingTime } from './useShelters';
+import type { ShelterWithDistance } from '../utils/shelterDistance';
+import { calculateWalkingTime } from '../utils/shelterDistance';
 import { haversineDistance } from '../utils/geometry';
 
 export function useNearestShelters() {

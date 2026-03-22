@@ -15,6 +15,7 @@ import type { TravelMode, LatLng, ShelterSortMode, SearchHistoryEntry, SavedRout
 import type { PlaceResult } from '../types';
 import { getCapacityColor, getCapacityStatusKey } from '../services/capacityService';
 import { getAggregatedStatus, getStatusBadgeColor } from '../services/shelterReportsService';
+
 import type { TimeFilter } from '../hooks/useAlertHistory';
 
 interface SearchPanelProps {
@@ -25,6 +26,7 @@ interface SearchPanelProps {
 export function SearchPanel({
   panelExpanded,
   onTogglePanel,
+
 }: SearchPanelProps) {
   const {
     routeInfo,
@@ -63,14 +65,14 @@ export function SearchPanel({
     allShelters,
   } = useShelterContext();
   const { t } = useLanguage();
-  const [showCopiedToast, setShowCopiedToast] = useState(false);
   const [originText, setOriginText] = useState('');
   const [destText, setDestText] = useState('');
   const [originPlace, setOriginPlace] = useState<PlaceResult | null>(null);
   const [destPlace, setDestPlace] = useState<PlaceResult | null>(null);
   const [travelMode, setTravelModeState] = useState<TravelMode>('WALKING');
-  const hasSearchedRef = useRef(false);
   const [useMyLocation, setUseMyLocation] = useState(false);
+  const [showCopiedToast, setShowCopiedToast] = useState(false);
+  const hasSearchedRef = useRef(false);
   const [sortMode, setSortMode] = useState<ShelterSortMode>('distance');
   const [showAccessibleOnly, setShowAccessibleOnly] = useState(false);
   const [routePlannerExpanded, setRoutePlannerExpanded] = useState(false);
@@ -298,6 +300,7 @@ export function SearchPanel({
 
   const canSearch = (useMyLocation && currentLocation || originPlace) && destPlace && !isSearching;
 
+
   // --- Bottom sheet swipe gesture logic (mobile only) ---
   const panelRef = useRef<HTMLElement>(null);
   const touchStartY = useRef(0);
@@ -492,11 +495,7 @@ export function SearchPanel({
               )}
             </div>
           </div>
-          <button
-            className="emergency-exit-btn"
-            onClick={onExitEmergency}
-            aria-label={t('emergency.exitAriaLabel')}
-          >
+          <button className="emergency-exit-btn" onClick={onExitEmergency} aria-label={t('emergency.exitAriaLabel')}>
             {t('emergency.exit')}
           </button>
         </div>
@@ -527,11 +526,7 @@ export function SearchPanel({
 
       {/* Emergency Quick Button */}
       {!emergencyMode && (
-        <button
-          className="emergency-quick-btn"
-          onClick={onEmergencyClick}
-          aria-label={t('emergency.findShelter')}
-        >
+        <button className="emergency-quick-btn" onClick={onEmergencyClick} aria-label={t('emergency.findShelter')}>
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path d="M12 2L3 7v10l9 5 9-5V7l-9-5z" fill="#D32F2F" />
             <path d="M12 7v6M12 15v1" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
@@ -1076,13 +1071,10 @@ export function SearchPanel({
         </>
       )}
 
+
       {/* Emergency Hotline */}
       <div className="hotline-section">
-        <a
-          href="tel:104"
-          className="hotline-link"
-          aria-label={t('hotline.ariaLabel')}
-        >
+        <a href="tel:104" className="hotline-link" aria-label={t('hotline.ariaLabel')}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
           </svg>

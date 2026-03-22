@@ -1,4 +1,5 @@
 import type { PlaceResult } from '../types';
+import { resilientFetch } from './fetchClient';
 
 // Re-export for backward compatibility
 export type NominatimResult = PlaceResult;
@@ -23,16 +24,18 @@ export async function searchPlaces(
     'accept-language': 'he',
   });
 
-  const response = await fetch(
+  const result = await resilientFetch<NominatimResponse[]>(
     `https://nominatim.openstreetmap.org/search?${params}`,
-    { signal }
+    {},
+    { timeout: 5000, retries: 0, signal }
   );
 
-  if (!response.ok) return [];
+  if (!result.ok) {
+    console.warn('[Nominatim] Search failed:', result.error.message);
+    return [];
+  }
 
-  const data: NominatimResponse[] = await response.json();
-
-  return data.map((item) => ({
+  return result.data.map((item) => ({
     lat: parseFloat(item.lat),
     lng: parseFloat(item.lon),
     displayName: item.display_name,

@@ -3,6 +3,7 @@
 
 import { ALERT_REGIONS, type OrefAlert, type AlertRegion } from './orefAlertService';
 import { isPointNearRoute } from '../utils/geometry';
+import { resilientFetch } from './fetchClient';
 import type { LatLng } from '../types';
 
 export interface GeocodedAlert {
@@ -33,14 +34,18 @@ const OREF_PROXY_URL = import.meta.env.VITE_OREF_PROXY_URL as string | undefined
 export async function fetchAlertHistory(): Promise<OrefAlert[]> {
   if (!OREF_PROXY_URL) return [];
 
-  const response = await fetch(`${OREF_PROXY_URL}/history`, {
-    headers: { Accept: 'application/json' },
-  });
+  const result = await resilientFetch<OrefAlert[]>(
+    `${OREF_PROXY_URL}/history`,
+    { headers: { Accept: 'application/json' } },
+    { timeout: 10000, retries: 1, retryDelay: 1000 }
+  );
 
-  if (!response.ok) return [];
+  if (!result.ok) {
+    console.warn('[AlertHistory] Failed to fetch alert history:', result.error.message);
+    return [];
+  }
 
-  const data: OrefAlert[] = await response.json();
-  return data;
+  return result.data;
 }
 
 /**

@@ -1,3 +1,5 @@
+import { ServiceError } from './serviceResult';
+
 export interface BugReport {
   id: string;
   category: 'shelter-data' | 'routing' | 'alerts' | 'ui' | 'other';
@@ -55,11 +57,16 @@ async function sendReport(report: BugReport): Promise<boolean> {
     return false;
   }
 
+  // Google Apps Script doesn't return CORS headers, so we must use no-cors.
+  // The request still reaches the server; the response is opaque (status 0).
+  // Both script.google.com and script.googleusercontent.com must be in CSP
+  // connect-src for the browser to allow the request.
+  //
+  // NOTE: resilientFetch expects JSON responses, but no-cors returns opaque
+  // responses (status 0, empty body). This will result in a PARSE error from
+  // resilientFetch, but we treat any non-throw as success since with no-cors
+  // we can't read the response anyway.
   try {
-    // Google Apps Script doesn't return CORS headers, so we must use no-cors.
-    // The request still reaches the server; the response is opaque (status 0).
-    // Both script.google.com and script.googleusercontent.com must be in CSP
-    // connect-src for the browser to allow the request.
     await fetch(endpoint, {
       method: 'POST',
       body: JSON.stringify(report),
@@ -68,7 +75,8 @@ async function sendReport(report: BugReport): Promise<boolean> {
     // With no-cors we can't read the response, but if fetch didn't throw
     // the request was sent successfully.
     return true;
-  } catch {
+  } catch (err) {
+    console.warn('[BugReport] Failed to send report:', new ServiceError('NETWORK', 'Bug report send failed', undefined, false, err).message);
     return false;
   }
 }

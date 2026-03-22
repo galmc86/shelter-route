@@ -1,10 +1,11 @@
-import { useState, useCallback, useMemo, type ChangeEvent } from 'react';
+import React, { useState, useCallback, Suspense, useMemo, type ChangeEvent } from 'react';
 import { useLanguage } from '../i18n';
 import './AppHeader.css';
 import { useTheme } from '../theme';
-import { BugReportForm } from './BugReportForm';
 import { getShelterDataAge, isShelterDataStale } from '../services/shelterApi';
 import type { Language } from '../i18n/translations';
+
+const BugReportForm = React.lazy(() => import('./BugReportForm').then(m => ({ default: m.BugReportForm })));
 
 const languageLabels: Record<Language, string> = {
   he: 'עברית',
@@ -115,7 +116,9 @@ export function AppHeader() {
           </select>
         </div>
       </header>
-      <BugReportForm open={bugReportOpen} onClose={handleCloseBugReport} />
+      <Suspense fallback={null}>
+        <BugReportForm open={bugReportOpen} onClose={handleCloseBugReport} />
+      </Suspense>
     </>
   );
 }
