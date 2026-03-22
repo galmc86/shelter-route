@@ -36,8 +36,10 @@
 
 .header-data-age {
   display: block;
-  font-size: 10px;
-  opacity: 0.7;
+  font-size: 9px;
+  opacity: 0.55;
+  letter-spacing: 0.2px;
+  margin-top: 1px;
 }
 
 .header-data-age--stale {
@@ -58,26 +60,33 @@
   background: var(--color-header-btn-bg);
   color: white;
   border: 1px solid var(--color-header-btn-border);
-  border-radius: 6px;
-  padding: 4px 6px;
+  border-radius: 8px;
+  padding: 5px 8px;
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
   flex-shrink: 0;
   appearance: none;
   -webkit-appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='white'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 6px center;
-  padding-right: 20px;
+  padding-right: 22px;
   min-width: 0;
   max-width: 100px;
 }
 
 .lang-select:hover {
   background-color: var(--color-header-btn-hover-bg);
+  border-color: rgba(255, 255, 255, 0.6);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='white'/%3E%3C/svg%3E");
+}
+
+.lang-select:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.7);
 }
 
 .lang-select option {
@@ -89,20 +98,26 @@
   background: var(--color-header-btn-bg);
   color: white;
   border: 1px solid var(--color-header-btn-border);
-  border-radius: 6px;
+  border-radius: 8px;
   padding: 4px 8px;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background 0.2s, border-color 0.2s, transform 0.15s;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   width: 32px;
-  height: 28px;
+  height: 30px;
 }
 
 .theme-toggle-btn:hover {
   background: var(--color-header-btn-hover-bg);
+  border-color: rgba(255, 255, 255, 0.6);
+  transform: scale(1.05);
+}
+
+.theme-toggle-btn:active {
+  transform: scale(0.95);
 }
 
 /* Bug Report Button */
@@ -110,20 +125,26 @@
   background: var(--color-header-btn-bg);
   color: white;
   border: 1px solid var(--color-header-btn-border);
-  border-radius: 6px;
+  border-radius: 8px;
   padding: 4px 8px;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background 0.2s, border-color 0.2s, transform 0.15s;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   width: 32px;
-  height: 28px;
+  height: 30px;
 }
 
 .bug-report-btn:hover {
   background: var(--color-header-btn-hover-bg);
+  border-color: rgba(255, 255, 255, 0.6);
+  transform: scale(1.05);
+}
+
+.bug-report-btn:active {
+  transform: scale(0.95);
 }
 
 

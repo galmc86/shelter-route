@@ -8,30 +8,50 @@
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: #D32F2F;
+  background: linear-gradient(135deg, #E53935, #C62828);
   border: none;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 16px rgba(211, 47, 47, 0.4);
-  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.12),
+    0 4px 12px rgba(211, 47, 47, 0.3),
+    0 8px 24px rgba(211, 47, 47, 0.2);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
   z-index: 20;
-  animation: pulse-emergency 2s infinite;
+  animation: pulse-emergency 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 .emergency-fab:hover {
   transform: scale(1.1);
-  box-shadow: 0 6px 20px rgba(211, 47, 47, 0.5);
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.15),
+    0 6px 16px rgba(211, 47, 47, 0.4),
+    0 12px 32px rgba(211, 47, 47, 0.25);
 }
 
 .emergency-fab:active {
   transform: scale(0.95);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.1),
+    0 2px 8px rgba(211, 47, 47, 0.3);
 }
 
 @keyframes pulse-emergency {
-  0%, 100% { box-shadow: 0 4px 16px rgba(211, 47, 47, 0.4); }
-  50% { box-shadow: 0 4px 24px rgba(211, 47, 47, 0.6); }
+  0%, 100% {
+    box-shadow:
+      0 2px 4px rgba(0, 0, 0, 0.12),
+      0 4px 12px rgba(211, 47, 47, 0.3),
+      0 8px 24px rgba(211, 47, 47, 0.2);
+  }
+  50% {
+    box-shadow:
+      0 2px 4px rgba(0, 0, 0, 0.12),
+      0 4px 16px rgba(211, 47, 47, 0.4),
+      0 8px 32px rgba(211, 47, 47, 0.25),
+      0 0 0 6px rgba(211, 47, 47, 0.08);
+  }
 }
 
 /* Emergency Quick Button (in panel) */
@@ -50,15 +70,18 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  transition: background 0.2s, border-color 0.2s;
+  transition: background 0.2s, border-color 0.2s, transform 0.15s, box-shadow 0.2s;
   min-height: 48px;
+  box-shadow: 0 2px 8px rgba(211, 47, 47, 0.1);
 }
 
 .emergency-quick-btn:hover {
   background: var(--color-emergency-quick-hover-bg);
   border-color: var(--color-emergency-quick-hover-border);
+  box-shadow: 0 4px 12px rgba(211, 47, 47, 0.15);
 }
 
 .emergency-quick-btn:active {
   background: var(--color-emergency-quick-active-bg);
+  transform: scale(0.98);
 }

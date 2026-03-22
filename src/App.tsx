@@ -402,18 +402,20 @@ function App() {
       <AppHeader />
       <main className="main-content" id="main-content">
         {!isNavigating && (
-          <SearchPanel
-            panelExpanded={panelExpanded}
-            onTogglePanel={() => setPanelExpanded((v) => !v)}
-          />
-        )}
-        {panelExpanded && !isNavigating && (
-          <>
-            <div className="family-safety-wrapper">
-              <FamilySafety initialGroupCode={familyGroupCode} />
-            </div>
-            <SafetyDashboard />
-          </>
+          <div className="panel-column">
+            <SearchPanel
+              panelExpanded={panelExpanded}
+              onTogglePanel={() => setPanelExpanded((v) => !v)}
+            />
+            {panelExpanded && (
+              <>
+                <div className="family-safety-wrapper">
+                  <FamilySafety initialGroupCode={familyGroupCode} />
+                </div>
+                <SafetyDashboard />
+              </>
+            )}
+          </div>
         )}
         <MapView
           routes={emergencyMode ? [] : routes}
