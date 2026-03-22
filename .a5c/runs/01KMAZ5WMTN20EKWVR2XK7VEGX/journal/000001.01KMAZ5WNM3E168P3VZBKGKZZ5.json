@@ -1,0 +1,15 @@
+{
+  "type": "RUN_CREATED",
+  "recordedAt": "2026-03-22T14:28:56.628Z",
+  "data": {
+    "runId": "01KMAZ5WMTN20EKWVR2XK7VEGX",
+    "processId": "polish-and-pr",
+    "entrypoint": {
+      "importPath": "../../processes/polish-and-pr.js",
+      "exportName": "process"
+    },
+    "inputsRef": "inputs.json",
+    "prompt": "Fix pre-existing test failures, visual QA on mobile, commit all changes, create PR"
+  },
+  "checksum": "ac706a2133a66578ce25c59e899bfc49b2a3bfbc926334e3f2a7dbd4c9d454d5"
+}

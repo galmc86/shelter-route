@@ -1,0 +1,1 @@
+{"success": true, "filesModified": ["src/services/__tests__/orefAlertService.test.ts"], "summary": "Created 37 tests covering haversineKm (5), matchUserToAlertRegion (7), getTimeToShelter (7), subscribeToAlerts (18 - polling lifecycle, exponential backoff, health status transitions, malformed responses, cleanup). All 37 tests pass.", "testsPass": true}

@@ -1,0 +1,27 @@
+{
+  "schemaVersion": "2026.01.tasks-v1",
+  "effectId": "01KMAZCCVXZBF1XRDSWD2NBBT0",
+  "taskId": "__sdk.breakpoint",
+  "invocationKey": "polish-and-pr:S000005:__sdk.breakpoint",
+  "stepId": "S000005",
+  "kind": "breakpoint",
+  "title": "breakpoint",
+  "metadata": {
+    "label": "breakpoint",
+    "payload": {
+      "context": {},
+      "question": "Tests fixed, visual QA passed, quality gate passed. Ready to commit all changes and create a PR to main?",
+      "title": "Ready to Commit & PR"
+    },
+    "requestedAt": "2026-03-22T14:32:29.821Z"
+  },
+  "inputs": {
+    "label": "breakpoint",
+    "payload": {
+      "context": {},
+      "question": "Tests fixed, visual QA passed, quality gate passed. Ready to commit all changes and create a PR to main?",
+      "title": "Ready to Commit & PR"
+    },
+    "requestedAt": "2026-03-22T14:32:29.821Z"
+  }
+}

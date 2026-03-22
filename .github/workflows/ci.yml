@@ -28,8 +28,16 @@ jobs:
           node-version: 20
           cache: 'npm'
       - run: npm ci
-      - run: npm run test:run
-      # Upload coverage if available
+      - run: npm run test:run -- --coverage
+      - name: Upload coverage summary
+        if: always()
+        run: |
+          echo "## Test Coverage Summary" >> $GITHUB_STEP_SUMMARY
+          if [ -f coverage/coverage-summary.json ]; then
+            cat coverage/coverage-summary.json | jq -r '.total | "| Metric | Pct |\n|--------|-----|\n| Statements | \(.statements.pct)% |\n| Branches | \(.branches.pct)% |\n| Functions | \(.functions.pct)% |\n| Lines | \(.lines.pct)% |"' >> $GITHUB_STEP_SUMMARY
+          else
+            echo "Coverage report not generated" >> $GITHUB_STEP_SUMMARY
+          fi
 
   build:
     runs-on: ubuntu-latest

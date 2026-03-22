@@ -1,0 +1,1 @@
+{"success": true, "filesModified": ["src/components/AlertBanner.tsx", "src/App.tsx", "src/App.css"], "summary": "Added floating countdown badge with SVG circular progress ring. IntersectionObserver shows/hides based on AlertBanner visibility. 60px tappable circle, red background, white countdown. Fixed top-right with RTL support."}

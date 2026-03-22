@@ -1,4 +1,5 @@
 import { useLanguage } from '../i18n';
+import './EmergencyButton.css';
 
 interface EmergencyButtonProps {
   onClick: () => void;

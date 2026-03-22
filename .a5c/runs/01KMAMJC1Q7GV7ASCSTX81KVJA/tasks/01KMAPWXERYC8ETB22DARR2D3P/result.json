@@ -1,0 +1,27 @@
+{
+  "schemaVersion": "2026.01.results-v1",
+  "effectId": "01KMAPWXERYC8ETB22DARR2D3P",
+  "taskId": "implement-item",
+  "invocationKey": "shelter-improvements:S000018:implement-item",
+  "status": "ok",
+  "result": {
+    "filesModified": [
+      "src/components/AlertBanner.tsx",
+      "src/App.tsx",
+      "src/App.css"
+    ],
+    "success": true,
+    "summary": "Added floating countdown badge with SVG circular progress ring. IntersectionObserver shows/hides based on AlertBanner visibility. 60px tappable circle, red background, white countdown. Fixed top-right with RTL support."
+  },
+  "startedAt": "2026-03-22T12:05:57.200Z",
+  "finishedAt": "2026-03-22T12:05:57.200Z",
+  "value": {
+    "filesModified": [
+      "src/components/AlertBanner.tsx",
+      "src/App.tsx",
+      "src/App.css"
+    ],
+    "success": true,
+    "summary": "Added floating countdown badge with SVG circular progress ring. IntersectionObserver shows/hides based on AlertBanner visibility. 60px tappable circle, red background, white countdown. Fixed top-right with RTL support."
+  }
+}

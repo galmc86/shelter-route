@@ -1,0 +1,29 @@
+{
+  "schemaVersion": "2026.01.tasks-v1",
+  "effectId": "01KMAPP3F0AX2D0NE2H66ZYA1Q",
+  "taskId": "implement-item",
+  "invocationKey": "shelter-improvements:S000016:implement-item",
+  "stepId": "S000016",
+  "kind": "agent",
+  "title": "Item 15: Add Walking-Time Isochrone in Emergency Mode",
+  "labels": [
+    "agent",
+    "implementation",
+    "item-15"
+  ],
+  "io": {
+    "inputJsonPath": "tasks/01KMAPP3F0AX2D0NE2H66ZYA1Q/input.json",
+    "outputJsonPath": "tasks/01KMAPP3F0AX2D0NE2H66ZYA1Q/output.json"
+  },
+  "inputs": {
+    "description": "Add a translucent radius circle on the map during emergency mode that shows how far the user can walk within the alert countdown time. In MapView.tsx: (1) When emergency mode is active and there's a countdown, calculate the walking distance radius: (countdownSeconds * 5000/3600) * 0.8 meters (walking speed 5km/h with 20% overhead factor), (2) Draw a Leaflet circle centered on the user's location with that radius, styled as a semi-transparent green fill, (3) Shelters inside the circle should have normal markers, shelters outside should appear dimmed/greyed, (4) Update the circle dynamically as countdown decreases, (5) Remove the circle when emergency mode ends. Add necessary props for countdown time to MapView.",
+    "files": [
+      "src/components/MapView.tsx",
+      "src/App.tsx",
+      "src/App.css"
+    ],
+    "itemNumber": 15,
+    "projectRoot": "/Users/gal.machluf/projects/shelter-finder/.claude/worktrees/priceless-kepler",
+    "title": "Add Walking-Time Isochrone in Emergency Mode"
+  }
+}

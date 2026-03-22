@@ -1,0 +1,25 @@
+{
+  "schemaVersion": "2026.01.results-v1",
+  "effectId": "01KMAN9CWHTFNN27AT9SAQPA3T",
+  "taskId": "implement-item",
+  "invocationKey": "shelter-improvements:S000006:implement-item",
+  "status": "ok",
+  "result": {
+    "filesModified": [
+      "src/services/__tests__/orefAlertService.test.ts"
+    ],
+    "success": true,
+    "summary": "Created 37 tests covering haversineKm (5), matchUserToAlertRegion (7), getTimeToShelter (7), subscribeToAlerts (18 - polling lifecycle, exponential backoff, health status transitions, malformed responses, cleanup). All 37 tests pass.",
+    "testsPass": true
+  },
+  "startedAt": "2026-03-22T11:41:25.314Z",
+  "finishedAt": "2026-03-22T11:41:25.314Z",
+  "value": {
+    "filesModified": [
+      "src/services/__tests__/orefAlertService.test.ts"
+    ],
+    "success": true,
+    "summary": "Created 37 tests covering haversineKm (5), matchUserToAlertRegion (7), getTimeToShelter (7), subscribeToAlerts (18 - polling lifecycle, exponential backoff, health status transitions, malformed responses, cleanup). All 37 tests pass.",
+    "testsPass": true
+  }
+}

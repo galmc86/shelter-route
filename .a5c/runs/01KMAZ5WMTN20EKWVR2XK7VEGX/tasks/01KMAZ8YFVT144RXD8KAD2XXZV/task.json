@@ -1,0 +1,20 @@
+{
+  "schemaVersion": "2026.01.tasks-v1",
+  "effectId": "01KMAZ8YFVT144RXD8KAD2XXZV",
+  "taskId": "visual-qa",
+  "invocationKey": "polish-and-pr:S000003:visual-qa",
+  "stepId": "S000003",
+  "kind": "agent",
+  "title": "Visual QA on mobile viewport",
+  "labels": [
+    "agent",
+    "visual-qa"
+  ],
+  "io": {
+    "inputJsonPath": "tasks/01KMAZ8YFVT144RXD8KAD2XXZV/input.json",
+    "outputJsonPath": "tasks/01KMAZ8YFVT144RXD8KAD2XXZV/output.json"
+  },
+  "inputs": {
+    "projectRoot": "/Users/gal.machluf/projects/shelter-finder/.claude/worktrees/priceless-kepler"
+  }
+}

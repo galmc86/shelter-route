@@ -1,0 +1,28 @@
+{
+  "schemaVersion": "2026.01.tasks-v1",
+  "effectId": "01KMAWJ046PXTFCC4YD1E9RJTK",
+  "taskId": "implement-item",
+  "invocationKey": "shelter-improvements:S000042:implement-item",
+  "stepId": "S000042",
+  "kind": "agent",
+  "title": "Item 33: Optimize Shelter Data Loading",
+  "labels": [
+    "agent",
+    "implementation",
+    "item-33"
+  ],
+  "io": {
+    "inputJsonPath": "tasks/01KMAWJ046PXTFCC4YD1E9RJTK/input.json",
+    "outputJsonPath": "tasks/01KMAWJ046PXTFCC4YD1E9RJTK/output.json"
+  },
+  "inputs": {
+    "description": "Optimize the 4.2MB shelters.json loading for faster initial page load. (1) In shelterApi.ts, implement a progressive loading approach: first load shelter data from localStorage cache immediately (already cached from previous visits), then fetch the latest version in the background, (2) Add a loading state that shows the app as functional with cached data while fresh data loads, (3) Implement bounding-box based filtering at fetch time - only parse shelters relevant to the current map viewport initially, then load the rest in the background, (4) Add a web worker for JSON parsing if available (create src/workers/shelterParser.ts as a simple inline worker), (5) Show a progress indicator during initial shelter data download for first-time users, (6) Compress the JSON response with gzip (add to _headers file). Keep backwards compatibility with the existing caching mechanism.",
+    "files": [
+      "src/services/shelterApi.ts",
+      "public/_headers"
+    ],
+    "itemNumber": 33,
+    "projectRoot": "/Users/gal.machluf/projects/shelter-finder/.claude/worktrees/priceless-kepler",
+    "title": "Optimize Shelter Data Loading"
+  }
+}

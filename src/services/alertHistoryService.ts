@@ -99,6 +99,74 @@ export function geocodeAlerts(
 /**
  * Assess route risk based on geocoded alert history.
  */
+export interface HeatMapCell {
+  lat: number;
+  lng: number;
+  intensity: number; // 0-1
+  count: number;
+}
+
+/**
+ * Aggregate geocoded alerts into grid cells for a heat map layer.
+ * Cells are ~0.05 degree squares (~5 km). Alerts are weighted by recency:
+ *   last hour = 1.0, last 6 hours = 0.7, last 24 hours = 0.3
+ */
+export function getHeatMapData(alerts: GeocodedAlert[]): HeatMapCell[] {
+  if (alerts.length === 0) return [];
+
+  const GRID_SIZE = 0.05; // ~5 km per cell
+  const now = Date.now();
+  const ONE_HOUR = 60 * 60 * 1000;
+  const SIX_HOURS = 6 * ONE_HOUR;
+
+  // Bucket alerts into grid cells
+  const cellMap = new Map<string, { lat: number; lng: number; weight: number; count: number }>();
+
+  for (const alert of alerts) {
+    const cellLat = Math.round(alert.lat / GRID_SIZE) * GRID_SIZE;
+    const cellLng = Math.round(alert.lng / GRID_SIZE) * GRID_SIZE;
+    const key = `${cellLat.toFixed(4)},${cellLng.toFixed(4)}`;
+
+    const age = now - new Date(alert.alertDate).getTime();
+    let recencyWeight: number;
+    if (age < ONE_HOUR) {
+      recencyWeight = 1.0;
+    } else if (age < SIX_HOURS) {
+      recencyWeight = 0.7;
+    } else {
+      recencyWeight = 0.3;
+    }
+
+    const existing = cellMap.get(key);
+    if (existing) {
+      existing.weight += recencyWeight;
+      existing.count += 1;
+    } else {
+      cellMap.set(key, { lat: cellLat, lng: cellLng, weight: recencyWeight, count: 1 });
+    }
+  }
+
+  // Normalize intensity to 0-1 range
+  let maxWeight = 0;
+  for (const cell of cellMap.values()) {
+    if (cell.weight > maxWeight) maxWeight = cell.weight;
+  }
+
+  if (maxWeight === 0) return [];
+
+  const result: HeatMapCell[] = [];
+  for (const cell of cellMap.values()) {
+    result.push({
+      lat: cell.lat,
+      lng: cell.lng,
+      intensity: cell.weight / maxWeight,
+      count: cell.count,
+    });
+  }
+
+  return result;
+}
+
 export function assessRouteRisk(
   alerts: GeocodedAlert[],
   routePath: LatLng[] | null

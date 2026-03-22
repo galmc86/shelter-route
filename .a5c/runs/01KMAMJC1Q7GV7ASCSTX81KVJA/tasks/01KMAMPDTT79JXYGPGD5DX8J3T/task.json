@@ -1,0 +1,27 @@
+{
+  "schemaVersion": "2026.01.tasks-v1",
+  "effectId": "01KMAMPDTT79JXYGPGD5DX8J3T",
+  "taskId": "implement-item",
+  "invocationKey": "shelter-improvements:S000002:implement-item",
+  "stepId": "S000002",
+  "kind": "agent",
+  "title": "Item 2: Emergency Button Always Visible on Mobile",
+  "labels": [
+    "agent",
+    "implementation",
+    "item-2"
+  ],
+  "io": {
+    "inputJsonPath": "tasks/01KMAMPDTT79JXYGPGD5DX8J3T/input.json",
+    "outputJsonPath": "tasks/01KMAMPDTT79JXYGPGD5DX8J3T/output.json"
+  },
+  "inputs": {
+    "description": "Fix emergency FAB being hidden when panel is expanded on mobile. In src/App.css around line 2448, the class .emergency-fab.fab-panel-expanded sets opacity:0 and pointer-events:none. Change this so the emergency button remains visible and tappable at all times regardless of panel state. Ensure it has proper z-index to float above the panel. Keep the button positioned so it doesn't overlap with critical panel controls. Test that it works with both collapsed and expanded panel states.",
+    "files": [
+      "src/App.css"
+    ],
+    "itemNumber": 2,
+    "projectRoot": "/Users/gal.machluf/projects/shelter-finder/.claude/worktrees/priceless-kepler",
+    "title": "Emergency Button Always Visible on Mobile"
+  }
+}

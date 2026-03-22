@@ -1,0 +1,1 @@
+{"success": true, "filesModified": ["src/i18n/translations.ts", "src/components/ShelterPopup.tsx", "src/components/SearchPanel.tsx", "src/App.css"], "summary": "Added 'Estimated' badges to capacity data in ShelterPopup and SearchPanel shelter list. Added translations. Styled as subtle muted badges with tooltips."}

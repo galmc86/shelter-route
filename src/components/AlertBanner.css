@@ -1,0 +1,423 @@
+/* AlertBanner Component Styles */
+
+/* =============== OREF Alert Banner =============== */
+
+@keyframes alert-pulse {
+  0%, 100% { background-color: #D32F2F; }
+  50% { background-color: #E65100; }
+}
+
+.alert-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10000;
+  animation: alert-pulse 1.5s ease-in-out infinite;
+  color: #FFFFFF;
+  box-shadow: 0 4px 20px rgba(211, 47, 47, 0.5);
+}
+
+.alert-banner-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  max-width: 1200px;
+  margin: 0 auto;
+  flex-wrap: wrap;
+}
+
+.alert-banner-icon {
+  flex-shrink: 0;
+  animation: alert-icon-shake 0.5s ease-in-out infinite;
+}
+
+@keyframes alert-icon-shake {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-5deg); }
+  75% { transform: rotate(5deg); }
+}
+
+.alert-banner-info {
+  flex: 1;
+  min-width: 120px;
+}
+
+.alert-banner-title {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.alert-banner-region {
+  font-size: 14px;
+  font-weight: 500;
+  opacity: 0.9;
+  margin-top: 2px;
+}
+
+.alert-banner-countdown-section {
+  text-align: center;
+  min-width: 100px;
+}
+
+.alert-banner-countdown-label {
+  font-size: 12px;
+  font-weight: 500;
+  opacity: 0.85;
+}
+
+.alert-banner-countdown {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 6px;
+}
+
+.alert-banner-countdown-number {
+  font-size: 44px;
+  font-weight: 900;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.alert-banner-countdown-unit {
+  font-size: 14px;
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+.alert-banner-expired {
+  font-size: 16px;
+  font-weight: 800;
+  text-transform: uppercase;
+  animation: alert-expired-blink 0.6s step-end infinite;
+}
+
+@keyframes alert-expired-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.alert-banner-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.alert-banner-actions--countdown {
+  width: 100%;
+}
+
+.alert-banner-actions--countdown .alert-banner-find-btn {
+  width: 100%;
+}
+
+.alert-banner-find-btn {
+  background: #FFFFFF;
+  color: #D32F2F;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: transform 0.1s, box-shadow 0.1s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.alert-banner-find-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.alert-banner-find-btn:active {
+  transform: scale(0.98);
+}
+
+.alert-banner-dismiss-btn {
+  background: rgba(255, 255, 255, 0.2);
+  color: #FFFFFF;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+
+.alert-banner-dismiss-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Shift app content down when alert banner is showing */
+.app-with-alert .header {
+  margin-top: 80px;
+}
+
+/* Mobile responsive */
+@media (max-width: 600px) {
+  .alert-banner-content {
+    padding: 8px 12px;
+    gap: 8px;
+  }
+
+  .alert-banner-title {
+    font-size: 15px;
+  }
+
+  .alert-banner-countdown-number {
+    font-size: 36px;
+  }
+
+  .alert-banner-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .alert-banner-find-btn,
+  .alert-banner-dismiss-btn {
+    flex: 1;
+    text-align: center;
+  }
+
+  .app-with-alert .header {
+    margin-top: 110px;
+  }
+}
+
+/* Dark mode - alert banner remains red/orange, just adjust shadows */
+[data-theme="dark"] .alert-banner {
+  box-shadow: 0 4px 20px rgba(211, 47, 47, 0.7);
+}
+
+[data-theme="dark"] .alert-banner-find-btn {
+  background: #FFF;
+  color: #B71C1C;
+}
+
+/* Post-Alert Debrief Screen */
+.alert-banner--debrief {
+  background: linear-gradient(135deg, #1976D2, #1565C0);
+  animation: none;
+  box-shadow: 0 4px 20px rgba(25, 118, 210, 0.4);
+}
+
+.alert-banner-content--debrief {
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 16px 20px;
+}
+
+.debrief-icon {
+  margin-bottom: 4px;
+}
+
+.debrief-main {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.debrief-title {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.debrief-subtitle {
+  font-size: 14px;
+  font-weight: 500;
+  opacity: 0.9;
+}
+
+.debrief-countdown-section {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 4px 0;
+}
+
+.debrief-countdown-time {
+  font-size: 36px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.debrief-countdown-label {
+  font-size: 13px;
+  font-weight: 500;
+  opacity: 0.85;
+}
+
+.debrief-actions {
+  margin: 4px 0;
+}
+
+.debrief-safe-btn {
+  background: #FFFFFF;
+  color: #1976D2;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 32px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.1s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.debrief-safe-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.debrief-safe-btn:active {
+  transform: scale(0.98);
+}
+
+.debrief-help-section {
+  width: 100%;
+  margin-top: 4px;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  padding-top: 8px;
+}
+
+.debrief-help-title {
+  font-size: 13px;
+  font-weight: 600;
+  opacity: 0.85;
+  margin-bottom: 6px;
+}
+
+.debrief-hotlines {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.debrief-hotline-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  padding: 6px 12px;
+  color: #FFFFFF;
+  text-decoration: none;
+  transition: background 0.15s;
+  min-width: 70px;
+}
+
+.debrief-hotline-link:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.debrief-hotline-number {
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.debrief-hotline-label {
+  font-size: 10px;
+  font-weight: 500;
+  opacity: 0.85;
+  white-space: nowrap;
+}
+
+[data-theme="dark"] .alert-banner--debrief {
+  background: linear-gradient(135deg, #1565C0, #0D47A1);
+  box-shadow: 0 4px 20px rgba(25, 118, 210, 0.6);
+}
+
+[data-theme="dark"] .debrief-safe-btn {
+  background: #FFF;
+  color: #0D47A1;
+}
+
+@media (max-width: 600px) {
+  .debrief-countdown-time {
+    font-size: 30px;
+  }
+
+  .debrief-hotlines {
+    gap: 6px;
+  }
+
+  .debrief-hotline-link {
+    padding: 5px 8px;
+    min-width: 60px;
+  }
+
+  .debrief-hotline-number {
+    font-size: 16px;
+  }
+}
+
+/* Floating Countdown Badge */
+.floating-countdown-badge {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 10001;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.6);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  box-shadow: 0 4px 16px rgba(211, 47, 47, 0.5);
+}
+
+.floating-countdown-badge--visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: scale(1);
+}
+
+.floating-countdown-badge:active {
+  transform: scale(0.92);
+}
+
+.floating-countdown-ring {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.floating-countdown-number {
+  position: absolute;
+  color: #FFFFFF;
+  font-size: 20px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+[dir="rtl"] .floating-countdown-badge {
+  right: auto;
+  left: 12px;
+}

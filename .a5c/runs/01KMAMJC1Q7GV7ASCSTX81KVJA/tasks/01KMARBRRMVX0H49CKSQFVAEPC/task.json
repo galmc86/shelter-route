@@ -1,0 +1,31 @@
+{
+  "schemaVersion": "2026.01.tasks-v1",
+  "effectId": "01KMARBRRMVX0H49CKSQFVAEPC",
+  "taskId": "implement-item",
+  "invocationKey": "shelter-improvements:S000028:implement-item",
+  "stepId": "S000028",
+  "kind": "agent",
+  "title": "Item 34: Improve Test Infrastructure",
+  "labels": [
+    "agent",
+    "implementation",
+    "item-34"
+  ],
+  "io": {
+    "inputJsonPath": "tasks/01KMARBRRMVX0H49CKSQFVAEPC/input.json",
+    "outputJsonPath": "tasks/01KMARBRRMVX0H49CKSQFVAEPC/output.json"
+  },
+  "inputs": {
+    "description": "Improve the test infrastructure for better coverage and CI quality gates. (1) Add coverage configuration to vitest.config.ts with thresholds: 60% for services/, 40% for hooks/, (2) Add component test examples: create src/components/__tests__/AlertBanner.test.tsx testing renders, countdown display, button visibility, dismiss behavior, (3) Create src/components/__tests__/ErrorBoundary.test.tsx testing error catching and fallback UI, (4) Update .github/workflows/ci.yml to include coverage reporting step and fail if thresholds are not met, (5) Add a test for the new alertSound.ts utility. Ensure all new and existing tests pass.",
+    "files": [
+      "vitest.config.ts",
+      "src/components/__tests__/AlertBanner.test.tsx",
+      "src/components/__tests__/ErrorBoundary.test.tsx",
+      "src/utils/__tests__/alertSound.test.ts",
+      ".github/workflows/ci.yml"
+    ],
+    "itemNumber": 34,
+    "projectRoot": "/Users/gal.machluf/projects/shelter-finder/.claude/worktrees/priceless-kepler",
+    "title": "Improve Test Infrastructure"
+  }
+}

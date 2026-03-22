@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "2026.01.tasks-v1",
+  "effectId": "01KMAZ85ZXV4BFP48DDB92QEYD",
+  "taskId": "run-tests",
+  "invocationKey": "polish-and-pr:S000002:run-tests",
+  "stepId": "S000002",
+  "kind": "shell",
+  "title": "Verify all tests pass",
+  "labels": [
+    "shell",
+    "tests"
+  ],
+  "io": {
+    "outputJsonPath": "tasks/01KMAZ85ZXV4BFP48DDB92QEYD/output.json"
+  },
+  "inputs": {
+    "projectRoot": "/Users/gal.machluf/projects/shelter-finder/.claude/worktrees/priceless-kepler"
+  }
+}

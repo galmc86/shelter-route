@@ -1,0 +1,28 @@
+{
+  "schemaVersion": "2026.01.tasks-v1",
+  "effectId": "01KMAPS5MSQHD35AWWQH5QAJXH",
+  "taskId": "implement-item",
+  "invocationKey": "shelter-improvements:S000017:implement-item",
+  "stepId": "S000017",
+  "kind": "agent",
+  "title": "Item 16: Add Bottom Sheet Swipe Gestures on Mobile",
+  "labels": [
+    "agent",
+    "implementation",
+    "item-16"
+  ],
+  "io": {
+    "inputJsonPath": "tasks/01KMAPS5MSQHD35AWWQH5QAJXH/input.json",
+    "outputJsonPath": "tasks/01KMAPS5MSQHD35AWWQH5QAJXH/output.json"
+  },
+  "inputs": {
+    "description": "Add touch drag gestures to the mobile bottom sheet panel in SearchPanel.tsx. (1) Implement touch event handlers (touchstart/touchmove/touchend) on the panel-handle and optionally the panel header area, (2) Add three snap points: peek (80px showing only handle), half (40vh showing search form), full (85vh showing everything), (3) Use velocity-based snapping - fast flick up/down snaps to next/prev point, slow drag snaps to nearest, (4) Add CSS transitions for smooth animations between snap points, (5) Update the panel state management to track these 3 states instead of just collapsed/expanded, (6) The onTogglePanel callback should cycle through states, (7) Ensure this works well with the existing panel content scrolling.",
+    "files": [
+      "src/components/SearchPanel.tsx",
+      "src/App.css"
+    ],
+    "itemNumber": 16,
+    "projectRoot": "/Users/gal.machluf/projects/shelter-finder/.claude/worktrees/priceless-kepler",
+    "title": "Add Bottom Sheet Swipe Gestures on Mobile"
+  }
+}

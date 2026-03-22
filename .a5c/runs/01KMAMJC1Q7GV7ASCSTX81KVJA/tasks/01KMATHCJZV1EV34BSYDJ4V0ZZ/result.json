@@ -1,0 +1,17 @@
+{
+  "schemaVersion": "2026.01.results-v1",
+  "effectId": "01KMATHCJZV1EV34BSYDJ4V0ZZ",
+  "taskId": "__sdk.breakpoint",
+  "invocationKey": "shelter-improvements:S000037:__sdk.breakpoint",
+  "status": "ok",
+  "result": {
+    "approved": true,
+    "response": "Approve"
+  },
+  "startedAt": "2026-03-22T13:22:21.585Z",
+  "finishedAt": "2026-03-22T13:22:21.585Z",
+  "value": {
+    "approved": true,
+    "response": "Approve"
+  }
+}

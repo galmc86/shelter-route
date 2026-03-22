@@ -1,0 +1,28 @@
+{
+  "schemaVersion": "2026.01.tasks-v1",
+  "effectId": "01KMAPKP2QTQY2K0HGNHJGR0D8",
+  "taskId": "implement-item",
+  "invocationKey": "shelter-improvements:S000015:implement-item",
+  "stepId": "S000015",
+  "kind": "agent",
+  "title": "Item 14: Switch to Continuous Geolocation in Emergency Mode",
+  "labels": [
+    "agent",
+    "implementation",
+    "item-14"
+  ],
+  "io": {
+    "inputJsonPath": "tasks/01KMAPKP2QTQY2K0HGNHJGR0D8/input.json",
+    "outputJsonPath": "tasks/01KMAPKP2QTQY2K0HGNHJGR0D8/output.json"
+  },
+  "inputs": {
+    "description": "Update useCurrentLocation.ts to use watchPosition instead of getCurrentPosition during emergency mode. (1) Add a 'continuous' parameter to the hook or create a separate useContinuousLocation mode, (2) When emergency mode is active, switch to watchPosition to continuously track the user's movement, (3) Update location state as new positions come in, (4) Clean up the watcher when emergency mode ends, (5) Show a position age indicator if last fix is >30 seconds old, (6) Wire this into App.tsx so that when emergencyMode is true, continuous tracking is active.",
+    "files": [
+      "src/hooks/useCurrentLocation.ts",
+      "src/App.tsx"
+    ],
+    "itemNumber": 14,
+    "projectRoot": "/Users/gal.machluf/projects/shelter-finder/.claude/worktrees/priceless-kepler",
+    "title": "Switch to Continuous Geolocation in Emergency Mode"
+  }
+}

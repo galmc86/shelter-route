@@ -1,0 +1,33 @@
+{
+  "schemaVersion": "2026.01.tasks-v1",
+  "effectId": "01KMAS5AW5S30XYEFJ12EM5ACJ",
+  "taskId": "implement-item",
+  "invocationKey": "shelter-improvements:S000031:implement-item",
+  "stepId": "S000031",
+  "kind": "agent",
+  "title": "Item 21: Implement \"My Shelters\" Saved Locations",
+  "labels": [
+    "agent",
+    "implementation",
+    "item-21"
+  ],
+  "io": {
+    "inputJsonPath": "tasks/01KMAS5AW5S30XYEFJ12EM5ACJ/input.json",
+    "outputJsonPath": "tasks/01KMAS5AW5S30XYEFJ12EM5ACJ/output.json"
+  },
+  "inputs": {
+    "description": "Add saved locations feature where users can save Home/Work/School and see pre-computed nearest shelters. (1) Create src/services/savedLocationsService.ts that manages saved locations in localStorage: add/remove/update location, get all locations, pre-compute 5 nearest shelters for each, (2) Create src/hooks/useSavedLocations.ts hook, (3) Create src/components/SavedLocations.tsx showing saved location cards with nearest shelter summary, (4) Add to SearchPanel - show saved locations as quick-select chips above the search inputs, (5) When a saved location is tapped, immediately show its nearest shelters on the map, (6) Add an \"Add current location\" button to save the user's current position, (7) Add translations for all new strings, (8) Limit to 5 saved locations.",
+    "files": [
+      "src/services/savedLocationsService.ts",
+      "src/hooks/useSavedLocations.ts",
+      "src/components/SavedLocations.tsx",
+      "src/components/SearchPanel.tsx",
+      "src/App.tsx",
+      "src/i18n/translations.ts",
+      "src/App.css"
+    ],
+    "itemNumber": 21,
+    "projectRoot": "/Users/gal.machluf/projects/shelter-finder/.claude/worktrees/priceless-kepler",
+    "title": "Implement \"My Shelters\" Saved Locations"
+  }
+}

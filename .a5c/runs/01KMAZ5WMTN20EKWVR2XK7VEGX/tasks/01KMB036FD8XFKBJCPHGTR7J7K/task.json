@@ -1,0 +1,21 @@
+{
+  "schemaVersion": "2026.01.tasks-v1",
+  "effectId": "01KMB036FD8XFKBJCPHGTR7J7K",
+  "taskId": "commit-and-pr",
+  "invocationKey": "polish-and-pr:S000006:commit-and-pr",
+  "stepId": "S000006",
+  "kind": "agent",
+  "title": "Commit all changes and create PR",
+  "labels": [
+    "agent",
+    "git",
+    "pr"
+  ],
+  "io": {
+    "inputJsonPath": "tasks/01KMB036FD8XFKBJCPHGTR7J7K/input.json",
+    "outputJsonPath": "tasks/01KMB036FD8XFKBJCPHGTR7J7K/output.json"
+  },
+  "inputs": {
+    "projectRoot": "/Users/gal.machluf/projects/shelter-finder/.claude/worktrees/priceless-kepler"
+  }
+}
