@@ -1,0 +1,30 @@
+{
+  "schemaVersion": "2026.01.tasks-v1",
+  "effectId": "01KMAW1BNH6QJBCXE8W930EQMG",
+  "taskId": "implement-item",
+  "invocationKey": "shelter-improvements:S000040:implement-item",
+  "stepId": "S000040",
+  "kind": "agent",
+  "title": "Item 29: Add Alert History Heat Map Layer",
+  "labels": [
+    "agent",
+    "implementation",
+    "item-29"
+  ],
+  "io": {
+    "inputJsonPath": "tasks/01KMAW1BNH6QJBCXE8W930EQMG/input.json",
+    "outputJsonPath": "tasks/01KMAW1BNH6QJBCXE8W930EQMG/output.json"
+  },
+  "inputs": {
+    "description": "Add a toggleable heat map layer on the map showing historical alert frequency. (1) The alertHistoryService.ts already fetches and geocodes alert history - extend it to produce heat map data: aggregate alerts by geographic grid cells, count frequency, weight by recency, (2) In MapView.tsx, add a toggle button for \"Alert History\" layer, (3) When enabled, overlay semi-transparent colored circles on the map: red for frequent recent alerts, orange for moderate, yellow for occasional, (4) Use Leaflet circle markers with appropriate radii based on zoom level, (5) Add a legend showing what colors mean, (6) This should not interfere with shelter markers or route polylines - use lower z-index, (7) Add translations for toggle and legend. Keep performance in mind - use canvas rendering for many markers.",
+    "files": [
+      "src/services/alertHistoryService.ts",
+      "src/components/MapView.tsx",
+      "src/App.css",
+      "src/i18n/translations.ts"
+    ],
+    "itemNumber": 29,
+    "projectRoot": "/Users/gal.machluf/projects/shelter-finder/.claude/worktrees/priceless-kepler",
+    "title": "Add Alert History Heat Map Layer"
+  }
+}

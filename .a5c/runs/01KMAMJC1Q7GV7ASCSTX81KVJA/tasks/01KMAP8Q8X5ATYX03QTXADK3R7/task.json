@@ -1,0 +1,30 @@
+{
+  "schemaVersion": "2026.01.tasks-v1",
+  "effectId": "01KMAP8Q8X5ATYX03QTXADK3R7",
+  "taskId": "implement-item",
+  "invocationKey": "shelter-improvements:S000013:implement-item",
+  "stepId": "S000013",
+  "kind": "agent",
+  "title": "Item 12: Add \"Shelters Near Me\" Primary CTA",
+  "labels": [
+    "agent",
+    "implementation",
+    "item-12"
+  ],
+  "io": {
+    "inputJsonPath": "tasks/01KMAP8Q8X5ATYX03QTXADK3R7/input.json",
+    "outputJsonPath": "tasks/01KMAP8Q8X5ATYX03QTXADK3R7/output.json"
+  },
+  "inputs": {
+    "description": "Add a prominent \"Find shelters near me\" button as the primary call-to-action in SearchPanel.tsx. This should appear before the origin/destination inputs and trigger geolocation + show nearby shelters on the map without requiring a destination. Changes: (1) Add a \"Find shelters near me\" button at the top of SearchPanel, styled prominently with location icon, (2) When clicked, trigger getLocation and use the current location to find nearest shelters (reuse the useNearestShelters hook logic but for non-emergency display), (3) Add \"Plan a safe route\" text/link that expands to show the existing origin/destination inputs, (4) The existing search flow should still work but be secondary to this quick action, (5) Add translations for new UI strings. This should work like a simplified non-emergency version of the emergency button.",
+    "files": [
+      "src/components/SearchPanel.tsx",
+      "src/App.tsx",
+      "src/App.css",
+      "src/i18n/translations.ts"
+    ],
+    "itemNumber": 12,
+    "projectRoot": "/Users/gal.machluf/projects/shelter-finder/.claude/worktrees/priceless-kepler",
+    "title": "Add \"Shelters Near Me\" Primary CTA"
+  }
+}

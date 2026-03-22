@@ -1,0 +1,31 @@
+{
+  "schemaVersion": "2026.01.tasks-v1",
+  "effectId": "01KMASEMMDWDJJT4KB2NA7FW4Z",
+  "taskId": "implement-item",
+  "invocationKey": "shelter-improvements:S000032:implement-item",
+  "stepId": "S000032",
+  "kind": "agent",
+  "title": "Item 22: Implement Family Safety Network (Local Version)",
+  "labels": [
+    "agent",
+    "implementation",
+    "item-22"
+  ],
+  "io": {
+    "inputJsonPath": "tasks/01KMASEMMDWDJJT4KB2NA7FW4Z/input.json",
+    "outputJsonPath": "tasks/01KMASEMMDWDJJT4KB2NA7FW4Z/output.json"
+  },
+  "inputs": {
+    "description": "Add a family safety network feature - starting with a local/shareable version (no server needed). (1) Create src/services/familySafetyService.ts: generate a unique family group code, store group members in localStorage, manage \"I'm Safe\" status, (2) Create src/components/FamilySafety.tsx: show family group UI with member list, status indicators, share group link button, (3) The group sharing works via URL parameter ?familyGroup=CODE - when another user opens this link, they join the group locally, (4) Add a \"I'm Safe\" button that updates the user's status in localStorage (for now - real-time sync would need a backend), (5) During active alerts, show family members' last known status, (6) Add a prominent \"Share with Family\" button in the app, (7) Note in UI that real-time sync requires internet - this version is for awareness and link sharing. Add translations.",
+    "files": [
+      "src/services/familySafetyService.ts",
+      "src/components/FamilySafety.tsx",
+      "src/App.tsx",
+      "src/i18n/translations.ts",
+      "src/App.css"
+    ],
+    "itemNumber": 22,
+    "projectRoot": "/Users/gal.machluf/projects/shelter-finder/.claude/worktrees/priceless-kepler",
+    "title": "Implement Family Safety Network (Local Version)"
+  }
+}

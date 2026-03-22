@@ -1,0 +1,1 @@
+{"success": true, "filesModified": ["src/components/ErrorBoundary.tsx", "src/App.tsx", "src/App.css"], "summary": "Created ErrorBoundary class component with emergency fallback UI showing phone numbers (100/101/102/104) as tappable links, bilingual support, Reload button. Wrapped App contents. Added high-contrast CSS."}

@@ -1,0 +1,28 @@
+{
+  "schemaVersion": "2026.01.tasks-v1",
+  "effectId": "01KMARPFXQ7CAWH9DG8DB0Y2GV",
+  "taskId": "quality-gate",
+  "invocationKey": "shelter-improvements:S000029:quality-gate",
+  "stepId": "S000029",
+  "kind": "shell",
+  "title": "Quality Gate - Phase 3",
+  "labels": [
+    "phase-3",
+    "quality-gate",
+    "shell"
+  ],
+  "io": {
+    "outputJsonPath": "tasks/01KMARPFXQ7CAWH9DG8DB0Y2GV/output.json"
+  },
+  "inputs": {
+    "checks": [
+      "lint",
+      "typecheck",
+      "test",
+      "build"
+    ],
+    "phase": 3,
+    "projectRoot": "/Users/gal.machluf/projects/shelter-finder/.claude/worktrees/priceless-kepler",
+    "title": "Phase 3 Reliability Quality Gate"
+  }
+}

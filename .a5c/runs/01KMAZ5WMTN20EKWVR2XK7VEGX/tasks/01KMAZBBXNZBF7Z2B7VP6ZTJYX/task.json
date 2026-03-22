@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "2026.01.tasks-v1",
+  "effectId": "01KMAZBBXNZBF7Z2B7VP6ZTJYX",
+  "taskId": "quality-gate",
+  "invocationKey": "polish-and-pr:S000004:quality-gate",
+  "stepId": "S000004",
+  "kind": "shell",
+  "title": "Final quality gate (lint + typecheck + build)",
+  "labels": [
+    "quality-gate",
+    "shell"
+  ],
+  "io": {
+    "outputJsonPath": "tasks/01KMAZBBXNZBF7Z2B7VP6ZTJYX/output.json"
+  },
+  "inputs": {
+    "projectRoot": "/Users/gal.machluf/projects/shelter-finder/.claude/worktrees/priceless-kepler"
+  }
+}

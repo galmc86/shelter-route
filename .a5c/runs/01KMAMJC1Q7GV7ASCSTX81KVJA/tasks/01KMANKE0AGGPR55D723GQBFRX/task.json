@@ -1,0 +1,29 @@
+{
+  "schemaVersion": "2026.01.tasks-v1",
+  "effectId": "01KMANKE0AGGPR55D723GQBFRX",
+  "taskId": "implement-item",
+  "invocationKey": "shelter-improvements:S000007:implement-item",
+  "stepId": "S000007",
+  "kind": "agent",
+  "title": "Item 7: Add React Error Boundary",
+  "labels": [
+    "agent",
+    "implementation",
+    "item-7"
+  ],
+  "io": {
+    "inputJsonPath": "tasks/01KMANKE0AGGPR55D723GQBFRX/input.json",
+    "outputJsonPath": "tasks/01KMANKE0AGGPR55D723GQBFRX/output.json"
+  },
+  "inputs": {
+    "description": "Add a React Error Boundary component that wraps the entire app. Create src/components/ErrorBoundary.tsx as a class component that: (1) catches JavaScript errors in the component tree, (2) shows a minimal emergency fallback UI with: the app title, emergency phone numbers (100 police, 101 ambulance, 102 fire), a \"Reload\" button, (3) logs the error to console for debugging, (4) supports both Hebrew and English (detect from document.documentElement.lang). Wrap the App contents in main.tsx or App.tsx with this ErrorBoundary. Style it in App.css with clear, high-contrast emergency-friendly styling.",
+    "files": [
+      "src/components/ErrorBoundary.tsx",
+      "src/App.tsx",
+      "src/App.css"
+    ],
+    "itemNumber": 7,
+    "projectRoot": "/Users/gal.machluf/projects/shelter-finder/.claude/worktrees/priceless-kepler",
+    "title": "Add React Error Boundary"
+  }
+}

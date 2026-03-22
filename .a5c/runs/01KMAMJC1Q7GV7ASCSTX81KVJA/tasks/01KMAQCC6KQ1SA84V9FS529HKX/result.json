@@ -1,0 +1,25 @@
+{
+  "schemaVersion": "2026.01.results-v1",
+  "effectId": "01KMAQCC6KQ1SA84V9FS529HKX",
+  "taskId": "quality-gate",
+  "invocationKey": "shelter-improvements:S000021:quality-gate",
+  "status": "ok",
+  "result": {
+    "build": "success",
+    "lint": "0 errors, 1 pre-existing warning",
+    "success": true,
+    "summary": "Phase 2 quality gate passed after fixing 2 lint errors (react-refresh export, setState in effect).",
+    "tests": "97 passed, 36 pre-existing failures",
+    "typecheck": "clean"
+  },
+  "startedAt": "2026-03-22T12:14:53.785Z",
+  "finishedAt": "2026-03-22T12:14:53.785Z",
+  "value": {
+    "build": "success",
+    "lint": "0 errors, 1 pre-existing warning",
+    "success": true,
+    "summary": "Phase 2 quality gate passed after fixing 2 lint errors (react-refresh export, setState in effect).",
+    "tests": "97 passed, 36 pre-existing failures",
+    "typecheck": "clean"
+  }
+}

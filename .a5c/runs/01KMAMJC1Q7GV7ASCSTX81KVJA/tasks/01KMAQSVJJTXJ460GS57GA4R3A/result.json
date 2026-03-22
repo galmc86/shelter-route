@@ -1,0 +1,29 @@
+{
+  "schemaVersion": "2026.01.results-v1",
+  "effectId": "01KMAQSVJJTXJ460GS57GA4R3A",
+  "taskId": "implement-item",
+  "invocationKey": "shelter-improvements:S000025:implement-item",
+  "status": "ok",
+  "result": {
+    "filesModified": [
+      "src/services/shelterApi.ts",
+      "src/components/AppHeader.tsx",
+      "src/i18n/translations.ts",
+      "src/App.css"
+    ],
+    "success": true,
+    "summary": "Added shelter data freshness tracking. Timestamp stored on fetch. getShelterDataAge/isShelterDataStale exports. Header shows data age with orange warning when stale (>30 days)."
+  },
+  "startedAt": "2026-03-22T12:21:53.409Z",
+  "finishedAt": "2026-03-22T12:21:53.409Z",
+  "value": {
+    "filesModified": [
+      "src/services/shelterApi.ts",
+      "src/components/AppHeader.tsx",
+      "src/i18n/translations.ts",
+      "src/App.css"
+    ],
+    "success": true,
+    "summary": "Added shelter data freshness tracking. Timestamp stored on fetch. getShelterDataAge/isShelterDataStale exports. Header shows data age with orange warning when stale (>30 days)."
+  }
+}

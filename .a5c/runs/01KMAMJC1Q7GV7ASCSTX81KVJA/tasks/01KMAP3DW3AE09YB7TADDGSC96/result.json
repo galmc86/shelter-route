@@ -1,0 +1,29 @@
+{
+  "schemaVersion": "2026.01.results-v1",
+  "effectId": "01KMAP3DW3AE09YB7TADDGSC96",
+  "taskId": "implement-item",
+  "invocationKey": "shelter-improvements:S000012:implement-item",
+  "status": "ok",
+  "result": {
+    "filesModified": [
+      "src/components/Onboarding.tsx",
+      "src/App.tsx",
+      "src/App.css",
+      "src/i18n/translations.ts"
+    ],
+    "success": true,
+    "summary": "Created 3-step onboarding overlay: welcome, location permission, emergency button guide. localStorage persistence, bilingual, styled overlay with animations. Wired into App.tsx."
+  },
+  "startedAt": "2026-03-22T11:53:01.581Z",
+  "finishedAt": "2026-03-22T11:53:01.581Z",
+  "value": {
+    "filesModified": [
+      "src/components/Onboarding.tsx",
+      "src/App.tsx",
+      "src/App.css",
+      "src/i18n/translations.ts"
+    ],
+    "success": true,
+    "summary": "Created 3-step onboarding overlay: welcome, location permission, emergency button guide. localStorage persistence, bilingual, styled overlay with animations. Wired into App.tsx."
+  }
+}

@@ -13,7 +13,7 @@ import { AppHeader } from './components/AppHeader';
 import { SearchPanel } from './components/SearchPanel';
 import { MapView } from './components/MapView';
 import { EmergencyButton } from './components/EmergencyButton';
-import { ShelterNavigation } from './components/ShelterNavigation';
+
 import { FamilySafety } from './components/FamilySafety';
 import { SafetyDashboard } from './components/SafetyDashboard';
 import { OfflineIndicator } from './components/OfflineIndicator';
@@ -25,9 +25,11 @@ import { useNearestShelters } from './hooks/useNearestShelters';
 import { useCapacity } from './hooks/useCapacity';
 import { useOrefAlerts } from './hooks/useOrefAlerts';
 import { useAlertHistory } from './hooks/useAlertHistory';
+import { useNavigation } from './hooks/useNavigation';
 import { AlertBanner } from './components/AlertBanner';
 import { playAlertSound, stopAlertSound } from './utils/alertSound';
 import { trackRouteSearch, trackEmergency } from './services/safetyAnalyticsService';
+import { NavigationPanel } from './components/NavigationPanel';
 import { useLanguage } from './i18n';
 import { useTheme } from './theme';
 import { RouteProvider } from './contexts/RouteContext';
@@ -83,14 +85,22 @@ function App() {
     timeFilter,
     setTimeFilter,
   } = useAlertHistory(selectedRoute);
+  const {
+    navigationRoute: navHookRoute,
+    targetShelter,
+    isNavigating,
+    isLoadingNav,
+    navError,
+    startNavigation,
+    stopNavigation,
+  } = useNavigation();
+  const pendingNavShelterRef = useRef<ShelterWithDistance | null>(null);
   const [shareOrigin, setShareOrigin] = useState<LatLng | null>(null);
   const [shareDestination, setShareDestination] = useState<LatLng | null>(null);
   const [shareTravelMode, setShareTravelMode] = useState<TravelMode>('WALKING');
   const [showOnboarding, setShowOnboarding] = useState(() => !isOnboardingCompleted());
   const [nearMeMode, setNearMeMode] = useState(false);
   const [familyGroupCode, setFamilyGroupCode] = useState<string | null>(null);
-  const [navigatingToShelter, setNavigatingToShelter] = useState<ShelterWithDistance | null>(null);
-  const [navigationRoute, setNavigationRoute] = useState<LatLng[] | null>(null);
 
   // Compute routes with shelter counts
   const routesWithShelters: RouteWithShelters[] = useMemo(() => {
@@ -259,19 +269,6 @@ function App() {
     setSelectedShelterId(null);
   }, [selectRoute]);
 
-  const handleNavigateToShelter = useCallback((shelter: ShelterWithDistance) => {
-    setNavigatingToShelter(shelter);
-  }, []);
-
-  const handleStopNavigation = useCallback(() => {
-    setNavigatingToShelter(null);
-    setNavigationRoute(null);
-  }, []);
-
-  const handleNavRouteCalculated = useCallback((path: LatLng[] | null) => {
-    setNavigationRoute(path);
-  }, []);
-
   const handleMapReady = useCallback((map: L.Map) => {
     leafletMapRef.current = map;
   }, []);
@@ -326,6 +323,33 @@ function App() {
     nearMeMode, handleNearMeClick, handleExitNearMe, handleUseMapCenter,
   ]);
 
+  const handleNavigateToShelter = useCallback(async (shelter: ShelterWithDistance) => {
+    if (!currentLocation) {
+      pendingNavShelterRef.current = shelter;
+      getLocation();
+      return;
+    }
+    pendingNavShelterRef.current = null;
+    await startNavigation(shelter, currentLocation, t);
+    setPanelExpanded(false);
+  }, [currentLocation, getLocation, startNavigation, t]);
+
+  // Auto-navigate once location arrives for a pending shelter.
+  useEffect(() => {
+    if (currentLocation && pendingNavShelterRef.current) {
+      const shelter = pendingNavShelterRef.current;
+      pendingNavShelterRef.current = null;
+      startNavigation(shelter, currentLocation, t).then(() => {
+        setPanelExpanded(false);
+      });
+    }
+  }, [currentLocation, startNavigation, t]);
+
+  const handleCancelNavigation = useCallback(() => {
+    stopNavigation();
+    setPanelExpanded(true);
+  }, [stopNavigation]);
+
   const shelterContextValue: ShelterContextValue = useMemo(() => ({
     selectedShelterId,
     onShelterClick: handleShelterClick,
@@ -377,11 +401,13 @@ function App() {
       <OfflineIndicator />
       <AppHeader />
       <main className="main-content" id="main-content">
-        <SearchPanel
-          panelExpanded={panelExpanded}
-          onTogglePanel={() => setPanelExpanded((v) => !v)}
-        />
-        {panelExpanded && (
+        {!isNavigating && (
+          <SearchPanel
+            panelExpanded={panelExpanded}
+            onTogglePanel={() => setPanelExpanded((v) => !v)}
+          />
+        )}
+        {panelExpanded && !isNavigating && (
           <>
             <div className="family-safety-wrapper">
               <FamilySafety initialGroupCode={familyGroupCode} />
@@ -392,21 +418,36 @@ function App() {
         <MapView
           routes={emergencyMode ? [] : routes}
           onSelectRoute={selectRoute}
-          userLocation={(emergencyMode || nearMeMode || navigatingToShelter) ? currentLocation : null}
+          userLocation={(emergencyMode || nearMeMode || isNavigating) ? currentLocation : null}
           onMapReady={handleMapReady}
           emergencyCountdown={isAlertActive && countdown != null ? countdown : undefined}
-          navigationRoute={navigationRoute}
+          navigationRoute={navHookRoute}
+          navigatingToShelter={targetShelter}
+          onNavigateToShelter={handleNavigateToShelter}
         />
       </main>
-      {navigatingToShelter && currentLocation && (
-        <ShelterNavigation
-          shelter={navigatingToShelter}
-          userLocation={currentLocation}
-          onStop={handleStopNavigation}
-          onRouteCalculated={handleNavRouteCalculated}
+      {isLoadingNav && (
+        <div className="navigation-loading" role="status">
+          <div className="loading-spinner" aria-hidden="true" />
+          <span>{t('nav.calculatingRoute')}</span>
+        </div>
+      )}
+      {navError && !isLoadingNav && (
+        <div className="navigation-error" role="alert">
+          <span>{navError}</span>
+          <button onClick={stopNavigation} aria-label={t('nav.cancel')}>✕</button>
+        </div>
+      )}
+      {isNavigating && navHookRoute && targetShelter && (
+        <NavigationPanel
+          shelter={targetShelter}
+          route={navHookRoute}
+          onCancel={handleCancelNavigation}
         />
       )}
-      <EmergencyButton onClick={handleEmergencyClick} panelExpanded={panelExpanded} />
+      {!isNavigating && (
+        <EmergencyButton onClick={handleEmergencyClick} panelExpanded={panelExpanded} />
+      )}
     </div>
     </ShelterProvider>
     </EmergencyProvider>

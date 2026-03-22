@@ -13,7 +13,7 @@ import { useEmergencyContext } from '../contexts/EmergencyContext';
 import { useShelterContext } from '../contexts/ShelterContext';
 import { useAlertHistory } from '../hooks/useAlertHistory';
 import { getHeatMapData, type HeatMapCell } from '../services/alertHistoryService';
-import type { RouteOption, LocationPoint, LatLng } from '../types';
+import type { RouteOption, LocationPoint } from '../types';
 import type { ShelterWithDistance } from '../hooks/useShelters';
 import type { CapacityData } from '../services/capacityService';
 import { ShelterPopup } from './ShelterPopup';
@@ -23,7 +23,9 @@ interface MapViewProps {
   userLocation?: LocationPoint | null;
   onMapReady?: (map: L.Map) => void;
   emergencyCountdown?: number;
-  navigationRoute?: LatLng[] | null;
+  navigationRoute?: RouteOption | null;
+  navigatingToShelter?: ShelterWithDistance | null;
+  onNavigateToShelter?: (shelter: ShelterWithDistance) => void;
 }
 
 const ISRAEL_CENTER: L.LatLngExpression = [31.5, 34.8];
@@ -128,13 +130,13 @@ function ShelterPopupWithLanguage({
   hasRoute,
   capacityData,
   lang,
-  onNavigateToShelter,
+  onNavigate,
 }: {
   shelter: ShelterWithDistance;
   hasRoute: boolean;
   capacityData?: CapacityData;
   lang: Language;
-  onNavigateToShelter?: (shelter: ShelterWithDistance) => void;
+  onNavigate?: (shelter: ShelterWithDistance) => void;
 }) {
   const { setLanguage } = useLanguage();
   // Sync language on mount (LanguageProvider defaults to 'he')
@@ -147,7 +149,7 @@ function ShelterPopupWithLanguage({
       shelter={shelter}
       hasRoute={hasRoute}
       capacityData={capacityData}
-      onNavigateToShelter={onNavigateToShelter}
+      onNavigate={onNavigate}
     />
   );
 }
@@ -173,10 +175,12 @@ export function MapView({
   onMapReady,
   emergencyCountdown,
   navigationRoute,
+  navigatingToShelter,
+  onNavigateToShelter,
 }: MapViewProps) {
   const { routeInfo, selectedRouteIndex, nearbyShelters: shelters } = useRouteContext();
   const { emergencyMode } = useEmergencyContext();
-  const { isLoaded, selectedShelterId, onShelterClick, onNavigateToShelter, capacityMap } = useShelterContext();
+  const { isLoaded, selectedShelterId, onShelterClick, capacityMap } = useShelterContext();
   const { language, t } = useLanguage();
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -185,7 +189,7 @@ export function MapView({
   const routePickerRef = useRef<L.Control | null>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
   const userMarkerRef = useRef<L.Marker | null>(null);
-  const navRouteLayerRef = useRef<L.Polyline | null>(null);
+
   const popupRootsRef = useRef<Map<string, Root>>(new Map());
   const isochroneCircleRef = useRef<L.Circle | null>(null);
   const walkingRadiusRef = useRef<number>(0);
@@ -193,6 +197,7 @@ export function MapView({
   const heatMapControlRef = useRef<L.Control | null>(null);
   const heatMapLegendRef = useRef<L.Control | null>(null);
   const [heatMapVisible, setHeatMapVisible] = useState(false);
+  const navigationLayerRef = useRef<L.Polyline | null>(null);
 
   // Fetch alert history for heat map (supplementary — tolerates duplicate fetch)
   const { alerts: geocodedAlerts } = useAlertHistory(routeInfo);
@@ -200,6 +205,14 @@ export function MapView({
   const toggleHeatMap = useCallback(() => {
     setHeatMapVisible((prev) => !prev);
   }, []);
+
+  // Use a ref for onNavigateToShelter so the shelter markers useEffect
+  // doesn't re-run (recreating all markers and closing popups) when
+  // the callback reference changes due to parent state updates.
+  const onNavigateRef = useRef(onNavigateToShelter);
+  useEffect(() => {
+    onNavigateRef.current = onNavigateToShelter;
+  }, [onNavigateToShelter]);
 
   // Initialize map
   useEffect(() => {
@@ -222,6 +235,10 @@ export function MapView({
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
       maxZoom: 19,
     }).addTo(map);
+
+    // Custom pane for navigation polyline so it always renders above route polylines
+    map.createPane('navigationPane');
+    map.getPane('navigationPane')!.style.zIndex = '650';
 
     mapInstanceRef.current = map;
     onMapReady?.(map);
@@ -383,31 +400,6 @@ export function MapView({
       map.fitBounds(bounds, { padding: [40, 40] });
     }
   }, [routeInfo, routes, selectedRouteIndex, onSelectRoute, language]);
-
-  // Draw navigation route overlay (in-app walking directions)
-  useEffect(() => {
-    const map = mapInstanceRef.current;
-    if (!map) return;
-
-    // Clear previous navigation route
-    if (navRouteLayerRef.current) {
-      navRouteLayerRef.current.remove();
-      navRouteLayerRef.current = null;
-    }
-
-    if (navigationRoute && navigationRoute.length >= 2) {
-      const latLngs: L.LatLngExpression[] = navigationRoute.map((p) => [p.lat, p.lng]);
-      navRouteLayerRef.current = L.polyline(latLngs, {
-        color: '#E53935',
-        weight: 5,
-        opacity: 0.85,
-        dashArray: '10 6',
-      }).addTo(map);
-
-      const bounds = L.latLngBounds(latLngs);
-      map.fitBounds(bounds, { padding: [60, 60] });
-    }
-  }, [navigationRoute]);
 
   // Update user location marker
   useEffect(() => {
@@ -719,7 +711,7 @@ export function MapView({
               hasRoute={!!routeInfo}
               capacityData={currentCapData}
               lang={language}
-              onNavigateToShelter={onNavigateToShelter}
+              onNavigate={(s) => onNavigateRef.current?.(s)}
             />
           </LanguageProvider>
         );
@@ -748,14 +740,52 @@ export function MapView({
       }
     });
 
-    // Cleanup on unmount
+    // Capture ref value for cleanup
+    const currentPopupRoots = popupRootsRef.current;
     return () => {
-      popupRootsRef.current.forEach((root) => {
+      currentPopupRoots.forEach((root) => {
         root.unmount();
       });
-      popupRootsRef.current.clear();
+      currentPopupRoots.clear();
     };
   }, [shelters, selectedShelterId, onShelterClick, onNavigateToShelter, routeInfo, language, capacityMap, emergencyMode, userLocation]);
+
+  // Render navigation polyline (walking to shelter)
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+
+    // Clean up previous navigation polyline
+    if (navigationLayerRef.current) {
+      navigationLayerRef.current.remove();
+      navigationLayerRef.current = null;
+    }
+
+    if (!navigationRoute || !navigatingToShelter) return;
+
+    if (navigationRoute.path.length < 2) return;
+
+    const latLngs: L.LatLngExpression[] = navigationRoute.path.map((p) => [p.lat, p.lng]);
+    const polyline = L.polyline(latLngs, {
+      color: '#10B981',
+      weight: 6,
+      opacity: 0.9,
+      dashArray: '12 8',
+      pane: 'navigationPane',
+    }).addTo(map);
+    navigationLayerRef.current = polyline;
+
+    // Fit bounds to navigation route
+    const bounds = L.latLngBounds(latLngs);
+    map.fitBounds(bounds, { padding: [50, 50], maxZoom: 16 });
+
+    return () => {
+      if (navigationLayerRef.current) {
+        navigationLayerRef.current.remove();
+        navigationLayerRef.current = null;
+      }
+    };
+  }, [navigationRoute, navigatingToShelter]);
 
   if (!isLoaded) {
     return (

@@ -229,6 +229,19 @@ export const translations = {
     'searchHistory.renamePrompt': 'הזן שם למסלול (או השאר ריק למחיקת השם):',
     'searchHistory.pinned': 'מוצמד',
 
+    // Saved Routes
+    'savedRoutes.save': 'שמור מסלול',
+    'savedRoutes.saved': 'מסלול שמור',
+    'savedRoutes.unsave': 'הסר שמירה',
+
+    // Navigation
+    'nav.navigate': 'נווט למקלט',
+    'nav.openGoogleMaps': 'פתח ב-Google Maps',
+    'nav.cancel': 'בטל',
+    'nav.walkingTo': 'הליכה אל',
+    'nav.locationRequired': 'נדרש מיקום לניווט',
+    'nav.calculatingRoute': 'מחשב מסלול...',
+
     // Bug Report
     'bugReport.button': 'דווח על באג',
     'bugReport.title': 'דווח על בעיה',
@@ -562,6 +575,19 @@ export const translations = {
     'searchHistory.rename': 'Rename',
     'searchHistory.renamePrompt': 'Enter a name for this route (or leave empty to remove):',
     'searchHistory.pinned': 'Pinned',
+
+    // Saved Routes
+    'savedRoutes.save': 'Save Route',
+    'savedRoutes.saved': 'Saved',
+    'savedRoutes.unsave': 'Unsave',
+
+    // Navigation
+    'nav.navigate': 'Navigate to shelter',
+    'nav.openGoogleMaps': 'Open in Google Maps',
+    'nav.cancel': 'Cancel',
+    'nav.walkingTo': 'Walking to',
+    'nav.locationRequired': 'Location required',
+    'nav.calculatingRoute': 'Calculating route...',
 
     // Bug Report
     'bugReport.button': 'Report a bug',
@@ -897,6 +923,19 @@ export const translations = {
     'searchHistory.renamePrompt': 'أدخل اسمًا لهذا المسار (أو اتركه فارغًا للحذف):',
     'searchHistory.pinned': 'مثبّت',
 
+    // Saved Routes
+    'savedRoutes.save': 'حفظ المسار',
+    'savedRoutes.saved': 'تم الحفظ',
+    'savedRoutes.unsave': 'إلغاء الحفظ',
+
+    // Navigation
+    'nav.navigate': 'انتقل إلى الملجأ',
+    'nav.openGoogleMaps': 'افتح في خرائط Google',
+    'nav.cancel': 'إلغاء',
+    'nav.walkingTo': 'المشي إلى',
+    'nav.locationRequired': 'الموقع مطلوب للتنقل',
+    'nav.calculatingRoute': 'جارٍ حساب المسار...',
+
     // Bug Report
     'bugReport.button': 'الإبلاغ عن خطأ',
     'bugReport.title': 'الإبلاغ عن مشكلة',
@@ -1230,6 +1269,19 @@ export const translations = {
     'searchHistory.rename': 'Переименовать',
     'searchHistory.renamePrompt': 'Введите название маршрута (или оставьте пустым для удаления):',
     'searchHistory.pinned': 'Закреплено',
+
+    // Saved Routes
+    'savedRoutes.save': 'Сохранить маршрут',
+    'savedRoutes.saved': 'Сохранено',
+    'savedRoutes.unsave': 'Отменить сохранение',
+
+    // Navigation
+    'nav.navigate': 'Навигация к укрытию',
+    'nav.openGoogleMaps': 'Открыть в Google Maps',
+    'nav.cancel': 'Отмена',
+    'nav.walkingTo': 'Идём к',
+    'nav.locationRequired': 'Для навигации требуется местоположение',
+    'nav.calculatingRoute': 'Расчёт маршрута...',
 
     // Bug Report
     'bugReport.button': 'Сообщить об ошибке',

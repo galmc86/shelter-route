@@ -11,7 +11,7 @@ import { useSavedLocations } from '../hooks/useSavedLocations';
 import { useRouteContext } from '../contexts/RouteContext';
 import { useEmergencyContext } from '../contexts/EmergencyContext';
 import { useShelterContext } from '../contexts/ShelterContext';
-import type { TravelMode, LatLng, ShelterSortMode, SearchHistoryEntry } from '../types';
+import type { TravelMode, LatLng, ShelterSortMode, SearchHistoryEntry, SavedRouteData } from '../types';
 import type { PlaceResult } from '../types';
 import { getCapacityColor, getCapacityStatusKey } from '../services/capacityService';
 import { getAggregatedStatus, getStatusBadgeColor } from '../services/shelterReportsService';
@@ -78,7 +78,7 @@ export function SearchPanel({
   const [showAccessibleOnly, setShowAccessibleOnly] = useState(false);
   const [routePlannerExpanded, setRoutePlannerExpanded] = useState(false);
   const [showShelterScore, setShowShelterScore] = useState(false);
-  const { entries: historyEntries, addEntry: addHistoryEntry, removeEntry: removeHistoryEntry, clearAll: clearHistory, togglePin: toggleHistoryPin, renameEntry: renameHistoryEntry, updateShelterCount: updateHistoryShelterCount } = useSearchHistory();
+  const { entries: historyEntries, addEntry: addHistoryEntry, removeEntry: removeHistoryEntry, clearAll: clearHistory, togglePin: toggleHistoryPin, renameEntry: renameHistoryEntry, updateShelterCount: updateHistoryShelterCount, saveRoute: saveHistoryRoute, unsaveRoute: unsaveHistoryRoute } = useSearchHistory();
   const { locations: savedLocations, addLocation: addSavedLocation, removeLocation: removeSavedLocation, isMaxReached: savedLocationsMaxReached } = useSavedLocations();
 
   // Mark as searched when route info arrives (e.g. from shared URL)
@@ -258,6 +258,46 @@ export function SearchPanel({
     hasSearchedRef.current = true;
     onSearch(entry.origin, entry.destination, entry.travelMode);
   }, [onSearch]);
+
+  // Find the history entry matching the current route for save/unsave
+  const currentRouteEntry = useMemo(() => {
+    if (!routeInfo) return null;
+    const origin = shareOrigin || (useMyLocation && currentLocation
+      ? { lat: currentLocation.lat, lng: currentLocation.lng }
+      : originPlace ? { lat: originPlace.lat, lng: originPlace.lng } : null);
+    const destination = shareDestination || (destPlace
+      ? { lat: destPlace.lat, lng: destPlace.lng }
+      : null);
+    if (!origin || !destination) return null;
+    return historyEntries.find((e) =>
+      Math.abs(e.origin.lat - origin.lat) < 0.001 &&
+      Math.abs(e.origin.lng - origin.lng) < 0.001 &&
+      Math.abs(e.destination.lat - destination.lat) < 0.001 &&
+      Math.abs(e.destination.lng - destination.lng) < 0.001 &&
+      e.travelMode === travelMode
+    ) ?? null;
+  }, [routeInfo, historyEntries, shareOrigin, shareDestination, useMyLocation, currentLocation, originPlace, destPlace, travelMode]);
+
+  const isRouteSaved = !!currentRouteEntry?.routeData;
+
+  const handleSaveRoute = useCallback(() => {
+    if (!currentRouteEntry || !routeInfo) return;
+    const selectedRoute = routesWithShelters[selectedRouteIndex]?.route;
+    const routeData: SavedRouteData = {
+      duration: routeInfo.duration,
+      distance: routeInfo.distance,
+      durationSeconds: selectedRoute?.durationSeconds ?? 0,
+      distanceMeters: selectedRoute?.distanceMeters ?? 0,
+      shelterCount: nearbyShelters.length,
+      savedAt: Date.now(),
+    };
+    saveHistoryRoute(currentRouteEntry.id, routeData);
+  }, [currentRouteEntry, routeInfo, routesWithShelters, selectedRouteIndex, nearbyShelters.length, saveHistoryRoute]);
+
+  const handleUnsaveRoute = useCallback(() => {
+    if (!currentRouteEntry) return;
+    unsaveHistoryRoute(currentRouteEntry.id);
+  }, [currentRouteEntry, unsaveHistoryRoute]);
 
   const canSearch = (useMyLocation && currentLocation || originPlace) && destPlace && !isSearching;
 
@@ -846,6 +886,26 @@ export function SearchPanel({
                   <path d="M18 8a3 3 0 1 0-2.12-5.12M18 8a3 3 0 0 1-2.12-.88L8.12 11.88M18 8l-.88.88M6 14a3 3 0 1 0 2.12-1.12M6 14a3 3 0 0 1 2.12-1.12M6 14l.88-.88M18 20a3 3 0 1 0-2.12-1.12M18 20a3 3 0 0 1-2.12-1.12l-7.76-4.76" stroke="#1565C0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
                 {t('share.button')}
+              </button>
+            )}
+            {currentRouteEntry && !sheltersLoading && (
+              <button
+                className={`save-route-btn ${isRouteSaved ? 'saved' : ''}`}
+                onClick={isRouteSaved ? handleUnsaveRoute : handleSaveRoute}
+                aria-label={isRouteSaved ? t('savedRoutes.unsave') : t('savedRoutes.save')}
+                aria-pressed={isRouteSaved}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"
+                    fill={isRouteSaved ? '#1565C0' : 'none'}
+                    stroke="#1565C0"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                {isRouteSaved ? t('savedRoutes.saved') : t('savedRoutes.save')}
               </button>
             )}
           </div>

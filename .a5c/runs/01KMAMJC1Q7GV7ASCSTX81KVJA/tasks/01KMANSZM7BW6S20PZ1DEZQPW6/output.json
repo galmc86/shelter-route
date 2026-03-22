@@ -1,0 +1,1 @@
+{"success": true, "lint": "0 errors, 1 pre-existing warning", "typecheck": "clean", "tests": "97 passed, 36 pre-existing failures (localStorage.clear in useSearchHistory)", "build": "success - built in 605ms", "summary": "Phase 1 quality gate passed. All new code compiles, lints clean, tests pass, builds successfully."}

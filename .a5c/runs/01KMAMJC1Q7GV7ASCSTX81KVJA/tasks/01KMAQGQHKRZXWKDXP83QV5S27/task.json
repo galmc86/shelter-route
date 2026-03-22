@@ -1,0 +1,27 @@
+{
+  "schemaVersion": "2026.01.tasks-v1",
+  "effectId": "01KMAQGQHKRZXWKDXP83QV5S27",
+  "taskId": "__sdk.breakpoint",
+  "invocationKey": "shelter-improvements:S000022:__sdk.breakpoint",
+  "stepId": "S000022",
+  "kind": "breakpoint",
+  "title": "breakpoint",
+  "metadata": {
+    "label": "breakpoint",
+    "payload": {
+      "context": {},
+      "question": "Phase 2 (Core Experience) is complete. Review the implemented improvements. Approve to continue to Phase 3?",
+      "title": "Phase 2 Complete - Core Experience"
+    },
+    "requestedAt": "2026-03-22T12:15:03.219Z"
+  },
+  "inputs": {
+    "label": "breakpoint",
+    "payload": {
+      "context": {},
+      "question": "Phase 2 (Core Experience) is complete. Review the implemented improvements. Approve to continue to Phase 3?",
+      "title": "Phase 2 Complete - Core Experience"
+    },
+    "requestedAt": "2026-03-22T12:15:03.219Z"
+  }
+}

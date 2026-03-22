@@ -1,0 +1,15 @@
+{
+  "type": "RUN_CREATED",
+  "recordedAt": "2026-03-22T11:23:31.282Z",
+  "data": {
+    "runId": "01KMAMJC1Q7GV7ASCSTX81KVJA",
+    "processId": "shelter-improvements",
+    "entrypoint": {
+      "importPath": "../../processes/shelter-improvements.js",
+      "exportName": "process"
+    },
+    "inputsRef": "inputs.json",
+    "prompt": "Implement all 34 items from the Shelter Route expert review plan across 5 phases: safety-critical fixes, core experience, reliability, growth features, and polish"
+  },
+  "checksum": "c29cabfa8c9b4ed4bf01c71bc5bc29571fb61b2cd8c946f02688a54143917872"
+}

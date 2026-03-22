@@ -1,0 +1,31 @@
+{
+  "schemaVersion": "2026.01.tasks-v1",
+  "effectId": "01KMAVCB33V01DJHPX6V9H7FG3",
+  "taskId": "implement-item",
+  "invocationKey": "shelter-improvements:S000038:implement-item",
+  "stepId": "S000038",
+  "kind": "agent",
+  "title": "Item 26: Add Basic In-App Navigation to Shelter",
+  "labels": [
+    "agent",
+    "implementation",
+    "item-26"
+  ],
+  "io": {
+    "inputJsonPath": "tasks/01KMAVCB33V01DJHPX6V9H7FG3/input.json",
+    "outputJsonPath": "tasks/01KMAVCB33V01DJHPX6V9H7FG3/output.json"
+  },
+  "inputs": {
+    "description": "Add basic in-app turn-by-turn-style directions to shelters using ORS route geometry, so users don't need to leave the app. (1) Create src/components/ShelterNavigation.tsx: a compact bottom bar showing step-by-step walking directions to a selected shelter, (2) Use the ORS API to fetch a walking route from user's current location to the shelter, (3) Display instructions: direction arrow based on device compass (DeviceOrientationEvent), distance to next turn, total remaining distance and time, (4) Show the route on the map with a highlighted polyline, (5) Add a pulsing marker on the destination shelter, (6) Add a \"Stop Navigation\" button to exit, (7) Keep it simple - this is augmented directions, not full turn-by-turn GPS nav. Add translations.",
+    "files": [
+      "src/components/ShelterNavigation.tsx",
+      "src/App.tsx",
+      "src/App.css",
+      "src/i18n/translations.ts",
+      "src/services/routeService.ts"
+    ],
+    "itemNumber": 26,
+    "projectRoot": "/Users/gal.machluf/projects/shelter-finder/.claude/worktrees/priceless-kepler",
+    "title": "Add Basic In-App Navigation to Shelter"
+  }
+}

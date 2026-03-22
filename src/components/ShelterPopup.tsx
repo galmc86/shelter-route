@@ -10,10 +10,10 @@ interface ShelterPopupProps {
   shelter: ShelterWithDistance;
   hasRoute: boolean;
   capacityData?: CapacityData;
-  onNavigateToShelter?: (shelter: ShelterWithDistance) => void;
+  onNavigate?: (shelter: ShelterWithDistance) => void;
 }
 
-export function ShelterPopup({ shelter, hasRoute, capacityData, onNavigateToShelter }: ShelterPopupProps) {
+export function ShelterPopup({ shelter, hasRoute, capacityData, onNavigate }: ShelterPopupProps) {
   const { language, t } = useLanguage();
   const dir = language === 'en' || language === 'ru' ? 'ltr' : 'rtl';
   const [showReportForm, setShowReportForm] = useState(false);
@@ -81,14 +81,26 @@ export function ShelterPopup({ shelter, hasRoute, capacityData, onNavigateToShel
         </div>
       )}
 
-      {onNavigateToShelter ? (
-        <button
-          type="button"
-          className="shelter-popup-nav shelter-popup-nav-btn"
-          onClick={() => onNavigateToShelter(shelter)}
-        >
-          {t('shelters.navigateToShelter')}
-        </button>
+      {onNavigate ? (
+        <div className="shelter-popup-nav-actions">
+          <button
+            className="shelter-popup-nav-btn"
+            onClick={() => onNavigate(shelter)}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M3 11l19-9-9 19-2-8-8-2z" fill="currentColor" />
+            </svg>
+            {t('nav.navigate')}
+          </button>
+          <a
+            href={navUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="shelter-popup-gmaps-link"
+          >
+            {t('nav.openGoogleMaps')}
+          </a>
+        </div>
       ) : (
         <a
           href={navUrl}

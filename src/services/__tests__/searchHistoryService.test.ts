@@ -9,9 +9,11 @@ import {
   togglePin,
   renameEntry,
   updateShelterCount,
+  saveRouteData,
+  unsaveRouteData,
   MAX_ENTRIES,
 } from '../searchHistoryService';
-import type { SearchHistoryEntry } from '../../types';
+import type { SearchHistoryEntry, SavedRouteData } from '../../types';
 
 function makeEntry(overrides: Partial<SearchHistoryEntry> = {}): SearchHistoryEntry {
   return {
@@ -288,6 +290,84 @@ describe('searchHistoryService', () => {
         42
       );
       expect(result[0].shelterCount).toBeUndefined();
+    });
+  });
+
+  describe('saveRouteData', () => {
+    const routeData: SavedRouteData = {
+      duration: '45 minutes',
+      distance: '2.5 km',
+      durationSeconds: 2700,
+      distanceMeters: 2500,
+      shelterCount: 12,
+      savedAt: Date.now(),
+    };
+
+    it('sets routeData on matching entry', () => {
+      const entries = [makeEntry({ id: 'a' })];
+      const result = saveRouteData(entries, 'a', routeData);
+      expect(result[0].routeData).toEqual(routeData);
+    });
+
+    it('does not affect other entries', () => {
+      const entries = [makeEntry({ id: 'a' }), makeEntry({ id: 'b' })];
+      const result = saveRouteData(entries, 'a', routeData);
+      expect(result[0].routeData).toEqual(routeData);
+      expect(result[1].routeData).toBeUndefined();
+    });
+
+    it('overwrites existing routeData', () => {
+      const oldData: SavedRouteData = { ...routeData, shelterCount: 5 };
+      const entries = [makeEntry({ id: 'a', routeData: oldData })];
+      const result = saveRouteData(entries, 'a', routeData);
+      expect(result[0].routeData?.shelterCount).toBe(12);
+    });
+  });
+
+  describe('unsaveRouteData', () => {
+    it('clears routeData on matching entry', () => {
+      const entries = [makeEntry({ id: 'a', routeData: {
+        duration: '10 min',
+        distance: '500 m',
+        durationSeconds: 600,
+        distanceMeters: 500,
+        shelterCount: 3,
+        savedAt: Date.now(),
+      } })];
+      const result = unsaveRouteData(entries, 'a');
+      expect(result[0].routeData).toBeUndefined();
+    });
+
+    it('does not affect other entries', () => {
+      const rd: SavedRouteData = {
+        duration: '10 min',
+        distance: '500 m',
+        durationSeconds: 600,
+        distanceMeters: 500,
+        shelterCount: 3,
+        savedAt: Date.now(),
+      };
+      const entries = [makeEntry({ id: 'a', routeData: rd }), makeEntry({ id: 'b', routeData: rd })];
+      const result = unsaveRouteData(entries, 'a');
+      expect(result[0].routeData).toBeUndefined();
+      expect(result[1].routeData).toEqual(rd);
+    });
+  });
+
+  describe('routeData persistence', () => {
+    it('saved route data survives load/save cycle', () => {
+      const routeData: SavedRouteData = {
+        duration: '30 min',
+        distance: '1.2 km',
+        durationSeconds: 1800,
+        distanceMeters: 1200,
+        shelterCount: 8,
+        savedAt: Date.now(),
+      };
+      const entries = [makeEntry({ id: 'a', routeData })];
+      saveHistory(entries);
+      const loaded = loadHistory();
+      expect(loaded[0].routeData).toEqual(routeData);
     });
   });
 });

@@ -137,13 +137,37 @@ export function SearchHistory({ entries, onSelect, onRemove, onClearAll, onToggl
                   )}
                   <span className="history-item-meta">
                     <span className="history-item-time">{timeStr}</span>
-                    {entry.shelterCount !== undefined && entry.shelterCount > 0 && (
-                      <span className="history-item-shelters">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                          <path d="M12 2L3 7v10l9 5 9-5V7l-9-5z" />
-                        </svg>
-                        {entry.shelterCount} {t('searchHistory.shelters')}
-                      </span>
+                    {entry.routeData ? (
+                      <>
+                        <span className="history-item-route-data">
+                          <span className="history-item-route-stat">{entry.routeData.duration}</span>
+                          <span className="history-item-route-sep">|</span>
+                          <span className="history-item-route-stat">{entry.routeData.distance}</span>
+                        </span>
+                        <span className="history-item-shelters">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                            <path d="M12 2L3 7v10l9 5 9-5V7l-9-5z" />
+                          </svg>
+                          {entry.routeData.shelterCount} {t('searchHistory.shelters')}
+                        </span>
+                        <span className="history-item-saved-badge">
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+                          </svg>
+                          {t('savedRoutes.saved')}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        {entry.shelterCount !== undefined && entry.shelterCount > 0 && (
+                          <span className="history-item-shelters">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                              <path d="M12 2L3 7v10l9 5 9-5V7l-9-5z" />
+                            </svg>
+                            {entry.shelterCount} {t('searchHistory.shelters')}
+                          </span>
+                        )}
+                      </>
                     )}
                     {entry.pinned && (
                       <span className="history-item-pinned-badge">{t('searchHistory.pinned')}</span>

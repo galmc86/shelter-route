@@ -1,0 +1,18 @@
+{
+  "type": "EFFECT_REQUESTED",
+  "recordedAt": "2026-03-22T11:46:19.030Z",
+  "data": {
+    "effectId": "01KMANW3R9PPRNKX1GRF6A5PMY",
+    "invocationKey": "shelter-improvements:S000010:__sdk.breakpoint",
+    "invocationHash": "4fbe09d3cf2b4182dfe02f038659790b34eae7013aad4711fb3ea76c378417b6",
+    "stepId": "S000010",
+    "taskId": "__sdk.breakpoint",
+    "kind": "breakpoint",
+    "label": "breakpoint",
+    "taskDefRef": "tasks/01KMANW3R9PPRNKX1GRF6A5PMY/task.json",
+    "labels": [
+      "breakpoint"
+    ]
+  },
+  "checksum": "59d76412716795343b861d1390e559860ac5848bd2cc3f0c0f2be241b0a9d6bf"
+}
