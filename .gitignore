@@ -29,3 +29,7 @@ dist-ssr
 !.env.example
 .claude/worktrees/
 .claude/
+
+# Playwright
+test-results/
+playwright-report/

@@ -217,6 +217,9 @@ export const translations = {
     'error.geolocationUnsupported': 'הדפדפן לא תומך בשירותי מיקום',
     'error.locationDenied': 'גישה למיקום נדחתה',
     'error.locationUnavailable': 'לא ניתן לקבל את המיקום הנוכחי',
+    'error.errorOccurred': 'שגיאה',
+    'error.tryAgain': 'נסה שוב',
+    'error.mapLoadError': 'שגיאה בטעינת המפה',
   },
   en: {
     // App Header
@@ -434,6 +437,9 @@ export const translations = {
     'error.geolocationUnsupported': 'Your browser does not support location services',
     'error.locationDenied': 'Location access denied',
     'error.locationUnavailable': 'Unable to get your current location',
+    'error.errorOccurred': 'An error occurred',
+    'error.tryAgain': 'Try again',
+    'error.mapLoadError': 'Error loading the map',
   },
 } as const;
 

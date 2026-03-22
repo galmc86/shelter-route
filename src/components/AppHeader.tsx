@@ -1,7 +1,8 @@
-import { useState, useCallback } from 'react';
+import React, { useState, useCallback, Suspense } from 'react';
 import { useLanguage } from '../i18n';
 import { useTheme } from '../theme';
-import { BugReportForm } from './BugReportForm';
+
+const BugReportForm = React.lazy(() => import('./BugReportForm').then(m => ({ default: m.BugReportForm })));
 
 export function AppHeader() {
   const { language, setLanguage, t } = useLanguage();
@@ -80,7 +81,9 @@ export function AppHeader() {
           </button>
         </div>
       </header>
-      <BugReportForm open={bugReportOpen} onClose={handleCloseBugReport} />
+      <Suspense fallback={null}>
+        <BugReportForm open={bugReportOpen} onClose={handleCloseBugReport} />
+      </Suspense>
     </>
   );
 }

@@ -12,8 +12,9 @@
  * Deploy: cd workers/oref-proxy && npx wrangler deploy
  */
 
-interface Env {
-  ALLOWED_ORIGIN: string;
+export interface Env {
+  ALLOWED_ORIGINS?: string;
+  ALLOWED_ORIGIN?: string; // backward compat
 }
 
 // Community API that mirrors OREF alerts in real-time with proper access
@@ -49,6 +50,18 @@ interface OrefAlert {
   data: string[];
   desc: string;
   alertDate: string;
+}
+
+/**
+ * Parse allowed origins from env vars.
+ * Prefers ALLOWED_ORIGINS (comma-separated), falls back to ALLOWED_ORIGIN (singular).
+ */
+export function parseAllowedOrigins(env: Env): string[] {
+  const raw = env.ALLOWED_ORIGINS || env.ALLOWED_ORIGIN || '';
+  return raw
+    .split(',')
+    .map((o) => o.trim())
+    .filter((o) => o.length > 0);
 }
 
 /**
@@ -91,18 +104,20 @@ function convertHistoryToOref(events: TzevaAdomHistoryEvent[]): OrefAlert[] {
   );
 }
 
-function getCorsHeaders(origin: string, env: Env): Record<string, string> {
-  const allowedOrigins = [
-    env.ALLOWED_ORIGIN,
-    'http://localhost:5173',
-    'http://localhost:4173',
-  ];
+/**
+ * Build CORS headers for a given request origin.
+ * Returns headers with Access-Control-Allow-Origin ONLY if the origin is allowed.
+ * If the origin is not in the allowed list, CORS headers are omitted (browser will block).
+ */
+export function getCorsHeaders(origin: string, env: Env): Record<string, string> {
+  const allowedOrigins = parseAllowedOrigins(env);
 
-  const isAllowed = allowedOrigins.some((o) => origin === o);
-  const corsOrigin = isAllowed ? origin : allowedOrigins[0];
+  if (!allowedOrigins.includes(origin)) {
+    return {};
+  }
 
   return {
-    'Access-Control-Allow-Origin': corsOrigin,
+    'Access-Control-Allow-Origin': origin,
     'Access-Control-Allow-Methods': 'GET, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
     'Access-Control-Max-Age': '86400',
@@ -184,6 +199,10 @@ export default {
 
     // Handle CORS preflight
     if (request.method === 'OPTIONS') {
+      // If origin is not allowed, return 403
+      if (!corsHeaders['Access-Control-Allow-Origin']) {
+        return new Response('Forbidden', { status: 403 });
+      }
       return new Response(null, { status: 204, headers: corsHeaders });
     }
 

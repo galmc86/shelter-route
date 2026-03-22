@@ -1,6 +1,8 @@
 // OREF real-time alert service
 // Polls Home Front Command alerts API for active rocket/missile alerts
 
+import { resilientFetch } from './fetchClient';
+
 export interface OrefAlert {
   id: string;
   cat: string;        // category (e.g., "1" = rockets)
@@ -130,40 +132,39 @@ export function subscribeToAlerts(
   const MAX_CONSECUTIVE_FAILURES = 3;
 
   const checkAlerts = async () => {
-    try {
-      const response = await fetch(OREF_ALERTS_URL);
+    // retries: 0 — this service has its own consecutiveFailures counter
+    const result = await resilientFetch<OrefAlert[]>(OREF_ALERTS_URL, {}, {
+      timeout: 10000,
+      retries: 0,
+    });
 
-      if (!response.ok) {
-        consecutiveFailures++;
-        return;
-      }
-
-      consecutiveFailures = 0;
-
-      const text = await response.text();
-      if (!text || text.trim() === '') {
+    if (!result.ok) {
+      // PARSE errors from empty response body mean "no alerts"
+      if (result.error.code === 'PARSE') {
         callback([], null);
         return;
       }
-
-      const alerts: OrefAlert[] = JSON.parse(text);
-
-      if (alerts.length === 0) {
-        callback([], null);
-        return;
-      }
-
-      // Match user location to alerted regions
-      let matchedRegion: AlertRegion | null = null;
-      if (userLat !== null && userLng !== null) {
-        const allAreas = alerts.flatMap(a => a.data);
-        matchedRegion = matchUserToAlertRegion(userLat, userLng, allAreas);
-      }
-
-      callback(alerts, matchedRegion);
-    } catch {
       consecutiveFailures++;
+      return;
     }
+
+    consecutiveFailures = 0;
+
+    const alerts = result.data;
+
+    if (!alerts || alerts.length === 0) {
+      callback([], null);
+      return;
+    }
+
+    // Match user location to alerted regions
+    let matchedRegion: AlertRegion | null = null;
+    if (userLat !== null && userLng !== null) {
+      const allAreas = alerts.flatMap(a => a.data);
+      matchedRegion = matchUserToAlertRegion(userLat, userLng, allAreas);
+    }
+
+    callback(alerts, matchedRegion);
   };
 
   checkAlerts();

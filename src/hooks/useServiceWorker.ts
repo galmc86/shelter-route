@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 
+const SW_UPDATE_INTERVAL = 60 * 60 * 1000; // 60 minutes
+
 interface ServiceWorkerState {
   isUpdateAvailable: boolean;
   applyUpdate: () => void;
@@ -12,9 +14,9 @@ export function useServiceWorker(): ServiceWorkerState {
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return;
 
-    navigator.serviceWorker.getRegistration().then((reg) => {
-      if (!reg) return;
+    let updateInterval: ReturnType<typeof setInterval> | undefined;
 
+    function trackWaitingWorker(reg: ServiceWorkerRegistration) {
       // Check if there's already a waiting worker
       if (reg.waiting) {
         setWaitingWorker(reg.waiting);
@@ -34,7 +36,24 @@ export function useServiceWorker(): ServiceWorkerState {
           }
         });
       });
-    });
+    }
+
+    // Register the service worker
+    navigator.serviceWorker
+      .register('/sw.js', { scope: '/' })
+      .then((registration) => {
+        console.log('SW registered:', registration.scope);
+
+        trackWaitingWorker(registration);
+
+        // Check for updates periodically
+        updateInterval = setInterval(() => {
+          registration.update();
+        }, SW_UPDATE_INTERVAL);
+      })
+      .catch((error) => {
+        console.log('SW registration failed:', error);
+      });
 
     // Handle controller change (reload when new SW takes control)
     let refreshing = false;
@@ -44,6 +63,12 @@ export function useServiceWorker(): ServiceWorkerState {
         window.location.reload();
       }
     });
+
+    return () => {
+      if (updateInterval) {
+        clearInterval(updateInterval);
+      }
+    };
   }, []);
 
   const applyUpdate = useCallback(() => {

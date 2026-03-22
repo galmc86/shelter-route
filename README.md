@@ -1,73 +1,86 @@
-# React + TypeScript + Vite
+# Shelter Finder
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A Progressive Web App (PWA) for finding nearby bomb shelters in Israel with route planning and real-time OREF (Home Front Command) alert integration.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Route-based shelter search** -- plan a walking, biking, or driving route and see shelters along the way
+- **Nearest shelter mode** -- find the closest shelters to your current location
+- **Emergency mode** -- triggered manually or automatically via real-time OREF rocket alert integration
+- **Multiple route alternatives** -- compare routes ranked by travel time and shelter coverage
+- **Offline support** -- service worker caches shelter data and app shell for use without connectivity
+- **Bilingual UI** -- Hebrew (RTL) and English (LTR) with full i18n support
+- **Dark / light theme**
 
-## React Compiler
+## Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+| Layer | Technology |
+|-------|-----------|
+| UI | React 19, TypeScript 5.9 |
+| Build | Vite 8 |
+| Maps | Leaflet, leaflet.markercluster |
+| Routing | OpenRouteService API |
+| Places autocomplete | Google Maps Places API |
+| Alerts proxy | Cloudflare Worker (`workers/oref-proxy/`) |
+| Testing | Vitest, Testing Library |
 
-## Expanding the ESLint configuration
+## Prerequisites
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- Node.js 18+
+- npm
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## Environment Variables
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+Create a `.env` file in the project root:
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```env
+VITE_ORS_API_KEY=<your OpenRouteService API key>
+VITE_GOOGLE_MAPS_API_KEY=<your Google Maps API key for Places autocomplete>
+VITE_OREF_PROXY_URL=<URL of the deployed oref-proxy Cloudflare Worker>
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+- **VITE_ORS_API_KEY** -- required. Get a free key at https://openrouteservice.org/
+- **VITE_GOOGLE_MAPS_API_KEY** -- required for address autocomplete. Enable the Places API in Google Cloud Console.
+- **VITE_OREF_PROXY_URL** -- URL of the Cloudflare Worker that proxies OREF alert requests (avoids CORS issues).
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Development
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install        # install dependencies
+npm run dev        # start Vite dev server (http://localhost:5173)
+npm run test       # run tests in watch mode
+npm run test:run   # run tests once
+npm run lint       # lint with ESLint
+npm run build      # type-check + production build
+npm run preview    # preview production build locally
 ```
+
+## Project Structure
+
+```
+src/
+  components/    # React UI components (MapView, SearchPanel, AlertBanner, etc.)
+  hooks/         # Custom React hooks (useAppController, useRoute, useOrefAlerts, etc.)
+  services/      # API clients and data services (routing, shelters, alerts, geocoding)
+  utils/         # Pure utility functions (geometry, distance calculations)
+  sw/            # Service worker request classifiers and caching logic
+workers/
+  oref-proxy/    # Cloudflare Worker that proxies OREF Home Front Command alert API
+public/
+  shelters.json  # Shelter coordinate dataset served as a static asset
+  sw.js          # Service worker entry point
+  manifest.json  # PWA manifest
+data/
+  *.kmz          # Raw shelter data source files (see data/README.md)
+```
+
+## Deployment
+
+The app is deployed to **Cloudflare Pages** at `https://shelter-route.pages.dev`.
+
+- The OREF alert proxy worker is deployed separately via `wrangler` from `workers/oref-proxy/`.
+- Shelter data (`public/shelters.json`) is cache-busted at build time using a content hash injected via `__SHELTER_DATA_VERSION__`.
+
+## License
+
+Private project.

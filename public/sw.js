@@ -24,8 +24,8 @@ self.addEventListener('install', (event) => {
       return cache.addAll(APP_SHELL);
     })
   );
-  // Activate new SW immediately
-  self.skipWaiting();
+  // Note: skipWaiting is NOT called here — activation is controlled
+  // via the SKIP_WAITING message handler so users can choose when to update.
 });
 
 // Activate: clean up old caches
@@ -57,6 +57,18 @@ self.addEventListener('fetch', (event) => {
 
   // Only handle GET requests
   if (request.method !== 'GET') return;
+
+  // OREF proxy (real-time alert data) — network-only, never cache
+  if (isOrefProxy(url)) {
+    event.respondWith(fetch(request));
+    return;
+  }
+
+  // Shelters data — network-first with cache fallback (needs to be fresh but available offline)
+  if (isSheltersData(url)) {
+    event.respondWith(networkFirst(request, API_CACHE));
+    return;
+  }
 
   // Map tiles — cache-first with expiration
   if (isTileRequest(url)) {
@@ -109,9 +121,19 @@ function isAPIRequest(url) {
 }
 
 function isStaticAsset(url) {
+  // Exclude shelters.json — it has its own network-first strategy
+  if (isSheltersData(url)) return false;
   return /\.(js|css|svg|png|jpg|jpeg|gif|ico|woff|woff2|ttf|eot|json)(\?.*)?$/.test(
     url.pathname
   );
+}
+
+function isSheltersData(url) {
+  return url.pathname.endsWith('/shelters.json') || url.pathname === '/shelters.json';
+}
+
+function isOrefProxy(url) {
+  return url.hostname.includes('workers.dev');
 }
 
 // Cache-first strategy: serve from cache, falling back to network

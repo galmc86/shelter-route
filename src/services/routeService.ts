@@ -1,6 +1,8 @@
 import type { RouteOption, TravelMode, LatLng, LatLngBounds } from '../types';
 import { translations } from '../i18n/translations';
 import type { TranslationKey } from '../i18n/translations';
+import { resilientFetch } from './fetchClient';
+import type { ServiceResult } from './serviceResult';
 
 type TranslateFn = (key: TranslationKey) => string;
 
@@ -128,13 +130,18 @@ interface AlternativeParams {
   weight_factor: number;
 }
 
+interface OrsRoutesResponse {
+  routes?: Array<{ geometry: string; summary: { duration: number; distance: number } }>;
+  error?: { message?: string };
+}
+
 async function fetchRoutes(
   origin: LatLng,
   destination: LatLng,
   profile: string,
   apiKey: string,
   alternativeParams?: AlternativeParams
-): Promise<Response> {
+): Promise<ServiceResult<OrsRoutesResponse>> {
   const body: Record<string, unknown> = {
     coordinates: [
       [origin.lng, origin.lat],
@@ -147,22 +154,20 @@ async function fetchRoutes(
     body.alternative_routes = alternativeParams;
   }
 
-  const doFetch = () =>
-    fetch(`${ORS_API}/${profile}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: apiKey,
-      },
-      body: JSON.stringify(body),
-    });
-
-  // Retry once on network error (handles Safari 18+ keep-alive bug)
-  try {
-    return await doFetch();
-  } catch {
-    return doFetch();
-  }
+  // retries: 1 handles transient network errors (e.g. Safari 18+ keep-alive bug)
+  // HTTP errors are NOT retried here — the ALTERNATIVE_STRATEGIES loop handles fallback
+  return resilientFetch<OrsRoutesResponse>(`${ORS_API}/${profile}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: apiKey,
+    },
+    body: JSON.stringify(body),
+  }, {
+    timeout: 30000,
+    retries: 1,
+    retryDelay: 1000,
+  });
 }
 
 // Graduated fallback: try progressively relaxed alternative params before giving up
@@ -181,40 +186,35 @@ export async function computeRoutes(
   const profile = PROFILE_MAP[travelMode];
   const apiKey = import.meta.env.VITE_ORS_API_KEY;
 
-  let response: Response | null = null;
+  let successResult: OrsRoutesResponse | null = null;
   let lastErrorMessage: string | null = null;
 
   for (const strategy of ALTERNATIVE_STRATEGIES) {
     const label = strategy ? `alternatives(target=${strategy.target_count},share=${strategy.share_factor})` : 'single route';
 
-    try {
-      response = await fetchRoutes(origin, destination, profile, apiKey, strategy);
-    } catch {
-      console.warn(`[RouteService] Network error with ${label}, trying next strategy`);
-      continue;
-    }
+    const result = await fetchRoutes(origin, destination, profile, apiKey, strategy);
 
-    if (!response.ok) {
-      const errorBody = await response.clone().json().catch(() => null);
-      lastErrorMessage = errorBody?.error?.message ?? null;
-      console.warn(`[RouteService] HTTP ${response.status} with ${label}:`, lastErrorMessage ?? 'unknown error');
-      response = null;
+    if (!result.ok) {
+      if (result.error.code === 'HTTP') {
+        lastErrorMessage = result.error.message;
+      }
+      console.warn(`[RouteService] ${result.error.code} error with ${label}:`, result.error.message);
       continue;
     }
 
     // Success
+    successResult = result.data;
     if (strategy) {
       console.info(`[RouteService] Got response with ${label}`);
     }
     break;
   }
 
-  if (!response || !response.ok) {
+  if (!successResult) {
     throw new Error(lastErrorMessage || t('error.networkError'));
   }
 
-  const data = await response.json();
-  const routes = parseRoutes(data, travelMode, t);
+  const routes = parseRoutes(successResult, travelMode, t);
 
   console.info(`[RouteService] Received ${routes.length} route(s) from ORS`);
 

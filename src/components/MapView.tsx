@@ -391,13 +391,14 @@ export function MapView({
   useEffect(() => {
     const map = mapInstanceRef.current;
     const markersLayer = markersLayerRef.current;
+    const popupRoots = popupRootsRef.current;
     if (!map || !markersLayer) return;
 
     // Clean up existing popup roots
-    popupRootsRef.current.forEach((root) => {
+    popupRoots.forEach((root) => {
       root.unmount();
     });
-    popupRootsRef.current.clear();
+    popupRoots.clear();
 
     markersLayer.clearLayers();
 
@@ -442,13 +443,13 @@ export function MapView({
       // Render React component when popup opens
       marker.on('popupopen', () => {
         // Unmount previous root if it exists
-        const existingRoot = popupRootsRef.current.get(shelter.id);
+        const existingRoot = popupRoots.get(shelter.id);
         if (existingRoot) {
           existingRoot.unmount();
         }
 
         const root = createRoot(popupContainer);
-        popupRootsRef.current.set(shelter.id, root);
+        popupRoots.set(shelter.id, root);
 
         const currentCapData = capacityMap?.get(shelter.id);
         root.render(
@@ -465,10 +466,10 @@ export function MapView({
 
       // Clean up React root when popup closes
       marker.on('popupclose', () => {
-        const root = popupRootsRef.current.get(shelter.id);
+        const root = popupRoots.get(shelter.id);
         if (root) {
           root.unmount();
-          popupRootsRef.current.delete(shelter.id);
+          popupRoots.delete(shelter.id);
         }
       });
 
@@ -488,10 +489,10 @@ export function MapView({
 
     // Cleanup on unmount
     return () => {
-      popupRootsRef.current.forEach((root) => {
+      popupRoots.forEach((root) => {
         root.unmount();
       });
-      popupRootsRef.current.clear();
+      popupRoots.clear();
     };
   }, [shelters, selectedShelterId, onShelterClick, routeInfo, language, capacityMap]);
 

@@ -2,6 +2,7 @@
 // Uses the new promise-based API with field-level billing optimization
 
 import type { PlaceResult } from '../types';
+import { ServiceError } from './serviceResult';
 
 // Client-side daily rate limit to prevent runaway API costs
 const DAILY_LIMIT = 500; // max autocomplete requests per day per client
@@ -128,8 +129,9 @@ export async function getPlaceDetails(
       lat: loc.lat(),
       lng: loc.lng(),
     };
-  } catch {
+  } catch (err) {
     resetSession();
+    console.warn('[GooglePlaces] Failed to get place details:', new ServiceError('UNKNOWN', 'Place details fetch failed', undefined, false, err).message);
     return null;
   }
 }

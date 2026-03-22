@@ -1,4 +1,5 @@
 import type { Shelter } from '../types';
+import { resilientFetch } from './fetchClient';
 
 interface MiklatShelter {
   id: number;
@@ -112,15 +113,15 @@ async function reverseGeocodeSingle(
   lat: number,
   lon: number
 ): Promise<string | null> {
-  try {
-    const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=he&zoom=18`;
-    const response = await fetch(url);
-    if (!response.ok) return null;
-    const data: NominatimResponse = await response.json();
-    return extractNameFromNominatim(data);
-  } catch {
+  const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=he&zoom=18`;
+  const result = await resilientFetch<NominatimResponse>(url, {}, { timeout: 5000, retries: 0 });
+
+  if (!result.ok) {
+    console.warn('[ShelterApi] Reverse geocode failed:', result.error.message);
     return null;
   }
+
+  return extractNameFromNominatim(result.data);
 }
 
 /** Max network reverse-geocode requests per session to avoid Nominatim rate limits */
@@ -271,29 +272,28 @@ export async function fetchAllShelters(
     return cachedShelters;
   }
 
-  try {
-    const response = await fetch(`/shelters.json?v=${__SHELTER_DATA_VERSION__}`);
+  const result = await resilientFetch<{ shelters: MiklatShelter[] }>(
+    `/shelters.json?v=${__SHELTER_DATA_VERSION__}`,
+    {},
+    { timeout: 15000, retries: 1, retryDelay: 1000 }
+  );
 
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-
-    const json: { shelters: MiklatShelter[] } = await response.json();
-    cachedShelters = parseShelters(json.shelters);
+  if (result.ok) {
+    cachedShelters = parseShelters(result.data.shelters);
     saveToLocalStorage(cachedShelters);
 
     // Start background reverse-geocoding for generic names
     reverseGeocodeGenericShelters(cachedShelters, onReverseGeocodeUpdate);
 
     return cachedShelters;
-  } catch (err) {
-    // Fallback to localStorage cache
-    const cached = loadFromLocalStorage();
-    if (cached && cached.length > 0) {
-      cachedShelters = cached;
-      return cachedShelters;
-    }
-    console.error('Failed to fetch shelters:', err);
-    throw new Error('שגיאה בטעינת מקלטים. בדוק את חיבור האינטרנט.', { cause: err });
   }
+
+  // Fallback to localStorage cache
+  const cached = loadFromLocalStorage();
+  if (cached && cached.length > 0) {
+    cachedShelters = cached;
+    return cachedShelters;
+  }
+  console.error('Failed to fetch shelters:', result.error.message);
+  throw new Error('שגיאה בטעינת מקלטים. בדוק את חיבור האינטרנט.', { cause: result.error });
 }
