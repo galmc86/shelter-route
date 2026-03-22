@@ -1,0 +1,64 @@
+/* EmergencyButton Component Styles */
+
+/* Emergency FAB (floating action button) */
+.emergency-fab {
+  position: fixed;
+  bottom: 24px;
+  left: 24px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #D32F2F;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(211, 47, 47, 0.4);
+  transition: transform 0.2s, box-shadow 0.2s;
+  z-index: 20;
+  animation: pulse-emergency 2s infinite;
+}
+
+.emergency-fab:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 20px rgba(211, 47, 47, 0.5);
+}
+
+.emergency-fab:active {
+  transform: scale(0.95);
+}
+
+@keyframes pulse-emergency {
+  0%, 100% { box-shadow: 0 4px 16px rgba(211, 47, 47, 0.4); }
+  50% { box-shadow: 0 4px 24px rgba(211, 47, 47, 0.6); }
+}
+
+/* Emergency Quick Button (in panel) */
+.emergency-quick-btn {
+  width: 100%;
+  padding: 14px 16px;
+  background: var(--color-emergency-quick-bg);
+  color: var(--color-emergency-quick-text);
+  border: 2px solid var(--color-emergency-quick-border);
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background 0.2s, border-color 0.2s;
+  min-height: 48px;
+}
+
+.emergency-quick-btn:hover {
+  background: var(--color-emergency-quick-hover-bg);
+  border-color: var(--color-emergency-quick-hover-border);
+}
+
+.emergency-quick-btn:active {
+  background: var(--color-emergency-quick-active-bg);
+}

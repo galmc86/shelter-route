@@ -1,79 +1,70 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { LocationInput } from './LocationInput';
+import './SearchPanel.css';
 import { TravelModeSelector } from './TravelModeSelector';
 import { SearchHistory } from './SearchHistory';
+import { SavedLocations } from './SavedLocations';
+import { ShelterScore } from './ShelterScore';
 import { useLanguage } from '../i18n';
 import { useSearchHistory } from '../hooks/useSearchHistory';
-import type { TravelMode, RouteInfo, LatLng, ShelterSortMode, RouteWithShelters, SearchHistoryEntry } from '../types';
-import type { ShelterWithDistance } from '../hooks/useShelters';
-import type { LocationPoint } from '../types';
+import { useSavedLocations } from '../hooks/useSavedLocations';
+import { useRouteContext } from '../contexts/RouteContext';
+import { useEmergencyContext } from '../contexts/EmergencyContext';
+import { useShelterContext } from '../contexts/ShelterContext';
+import type { TravelMode, LatLng, ShelterSortMode, SearchHistoryEntry } from '../types';
 import type { PlaceResult } from '../types';
-import type { CapacityData } from '../services/capacityService';
 import { getCapacityColor, getCapacityStatusKey } from '../services/capacityService';
-import type { RouteRiskAssessment } from '../services/alertHistoryService';
+import { getAggregatedStatus, getStatusBadgeColor } from '../services/shelterReportsService';
 import type { TimeFilter } from '../hooks/useAlertHistory';
 
 interface SearchPanelProps {
-  isLoaded: boolean;
-  onSearch: (origin: LatLng, destination: LatLng, travelMode: TravelMode) => void;
-  isSearching: boolean;
-  routeInfo: RouteInfo | null;
-  selectedRouteIndex?: number;
-  nearbyShelters: ShelterWithDistance[];
-  sheltersLoading: boolean;
-  currentLocation: LocationPoint | null;
-  isLoadingLocation: boolean;
-  onGetLocation: () => void;
-  searchError: string | null;
-  locationError?: string | null;
-  onShelterClick?: (shelter: ShelterWithDistance) => void;
-  selectedShelterId?: string | null;
-  emergencyMode?: boolean;
-  onEmergencyClick?: () => void;
-  onExitEmergency?: () => void;
   panelExpanded?: boolean;
   onTogglePanel?: () => void;
-  shareOrigin?: { lat: number; lng: number } | null;
-  shareDestination?: { lat: number; lng: number } | null;
-  shareTravelMode?: TravelMode;
-  routesWithShelters?: RouteWithShelters[];
-  onRouteSelect?: (index: number) => void;
-  capacityMap?: Map<string, CapacityData>;
-  routeRisk?: RouteRiskAssessment | null;
-  timeFilter?: TimeFilter;
-  onTimeFilterChange?: (hours: TimeFilter) => void;
 }
 
 export function SearchPanel({
-  isLoaded,
-  onSearch,
-  isSearching,
-  routeInfo,
-  selectedRouteIndex = 0,
-  nearbyShelters,
-  sheltersLoading,
-  currentLocation,
-  isLoadingLocation,
-  onGetLocation,
-  searchError,
-  locationError,
-  onShelterClick,
-  selectedShelterId,
-  emergencyMode,
-  onEmergencyClick,
-  onExitEmergency,
   panelExpanded,
   onTogglePanel,
-  shareOrigin,
-  shareDestination,
-  shareTravelMode,
-  routesWithShelters = [],
-  onRouteSelect,
-  capacityMap,
-  routeRisk,
-  timeFilter = 24,
-  onTimeFilterChange,
 }: SearchPanelProps) {
+  const {
+    routeInfo,
+    selectedRouteIndex,
+    routesWithShelters,
+    nearbyShelters,
+    sheltersLoading,
+    searchError,
+    isSearching,
+    onSearch,
+    onRouteSelect,
+    shareOrigin,
+    shareDestination,
+    shareTravelMode,
+    routeRisk,
+    timeFilter,
+    onTimeFilterChange,
+  } = useRouteContext();
+
+  const {
+    emergencyMode,
+    onEmergencyClick,
+    onExitEmergency,
+    currentLocation,
+    isLoadingLocation,
+    locationError,
+    onGetLocation,
+    nearMeMode,
+    onNearMeClick,
+    onExitNearMe,
+    onUseMapCenter,
+  } = useEmergencyContext();
+
+  const {
+    selectedShelterId,
+    onShelterClick,
+    capacityMap,
+    isLoaded,
+    allShelters,
+  } = useShelterContext();
   const { t } = useLanguage();
   const [showCopiedToast, setShowCopiedToast] = useState(false);
   const [originText, setOriginText] = useState('');
@@ -85,7 +76,10 @@ export function SearchPanel({
   const [useMyLocation, setUseMyLocation] = useState(false);
   const [sortMode, setSortMode] = useState<ShelterSortMode>('distance');
   const [showAccessibleOnly, setShowAccessibleOnly] = useState(false);
+  const [routePlannerExpanded, setRoutePlannerExpanded] = useState(false);
+  const [showShelterScore, setShowShelterScore] = useState(false);
   const { entries: historyEntries, addEntry: addHistoryEntry, removeEntry: removeHistoryEntry, clearAll: clearHistory, togglePin: toggleHistoryPin, renameEntry: renameHistoryEntry, updateShelterCount: updateHistoryShelterCount } = useSearchHistory();
+  const { locations: savedLocations, addLocation: addSavedLocation, removeLocation: removeSavedLocation, isMaxReached: savedLocationsMaxReached } = useSavedLocations();
 
   // Mark as searched when route info arrives (e.g. from shared URL)
   useEffect(() => {
@@ -150,6 +144,7 @@ export function SearchPanel({
     }
   }, [showCopiedToast]);
 
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization
   const handleShare = useCallback(async () => {
     if (!shareOrigin || !shareDestination) return;
 
@@ -161,7 +156,12 @@ export function SearchPanel({
 
     const shareUrl = `${window.location.origin}${window.location.pathname}?${params.toString()}`;
     const shelterCount = nearbyShelters.length;
-    const shareText = t('share.text').replace('{{count}}', String(shelterCount));
+    const origin = originText || t('search.myLocation');
+    const dest = destText || '';
+    const shareText = t('share.richText')
+      .replace('{{count}}', String(shelterCount))
+      .replace('{{origin}}', origin)
+      .replace('{{destination}}', dest);
 
     if (navigator.share) {
       try {
@@ -186,6 +186,7 @@ export function SearchPanel({
   }, [shareOrigin, shareDestination, shareTravelMode, nearbyShelters.length, t]);
 
   // Auto-recalculate route when travel mode changes (if a route has already been searched)
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization
   const setTravelMode = useCallback((newMode: TravelMode) => {
     setTravelModeState(newMode);
 
@@ -240,6 +241,13 @@ export function SearchPanel({
     });
   }, [useMyLocation, currentLocation, originPlace, destPlace, travelMode, onSearch, addHistoryEntry, originText, destText, t]);
 
+  const handleSavedLocationSelect = useCallback((location: { lat: number; lng: number }) => {
+    // Set the saved location as origin and trigger near-me style search
+    setOriginText(t('savedLocations.savedPoint'));
+    setOriginPlace({ lat: location.lat, lng: location.lng, displayName: t('savedLocations.savedPoint') });
+    setUseMyLocation(false);
+  }, [t]);
+
   const handleHistorySelect = useCallback((entry: SearchHistoryEntry) => {
     setOriginText(entry.originName);
     setDestText(entry.destName);
@@ -253,8 +261,148 @@ export function SearchPanel({
 
   const canSearch = (useMyLocation && currentLocation || originPlace) && destPlace && !isSearching;
 
+  // --- Bottom sheet swipe gesture logic (mobile only) ---
+  const panelRef = useRef<HTMLElement>(null);
+  const touchStartY = useRef(0);
+  const touchCurrentY = useRef(0);
+  const touchStartTime = useRef(0);
+  const isDragging = useRef(false);
+  const snapPointName = useRef<'peek' | 'half' | 'full'>(panelExpanded ? 'half' : 'peek');
+
+  // Snap point heights in px (computed from vh at runtime)
+  const getSnapPoints = useCallback(() => {
+    const vh = window.innerHeight;
+    return {
+      peek: 80,
+      half: vh * 0.4,
+      full: vh * 0.85,
+    };
+  }, []);
+
+  // Translate the panel to a given height (from bottom)
+  const setPanelHeight = useCallback((height: number, animate: boolean) => {
+    const el = panelRef.current;
+    if (!el) return;
+    if (animate) {
+      el.style.transition = 'max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1)';
+    } else {
+      el.style.transition = 'none';
+    }
+    el.style.maxHeight = `${height}px`;
+  }, []);
+
+  const snapTo = useCallback((point: 'peek' | 'half' | 'full', animate = true) => {
+    const snaps = getSnapPoints();
+    snapPointName.current = point;
+    setPanelHeight(snaps[point], animate);
+    // Sync the expanded/collapsed state with parent
+    if (point === 'peek' && panelExpanded && onTogglePanel) {
+      onTogglePanel();
+    } else if (point !== 'peek' && !panelExpanded && onTogglePanel) {
+      onTogglePanel();
+    }
+  }, [getSnapPoints, setPanelHeight, panelExpanded, onTogglePanel]);
+
+  // Keep snap point in sync with external panelExpanded changes
+  useEffect(() => {
+    if (window.innerWidth >= 769) return;
+    if (panelExpanded && snapPointName.current === 'peek') {
+      snapPointName.current = 'half';
+      const snaps = getSnapPoints();
+      setPanelHeight(snaps.half, true);
+    } else if (!panelExpanded && snapPointName.current !== 'peek') {
+      snapPointName.current = 'peek';
+      const snaps = getSnapPoints();
+      setPanelHeight(snaps.peek, true);
+    }
+  }, [panelExpanded, getSnapPoints, setPanelHeight]);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (window.innerWidth >= 769) return;
+    const touch = e.touches[0];
+    touchStartY.current = touch.clientY;
+    touchCurrentY.current = touch.clientY;
+    touchStartTime.current = Date.now();
+    isDragging.current = true;
+
+    // Remove transition during drag for responsiveness
+    const el = panelRef.current;
+    if (el) {
+      el.style.transition = 'none';
+    }
+  }, []);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!isDragging.current || window.innerWidth >= 769) return;
+    const touch = e.touches[0];
+    touchCurrentY.current = touch.clientY;
+
+    const delta = touchStartY.current - touch.clientY; // positive = dragging up
+    const snaps = getSnapPoints();
+    const currentHeight = snaps[snapPointName.current];
+    const newHeight = Math.max(snaps.peek, Math.min(snaps.full, currentHeight + delta));
+
+    const el = panelRef.current;
+    if (el) {
+      el.style.maxHeight = `${newHeight}px`;
+    }
+  }, [getSnapPoints]);
+
+  const handleTouchEnd = useCallback(() => {
+    if (!isDragging.current || window.innerWidth >= 769) return;
+    isDragging.current = false;
+
+    const delta = touchStartY.current - touchCurrentY.current; // positive = up
+    const elapsed = (Date.now() - touchStartTime.current) / 1000; // seconds
+    const velocity = elapsed > 0 ? delta / elapsed : 0; // px/s, positive = up
+
+    const snaps = getSnapPoints();
+    const currentHeight = snaps[snapPointName.current] + delta;
+    const VELOCITY_THRESHOLD = 400; // px/s
+
+    let target: 'peek' | 'half' | 'full';
+
+    if (Math.abs(velocity) > VELOCITY_THRESHOLD) {
+      // Fast flick: snap to next/previous point
+      const ordered: Array<'peek' | 'half' | 'full'> = ['peek', 'half', 'full'];
+      const currentIdx = ordered.indexOf(snapPointName.current);
+      if (velocity > 0) {
+        // Flick up -> next higher point
+        target = ordered[Math.min(currentIdx + 1, ordered.length - 1)];
+      } else {
+        // Flick down -> next lower point
+        target = ordered[Math.max(currentIdx - 1, 0)];
+      }
+    } else {
+      // Slow drag: snap to nearest point
+      const distances = {
+        peek: Math.abs(currentHeight - snaps.peek),
+        half: Math.abs(currentHeight - snaps.half),
+        full: Math.abs(currentHeight - snaps.full),
+      };
+      target = (Object.entries(distances) as Array<['peek' | 'half' | 'full', number]>)
+        .sort((a, b) => a[1] - b[1])[0][0];
+    }
+
+    snapTo(target, true);
+  }, [getSnapPoints, snapTo]);
+
+  // Handle click on the handle (for non-touch / desktop fallback)
+  const handleHandleClick = useCallback(() => {
+    if (window.innerWidth < 769) {
+      // On mobile, cycle through snap points on click
+      const ordered: Array<'peek' | 'half' | 'full'> = ['peek', 'half', 'full'];
+      const currentIdx = ordered.indexOf(snapPointName.current);
+      const nextIdx = (currentIdx + 1) % ordered.length;
+      snapTo(ordered[nextIdx], true);
+    } else if (onTogglePanel) {
+      onTogglePanel();
+    }
+  }, [snapTo, onTogglePanel]);
+
   return (
     <aside
+      ref={panelRef}
       className={`search-panel ${panelExpanded ? 'panel-expanded' : 'panel-collapsed'}`}
       role="complementary"
       aria-label={t('search.ariaLabel')}
@@ -262,7 +410,10 @@ export function SearchPanel({
       {/* Mobile drag handle */}
       <button
         className="panel-handle"
-        onClick={onTogglePanel}
+        onClick={handleHandleClick}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
         aria-label={panelExpanded ? t('search.panelCollapse') : t('search.panelExpand')}
         aria-expanded={panelExpanded}
       >
@@ -289,6 +440,19 @@ export function SearchPanel({
                     ? locationError
                     : `${nearbyShelters.length} ${t('emergency.nearbyShelters')}`}
               </div>
+              {locationError && !isLoadingLocation && (
+                <div className="emergency-fallback">
+                  <button
+                    className="emergency-map-center-btn"
+                    onClick={onUseMapCenter}
+                  >
+                    {t('emergency.useMapCenter')}
+                  </button>
+                  <div className="emergency-permission-hint">
+                    {t('emergency.locationPermissionHint')}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
           <button
@@ -301,8 +465,31 @@ export function SearchPanel({
         </div>
       )}
 
+      {/* Navigate to Nearest Shelter - One-Tap Emergency Navigation */}
+      {emergencyMode && nearbyShelters.length > 0 && (() => {
+        const nearest = nearbyShelters[0];
+        const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${nearest.lat},${nearest.lon}&travelmode=walking`;
+        return (
+          <a
+            href={mapsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="emergency-navigate-now-btn"
+            aria-label={`${t('emergency.navigateNow')} - ${nearest.name}`}
+          >
+            <span className="emergency-navigate-now-icon" aria-hidden="true">&#x27A4;</span>
+            <span className="emergency-navigate-now-text">
+              <span className="emergency-navigate-now-label">{t('emergency.navigateNow')}</span>
+              <span className="emergency-navigate-now-detail">
+                {nearest.name} &middot; {t('emergency.walkingTime')}: ~{nearest.walkingTimeMinutes} {t('capacity.minutes')}
+              </span>
+            </span>
+          </a>
+        );
+      })()}
+
       {/* Emergency Quick Button */}
-      {!emergencyMode && (
+      {!emergencyMode && !nearMeMode && (
         <button
           className="emergency-quick-btn"
           onClick={onEmergencyClick}
@@ -316,83 +503,190 @@ export function SearchPanel({
         </button>
       )}
 
-      {/* Regular search (hidden in emergency mode) */}
-      {!emergencyMode && (
-        <>
-          <div className="panel-section">
-            <div className="section-label" id="route-label">{t('search.sectionRoute')}</div>
-            <div className="inputs-container" role="group" aria-labelledby="route-label">
-              <LocationInput
-                placeholder={t('search.placeholder.origin')}
-                value={originText}
-                onChange={(v) => {
-                  setOriginText(v);
-                  setUseMyLocation(false);
-                }}
-                onPlaceSelect={(place) => {
-                  setOriginPlace(place);
-                  setUseMyLocation(false);
-                }}
-                isLoaded={isLoaded}
-                icon="origin"
-                showMyLocation
-                onUseCurrentLocation={handleUseCurrentLocation}
-                isLoadingLocation={isLoadingLocation}
-                currentLocation={currentLocation}
-              />
-              <LocationInput
-                placeholder={t('search.placeholder.dest')}
-                value={destText}
-                onChange={setDestText}
-                onPlaceSelect={setDestPlace}
-                isLoaded={isLoaded}
-                icon="dest"
-              />
+      {/* Near Me Mode Banner */}
+      {nearMeMode && !emergencyMode && (
+        <div className="near-me-banner" role="status">
+          <div className="near-me-banner-content">
+            <span className="near-me-banner-icon" aria-hidden="true">{'\uD83D\uDCCD'}</span>
+            <div>
+              <div className="near-me-banner-title">{t('search.sheltersNearMe')}</div>
+              <div className="near-me-banner-subtitle">
+                {isLoadingLocation
+                  ? t('emergency.locating')
+                  : locationError
+                    ? locationError
+                    : `${nearbyShelters.length} ${t('emergency.nearbyShelters')}`}
+              </div>
             </div>
           </div>
+          <button
+            className="near-me-exit-btn"
+            onClick={onExitNearMe}
+            aria-label={t('emergency.exit')}
+          >
+            {t('emergency.exit')}
+          </button>
+        </div>
+      )}
 
-          <div className="panel-section">
-            <div className="section-label" id="travel-label">{t('search.sectionTransport')}</div>
-            <TravelModeSelector
-              selected={travelMode}
-              onSelect={setTravelMode}
-            />
-          </div>
+      {/* Shelters Near Me Primary CTA */}
+      {!emergencyMode && !nearMeMode && (
+        <button
+          className="near-me-cta-btn"
+          onClick={onNearMeClick}
+          aria-label={t('search.sheltersNearMe')}
+        >
+          <span className="near-me-cta-icon" aria-hidden="true">{'\uD83D\uDCCD'}</span>
+          {t('search.sheltersNearMe')}
+        </button>
+      )}
 
-          <div className="search-btn-wrapper">
+      {/* Shelter Score Toggle - shown in nearMe mode or when shelters are loaded */}
+      {(nearMeMode || nearbyShelters.length > 0) && !emergencyMode && currentLocation && allShelters.length > 0 && (
+        <>
+          {!showShelterScore ? (
             <button
-              className="search-btn"
-              onClick={handleSearch}
-              disabled={!canSearch}
-              title={!canSearch ? t('search.button.tooltip') : undefined}
-              aria-label={canSearch ? t('search.button.ariaEnabled') : t('search.button.ariaDisabled')}
+              className="shelter-score-toggle-btn"
+              onClick={() => setShowShelterScore(true)}
             >
-              {isSearching ? (
-                <>
-                  <span className="loading-spinner small" aria-hidden="true" />
-                  {t('search.searching')}
-                </>
-              ) : (
-                <>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <circle cx="10.5" cy="10.5" r="7" stroke="white" strokeWidth="2.5" />
-                    <path d="M16 16l5.5 5.5" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
-                  </svg>
-                  {t('search.button')}
-                </>
-              )}
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M12 2L3 7v10l9 5 9-5V7l-9-5z" fill="var(--color-primary, #1565C0)" />
+                <text x="12" y="16" textAnchor="middle" fill="white" fontSize="10" fontWeight="bold">A</text>
+              </svg>
+              {t('shelterScore.checkScore')}
             </button>
-            {!canSearch && (
-              <span className="search-btn-tooltip" aria-hidden="true">
-                {t('search.button.tooltip')}
-              </span>
-            )}
-          </div>
+          ) : (
+            <>
+              <button
+                className="shelter-score-toggle-btn shelter-score-toggle-btn--active"
+                onClick={() => setShowShelterScore(false)}
+              >
+                {t('shelterScore.hideScore')}
+              </button>
+              <ShelterScore
+                lat={currentLocation.lat}
+                lng={currentLocation.lng}
+                shelters={allShelters}
+                addressName={t('search.myLocation')}
+              />
+            </>
+          )}
+        </>
+      )}
+
+      {/* Saved Locations (hidden in emergency and nearMe mode) */}
+      {!emergencyMode && !nearMeMode && (
+        <SavedLocations
+          locations={savedLocations}
+          onSelectLocation={handleSavedLocationSelect}
+          onAddLocation={addSavedLocation}
+          onRemoveLocation={removeSavedLocation}
+          isMaxReached={savedLocationsMaxReached}
+          currentLocation={currentLocation ? { lat: currentLocation.lat, lng: currentLocation.lng } : null}
+          shelters={nearbyShelters.map((s) => ({ id: s.id, name: s.name, lat: s.lat, lon: s.lon, address: s.address }))}
+        />
+      )}
+
+      {/* Regular search (hidden in emergency and nearMe mode) */}
+      {!emergencyMode && !nearMeMode && (
+        <>
+          {/* Collapsible route planner toggle */}
+          <button
+            className="route-planner-toggle"
+            onClick={() => setRoutePlannerExpanded((v) => !v)}
+            aria-expanded={routePlannerExpanded}
+          >
+            <svg
+              className={`route-planner-toggle-chevron ${routePlannerExpanded ? 'expanded' : ''}`}
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              aria-hidden="true"
+            >
+              <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            {t('search.planSafeRoute')}
+          </button>
+
+          {routePlannerExpanded && (
+            <>
+              <div className="panel-section">
+                <div className="section-label" id="route-label">{t('search.sectionRoute')}</div>
+                <div className="inputs-container" role="group" aria-labelledby="route-label">
+                  <LocationInput
+                    placeholder={t('search.placeholder.origin')}
+                    value={originText}
+                    onChange={(v) => {
+                      setOriginText(v);
+                      setUseMyLocation(false);
+                    }}
+                    onPlaceSelect={(place) => {
+                      setOriginPlace(place);
+                      setUseMyLocation(false);
+                    }}
+                    isLoaded={isLoaded}
+                    icon="origin"
+                    showMyLocation
+                    onUseCurrentLocation={handleUseCurrentLocation}
+                    isLoadingLocation={isLoadingLocation}
+                    currentLocation={currentLocation}
+                  />
+                  <LocationInput
+                    placeholder={t('search.placeholder.dest')}
+                    value={destText}
+                    onChange={setDestText}
+                    onPlaceSelect={setDestPlace}
+                    isLoaded={isLoaded}
+                    icon="dest"
+                  />
+                </div>
+              </div>
+
+              <div className="panel-section">
+                <div className="section-label" id="travel-label">{t('search.sectionTransport')}</div>
+                <TravelModeSelector
+                  selected={travelMode}
+                  onSelect={setTravelMode}
+                />
+              </div>
+
+              <div className="search-btn-wrapper">
+                <button
+                  className="search-btn"
+                  onClick={handleSearch}
+                  disabled={!canSearch}
+                  title={!canSearch ? t('search.button.tooltip') : undefined}
+                  aria-label={canSearch ? t('search.button.ariaEnabled') : t('search.button.ariaDisabled')}
+                >
+                  {isSearching ? (
+                    <>
+                      <span className="loading-spinner small" aria-hidden="true" />
+                      {t('search.searching')}
+                    </>
+                  ) : (
+                    <>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <circle cx="10.5" cy="10.5" r="7" stroke="white" strokeWidth="2.5" />
+                        <path d="M16 16l5.5 5.5" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+                      </svg>
+                      {t('search.button')}
+                    </>
+                  )}
+                </button>
+                {!canSearch && (
+                  <span className="search-btn-tooltip" aria-hidden="true">
+                    {t('search.button.tooltip')}
+                  </span>
+                )}
+              </div>
+            </>
+          )}
         </>
       )}
 
       {/* Search History — shown when no route is displayed */}
-      {!routeInfo && !emergencyMode && historyEntries.length > 0 && (
+      {!routeInfo && !emergencyMode && !nearMeMode && historyEntries.length > 0 && (
         <SearchHistory
           entries={historyEntries}
           onSelect={handleHistorySelect}
@@ -604,7 +898,7 @@ export function SearchPanel({
               <path d="M12 2L3 7v10l9 5 9-5V7l-9-5z" />
               <path d="M12 6v8M8 10h8" stroke="white" strokeWidth="2" strokeLinecap="round" />
             </svg>
-            {emergencyMode ? t('shelters.nearYou') : `${t('shelters.alongRoute')} (${nearbyShelters.length})`}
+            {(emergencyMode || nearMeMode) ? t('shelters.nearYou') : `${t('shelters.alongRoute')} (${nearbyShelters.length})`}
           </div>
 
           {/* Sort & Filter Controls */}
@@ -650,6 +944,7 @@ export function SearchPanel({
                 : undefined;
               const capColor = getCapacityColor(occupancyPct);
               const capStatus = getCapacityStatusKey(occupancyPct);
+              const communityStatus = getAggregatedStatus(shelter.id);
               const statusIcon = capStatus === 'capacity.low' ? '\u2713'
                 : capStatus === 'capacity.medium' ? '\u26A0'
                 : capStatus === 'capacity.high' ? '!'
@@ -681,6 +976,15 @@ export function SearchPanel({
                           </svg>
                         </span>
                       )}
+                      {communityStatus && (
+                        <span
+                          className="shelter-community-badge"
+                          style={{ backgroundColor: getStatusBadgeColor(communityStatus) }}
+                          title={t(`report.${communityStatus === 'key-required' ? 'keyRequired' : communityStatus}`)}
+                        >
+                          {t(`report.${communityStatus === 'key-required' ? 'keyRequired' : communityStatus}`)}
+                        </span>
+                      )}
                     </div>
                     {shelter.address && (
                       <div className="shelter-item-address">{shelter.address}</div>
@@ -710,6 +1014,9 @@ export function SearchPanel({
                       <span className="capacity-bar-label" style={{ color: capColor }}>
                         <span className="capacity-status-icon" aria-hidden="true">{statusIcon}</span>
                         {occupancyPct !== undefined ? `${occupancyPct}%` : t('capacity.unknown')}
+                        <span className="capacity-estimated-badge-sm" title={t('capacity.estimatedTooltip')}>
+                          {t('capacity.estimated')}
+                        </span>
                       </span>
                     </div>
                   </div>

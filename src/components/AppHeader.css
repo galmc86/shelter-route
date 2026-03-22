@@ -1,0 +1,311 @@
+/* AppHeader Component Styles */
+
+/* Header */
+.header {
+  background: linear-gradient(135deg, var(--color-header-gradient-from), var(--color-header-gradient-to));
+  color: white;
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: var(--shadow-header);
+  position: relative;
+  z-index: 10;
+  flex-shrink: 0;
+}
+
+.header-icon {
+  width: 36px;
+  height: 36px;
+  background: var(--color-header-icon-bg);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.header-title {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.header-subtitle {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.header-data-age {
+  display: block;
+  font-size: 10px;
+  opacity: 0.7;
+}
+
+.header-data-age--stale {
+  color: #ffb74d;
+  opacity: 1;
+  font-weight: 600;
+}
+
+.header-actions {
+  margin-inline-start: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.lang-select {
+  background: var(--color-header-btn-bg);
+  color: white;
+  border: 1px solid var(--color-header-btn-border);
+  border-radius: 6px;
+  padding: 4px 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  flex-shrink: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='white'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 6px center;
+  padding-right: 20px;
+  min-width: 0;
+  max-width: 100px;
+}
+
+.lang-select:hover {
+  background-color: var(--color-header-btn-hover-bg);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='white'/%3E%3C/svg%3E");
+}
+
+.lang-select option {
+  background: #1565C0;
+  color: white;
+}
+
+.theme-toggle-btn {
+  background: var(--color-header-btn-bg);
+  color: white;
+  border: 1px solid var(--color-header-btn-border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 28px;
+}
+
+.theme-toggle-btn:hover {
+  background: var(--color-header-btn-hover-bg);
+}
+
+/* Bug Report Button */
+.bug-report-btn {
+  background: var(--color-header-btn-bg);
+  color: white;
+  border: 1px solid var(--color-header-btn-border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 28px;
+}
+
+.bug-report-btn:hover {
+  background: var(--color-header-btn-hover-bg);
+}
+
+
+/* Bug Report Dialog */
+.bug-report-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+
+.bug-report-dialog {
+  background: var(--color-panel-bg);
+  color: var(--color-text);
+  border-radius: 12px;
+  width: 100%;
+  max-width: 440px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.bug-report-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.bug-report-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.bug-report-close-btn {
+  background: none;
+  border: none;
+  color: var(--color-subtle-text);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+}
+
+.bug-report-close-btn:hover {
+  color: var(--color-text);
+  background: var(--color-divider);
+}
+
+.bug-report-form {
+  padding: 16px 20px 20px;
+}
+
+.bug-report-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-subtle-text);
+  margin-bottom: 8px;
+}
+
+.bug-report-categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.bug-report-category-btn {
+  background: var(--color-input-bg);
+  color: var(--color-text);
+  border: 1px solid var(--color-input-border);
+  border-radius: 16px;
+  padding: 5px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.bug-report-category-btn:hover {
+  border-color: var(--color-primary);
+}
+
+.bug-report-category-btn.active {
+  background: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
+}
+
+.bug-report-textarea {
+  width: 100%;
+  background: var(--color-input-bg);
+  color: var(--color-text);
+  border: 1px solid var(--color-input-border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 80px;
+  margin-bottom: 16px;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+
+.bug-report-textarea::placeholder {
+  color: var(--color-input-placeholder);
+}
+
+.bug-report-textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  background: var(--color-input-bg-focus);
+}
+
+.bug-report-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.bug-report-cancel-btn {
+  background: var(--color-input-bg);
+  color: var(--color-text);
+  border: 1px solid var(--color-input-border);
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.bug-report-cancel-btn:hover {
+  background: var(--color-divider);
+}
+
+.bug-report-submit-btn {
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.bug-report-submit-btn:hover {
+  background: var(--color-primary-dark);
+}
+
+.bug-report-submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.bug-report-success {
+  padding: 32px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+}
+
+.bug-report-success p {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.bug-report-offline-note {
+  font-size: 12px;
+  color: var(--color-subtle-text);
+  margin-top: 8px;
+  text-align: center;
+}

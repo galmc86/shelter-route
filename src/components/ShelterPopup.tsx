@@ -1,17 +1,23 @@
+import { useState } from 'react';
 import { useLanguage } from '../i18n';
 import type { ShelterWithDistance } from '../hooks/useShelters';
 import type { CapacityData } from '../services/capacityService';
 import { getCapacityColor } from '../services/capacityService';
+import { getAggregatedStatus, getStatusBadgeColor } from '../services/shelterReportsService';
+import { ShelterReport } from './ShelterReport';
 
 interface ShelterPopupProps {
   shelter: ShelterWithDistance;
   hasRoute: boolean;
   capacityData?: CapacityData;
+  onNavigateToShelter?: (shelter: ShelterWithDistance) => void;
 }
 
-export function ShelterPopup({ shelter, hasRoute, capacityData }: ShelterPopupProps) {
+export function ShelterPopup({ shelter, hasRoute, capacityData, onNavigateToShelter }: ShelterPopupProps) {
   const { language, t } = useLanguage();
-  const dir = language === 'he' ? 'rtl' : 'ltr';
+  const dir = language === 'en' || language === 'ru' ? 'ltr' : 'rtl';
+  const [showReportForm, setShowReportForm] = useState(false);
+  const aggregatedStatus = getAggregatedStatus(shelter.id);
 
   const name = shelter.name || t('shelters.publicShelter');
   const distanceText = Math.round(shelter.distanceFromRoute);
@@ -44,7 +50,12 @@ export function ShelterPopup({ shelter, hasRoute, capacityData }: ShelterPopupPr
 
       {occupancyPct !== undefined && (
         <div className="shelter-popup-capacity">
-          <div className="shelter-popup-capacity-label">{t('capacity.title')}</div>
+          <div className="shelter-popup-capacity-label">
+            {t('capacity.title')}
+            <span className="capacity-estimated-badge" title={t('capacity.estimatedTooltip')}>
+              {t('capacity.estimated')}
+            </span>
+          </div>
           <div className="shelter-popup-capacity-row">
             <div className="shelter-popup-capacity-track">
               <div
@@ -59,14 +70,50 @@ export function ShelterPopup({ shelter, hasRoute, capacityData }: ShelterPopupPr
         </div>
       )}
 
-      <a
-        href={navUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="shelter-popup-nav"
+      {aggregatedStatus && (
+        <div className="shelter-popup-community-status">
+          <span
+            className="shelter-status-badge"
+            style={{ backgroundColor: getStatusBadgeColor(aggregatedStatus) }}
+          >
+            {t(`report.${aggregatedStatus === 'key-required' ? 'keyRequired' : aggregatedStatus}`)}
+          </span>
+        </div>
+      )}
+
+      {onNavigateToShelter ? (
+        <button
+          type="button"
+          className="shelter-popup-nav shelter-popup-nav-btn"
+          onClick={() => onNavigateToShelter(shelter)}
+        >
+          {t('shelters.navigateToShelter')}
+        </button>
+      ) : (
+        <a
+          href={navUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="shelter-popup-nav"
+        >
+          {t('shelters.navigateToShelter')}
+        </a>
+      )}
+
+      <button
+        className="shelter-popup-report-btn"
+        onClick={() => setShowReportForm(!showReportForm)}
+        type="button"
       >
-        {t('shelters.navigateToShelter')}
-      </a>
+        {t('report.reportStatus')}
+      </button>
+
+      {showReportForm && (
+        <ShelterReport
+          shelterId={shelter.id}
+          onClose={() => setShowReportForm(false)}
+        />
+      )}
     </div>
   );
 }
