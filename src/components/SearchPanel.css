@@ -473,6 +473,46 @@
   background: var(--color-primary-border);
 }
 
+/* Save Route Button */
+.save-route-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  margin-top: 8px;
+  padding: 10px 12px;
+  background: none;
+  border: 1.5px solid var(--color-primary);
+  color: var(--color-primary);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  transition: background 0.2s, color 0.2s;
+  min-height: 40px;
+}
+
+.save-route-btn:hover {
+  background: var(--color-primary-light);
+}
+
+.save-route-btn:active {
+  background: var(--color-primary-border);
+}
+
+.save-route-btn.saved {
+  background: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
+}
+
+.save-route-btn.saved:hover {
+  background: var(--color-primary-dark);
+  border-color: var(--color-primary-dark);
+}
+
 /* Copied Toast */
 .copied-toast {
   position: fixed;
