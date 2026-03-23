@@ -55,6 +55,22 @@ function normalizeText(value: string | undefined): string {
     .toLowerCase();
 }
 
+function extractSchoolNameHints(value: string | undefined): string[] {
+  if (!value) {
+    return [];
+  }
+
+  return [
+    ...Array.from(value.matchAll(/ביה"?ס\s+"([^"]{2,})"/g)).map((match) => match[1] ?? ''),
+    ...Array.from(value.matchAll(/בית הספר\s+"([^"]{2,})"/g)).map((match) => match[1] ?? ''),
+    ...Array.from(value.matchAll(/בי"?ס\s+"([^"]{2,})"/g)).map((match) => match[1] ?? ''),
+    ...Array.from(value.matchAll(/"([^"]{2,})"/g)).map((match) => match[1] ?? ''),
+    ...Array.from(value.matchAll(/״([^״]{2,})״/g)).map((match) => match[1] ?? ''),
+  ]
+    .map((phrase) => normalizeText(phrase))
+    .filter(Boolean);
+}
+
 function toWordSet(value: string | undefined): Set<string> {
   const normalized = normalizeText(value);
   if (!normalized) {
@@ -102,6 +118,27 @@ function looksLikeSchoolMatch(current: MiklatShelter, candidate: MiklatShelter):
   return /בית ספר|ביה"?ס|מוסדות חינוך/.test(combined);
 }
 
+function quotedSchoolNameOverlap(
+  current: MiklatShelter,
+  candidate: MiklatShelter
+): number {
+  const candidateName = candidate.name;
+  let best = 0;
+
+  for (const phrase of extractSchoolNameHints(current.description)) {
+    best = Math.max(best, textOverlap(phrase, candidateName));
+  }
+
+  return best;
+}
+
+function looksLikeParkingMatch(current: MiklatShelter, candidate: MiklatShelter): boolean {
+  const currentText = `${current.name} ${current.description ?? ''}`;
+  const candidateText = `${candidate.name} ${candidate.description ?? ''}`;
+  return /חניון|מחסה/.test(currentText)
+    && /חניון|מגדל|מלון|בית/.test(candidateText);
+}
+
 function classifyMatch(
   current: MiklatShelter,
   candidate: MiklatShelter
@@ -119,6 +156,7 @@ function classifyMatch(
   const exactishDescription = descriptionOverlap >= 0.8;
   const strongTextSignal = nameOverlap >= 0.5 || descriptionOverlap >= 0.75;
   const plausibleTextSignal = nameOverlap >= 0.5 || descriptionOverlap >= 0.5;
+  const quotedSchoolOverlap = quotedSchoolNameOverlap(current, candidate);
 
   if (distanceMeters <= SAFE_MOVE_DISTANCE_METERS && (exactishName || exactishDescription)) {
     return {
@@ -163,6 +201,22 @@ function classifyMatch(
   if (
     distanceMeters <= SAFE_ENRICH_ADDRESS_DISTANCE_METERS
     && looksLikeSchoolMatch(current, candidate)
+    && (descriptionOverlap >= 1 || quotedSchoolOverlap >= 0.5)
+  ) {
+    return {
+      current,
+      candidate,
+      distanceMeters,
+      nameOverlap,
+      descriptionOverlap,
+      confidence: 'high',
+      action: 'safe_enrich',
+    };
+  }
+
+  if (
+    distanceMeters <= SAFE_ENRICH_ADDRESS_DISTANCE_METERS
+    && looksLikeParkingMatch(current, candidate)
     && descriptionOverlap >= 1
   ) {
     return {

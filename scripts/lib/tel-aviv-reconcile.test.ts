@@ -176,6 +176,56 @@ describe('tel-aviv-reconcile', () => {
     });
   });
 
+  it('promotes school-site matches when the quoted school name matches the ArcGIS school name', () => {
+    const current = makeShelter({
+      id: 5562,
+      name: 'מקלט ציבורי במוסדות חינוך',
+      lat: 32.115895,
+      lng: 34.8381995,
+      description: 'המקלט נמצא בשטח ביה"ס "הגליל", כניסה מהשער הראשי ואז ימינה וישר עד למקלט.',
+    });
+    const candidate = makeShelter({
+      id: 999,
+      name: 'בית ספר הגליל',
+      lat: 32.115528,
+      lng: 34.83750205,
+      description: 'גבעתי 4',
+      source: 'tel-aviv-arcgis',
+      sources: ['tel-aviv-arcgis'],
+    });
+
+    const result = reconcileTelAvivShelters(makeDataset([current]), [candidate]);
+
+    expect(result.report.safeEnrichCount).toBe(1);
+    expect(result.report.safeMoveCount).toBe(0);
+    expect(result.report.ambiguousCount).toBe(0);
+  });
+
+  it('promotes parking/refuge matches when the address matches exactly', () => {
+    const current = makeShelter({
+      id: 19980,
+      name: 'חניון מחסה לציבור',
+      lat: 32.061,
+      lng: 34.771,
+      description: 'אחד העם 9',
+    });
+    const candidate = makeShelter({
+      id: 999,
+      name: 'בית הרכב מגדל שלום',
+      lat: 32.0606,
+      lng: 34.7704,
+      description: 'אחד העם 9',
+      source: 'tel-aviv-arcgis',
+      sources: ['tel-aviv-arcgis'],
+    });
+
+    const result = reconcileTelAvivShelters(makeDataset([current]), [candidate]);
+
+    expect(result.report.safeEnrichCount).toBe(1);
+    expect(result.report.safeMoveCount).toBe(0);
+    expect(result.report.ambiguousCount).toBe(0);
+  });
+
   it('reports unmatched candidate shelters without adding them automatically', () => {
     const current = makeShelter();
     const candidate = makeShelter({
