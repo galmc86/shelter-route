@@ -3,7 +3,7 @@ import { reportError } from './errorReportingService';
 import { translations } from '../i18n/translations';
 import type { TranslationKey } from '../i18n/translations';
 import { resilientFetch } from './fetchClient';
-import type { ServiceResult } from './serviceResult';
+import { ServiceError, type ServiceResult } from './serviceResult';
 
 type TranslateFn = (key: TranslationKey) => string;
 
@@ -136,6 +136,14 @@ interface OrsRoutesResponse {
   error?: { message?: string };
 }
 
+function getOrsApiKey(): string {
+  const apiKey = (import.meta.env.VITE_ORS_API_KEY as string | undefined)?.trim();
+  if (!apiKey) {
+    throw new ServiceError('UNKNOWN', 'Missing OpenRouteService API key');
+  }
+  return apiKey;
+}
+
 async function fetchRoutes(
   origin: LatLng,
   destination: LatLng,
@@ -185,7 +193,14 @@ export async function computeRoutes(
   t: TranslateFn = defaultT
 ): Promise<RouteOption[]> {
   const profile = PROFILE_MAP[travelMode];
-  const apiKey = import.meta.env.VITE_ORS_API_KEY;
+  let apiKey: string;
+  try {
+    apiKey = getOrsApiKey();
+  } catch (err) {
+    const message = t('error.routeSearchFailed');
+    reportError('route-api-config', 'Missing ORS API key', err instanceof Error ? err.message : String(err));
+    throw new Error(message, { cause: err });
+  }
 
   let successResult: OrsRoutesResponse | null = null;
   let lastErrorMessage: string | null = null;
@@ -237,7 +252,7 @@ export async function computeWalkingRoute(
   destination: LatLng
 ): Promise<{ path: LatLng[]; distanceMeters: number; durationSeconds: number }> {
   const profile = 'foot-walking';
-  const apiKey = import.meta.env.VITE_ORS_API_KEY;
+  const apiKey = getOrsApiKey();
 
   const result = await fetchRoutes(origin, destination, profile, apiKey);
 

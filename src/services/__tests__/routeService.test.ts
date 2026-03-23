@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { computeRoutes } from '../routeService';
+import { computeRoutes, computeWalkingRoute } from '../routeService';
 
 // Mock import.meta.env
 vi.stubEnv('VITE_ORS_API_KEY', 'test-api-key');
@@ -33,6 +33,7 @@ const SIMPLE_POLYLINE = '_p~iF~ps|U_ulLnnqC';
 describe('computeRoutes', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    vi.stubEnv('VITE_ORS_API_KEY', 'test-api-key');
   });
 
   it('calls ORS API with correct parameters for WALKING mode', async () => {
@@ -242,5 +243,70 @@ describe('computeRoutes', () => {
         'WALKING'
       )
     ).rejects.toThrow('Rate limit exceeded');
+  });
+
+  it('throws a route search error when the ORS API key is missing', async () => {
+    vi.unstubAllEnvs();
+
+    await expect(
+      computeRoutes(
+        { lat: 32.0, lng: 34.0 },
+        { lat: 32.1, lng: 34.1 },
+        'WALKING'
+      )
+    ).rejects.toThrow('שגיאה בחיפוש מסלול');
+  });
+});
+
+describe('computeWalkingRoute', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    vi.stubEnv('VITE_ORS_API_KEY', 'test-api-key');
+  });
+
+  it('returns the first walking route path and summary', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      mockResponse({
+        routes: [
+          {
+            geometry: SIMPLE_POLYLINE,
+            summary: { duration: 420, distance: 650 },
+          },
+        ],
+      })
+    );
+
+    const result = await computeWalkingRoute(
+      { lat: 32.0, lng: 34.0 },
+      { lat: 32.1, lng: 34.1 }
+    );
+
+    expect(result.distanceMeters).toBe(650);
+    expect(result.durationSeconds).toBe(468);
+    expect(result.path.length).toBeGreaterThan(0);
+  });
+
+  it('throws when the ORS API key is missing', async () => {
+    vi.unstubAllEnvs();
+
+    await expect(
+      computeWalkingRoute(
+        { lat: 32.0, lng: 34.0 },
+        { lat: 32.1, lng: 34.1 }
+      )
+    ).rejects.toThrow('Missing OpenRouteService API key');
+  });
+
+  it('throws when the walking response contains no routes', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      mockResponse({ routes: [] })
+    );
+
+    await expect(
+      computeWalkingRoute(
+        { lat: 32.0, lng: 34.0 },
+        { lat: 32.1, lng: 34.1 }
+      )
+    ).rejects.toThrow('No walking route found');
   });
 });
