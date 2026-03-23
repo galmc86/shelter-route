@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState } from 'react';
 import { LocationInput } from './LocationInput';
 import './SearchPanel.css';
 import { TravelModeSelector } from './TravelModeSelector';
@@ -13,7 +13,7 @@ import { useEmergencyContext } from '../contexts/EmergencyContext';
 import { useShelterContext } from '../contexts/ShelterContext';
 import { useSearchPanelSheet } from '../hooks/useSearchPanelSheet';
 import { useSearchPanelRoutePlanner } from '../hooks/useSearchPanelRoutePlanner';
-import type { ShelterSortMode, SavedRouteData } from '../types';
+import { useSearchPanelShelters } from '../hooks/useSearchPanelShelters';
 import { getCapacityColor, getCapacityStatusKey } from '../services/capacityService';
 import { getAggregatedStatus, getStatusBadgeColor } from '../services/shelterReportsService';
 
@@ -66,8 +66,6 @@ export function SearchPanel({
     allShelters,
   } = useShelterContext();
   const { t } = useLanguage();
-  const [sortMode, setSortMode] = useState<ShelterSortMode>('distance');
-  const [showAccessibleOnly, setShowAccessibleOnly] = useState(false);
   const [routePlannerExpanded, setRoutePlannerExpanded] = useState(false);
   const [showShelterScore, setShowShelterScore] = useState(false);
   const { entries: historyEntries, addEntry: addHistoryEntry, removeEntry: removeHistoryEntry, clearAll: clearHistory, togglePin: toggleHistoryPin, renameEntry: renameHistoryEntry, updateShelterCount: updateHistoryShelterCount, saveRoute: saveHistoryRoute, unsaveRoute: unsaveHistoryRoute } = useSearchHistory();
@@ -107,72 +105,29 @@ export function SearchPanel({
     updateHistoryShelterCount,
     t,
   });
-
-  // Filter and sort shelters based on user preferences
-  const displayedShelters = useMemo(() => {
-    let shelters = [...nearbyShelters];
-
-    // Filter by accessibility
-    if (showAccessibleOnly) {
-      shelters = shelters.filter((s) => s.isAccessible);
-    }
-
-    // Sort
-    if (sortMode === 'walkingTime') {
-      shelters.sort((a, b) => a.walkingTimeMinutes - b.walkingTimeMinutes);
-    } else {
-      shelters.sort((a, b) => a.distanceFromRoute - b.distanceFromRoute);
-    }
-
-    return shelters;
-  }, [nearbyShelters, sortMode, showAccessibleOnly]);
-
-  // Find the route index with the most shelters
-  const bestRouteIndex = useMemo(() => {
-    if (routesWithShelters.length <= 1) return 0;
-    let maxCount = -1;
-    let bestIdx = 0;
-    routesWithShelters.forEach((rws, idx) => {
-      if (rws.shelterCount > maxCount) {
-        maxCount = rws.shelterCount;
-        bestIdx = idx;
-      }
-    });
-    return bestIdx;
-  }, [routesWithShelters]);
-
-  // Find the history entry matching the current route for save/unsave
-  const currentRouteEntry = useMemo(() => {
-    if (!routeInfo || !currentOrigin || !currentDestination) return null;
-    return historyEntries.find((e) =>
-      Math.abs(e.origin.lat - currentOrigin.lat) < 0.001 &&
-      Math.abs(e.origin.lng - currentOrigin.lng) < 0.001 &&
-      Math.abs(e.destination.lat - currentDestination.lat) < 0.001 &&
-      Math.abs(e.destination.lng - currentDestination.lng) < 0.001 &&
-      e.travelMode === travelMode
-    ) ?? null;
-  }, [routeInfo, currentOrigin, currentDestination, historyEntries, travelMode]);
-
-  const isRouteSaved = !!currentRouteEntry?.routeData;
-
-  const handleSaveRoute = useCallback(() => {
-    if (!currentRouteEntry || !routeInfo) return;
-    const selectedRoute = routesWithShelters[selectedRouteIndex]?.route;
-    const routeData: SavedRouteData = {
-      duration: routeInfo.duration,
-      distance: routeInfo.distance,
-      durationSeconds: selectedRoute?.durationSeconds ?? 0,
-      distanceMeters: selectedRoute?.distanceMeters ?? 0,
-      shelterCount: nearbyShelters.length,
-      savedAt: Date.now(),
-    };
-    saveHistoryRoute(currentRouteEntry.id, routeData);
-  }, [currentRouteEntry, routeInfo, routesWithShelters, selectedRouteIndex, nearbyShelters.length, saveHistoryRoute]);
-
-  const handleUnsaveRoute = useCallback(() => {
-    if (!currentRouteEntry) return;
-    unsaveHistoryRoute(currentRouteEntry.id);
-  }, [currentRouteEntry, unsaveHistoryRoute]);
+  const {
+    sortMode,
+    setSortMode,
+    showAccessibleOnly,
+    setShowAccessibleOnly,
+    displayedShelters,
+    bestRouteIndex,
+    currentRouteEntry,
+    isRouteSaved,
+    handleSaveRoute,
+    handleUnsaveRoute,
+  } = useSearchPanelShelters({
+    routeInfo,
+    routesWithShelters,
+    selectedRouteIndex,
+    nearbyShelters,
+    currentOrigin,
+    currentDestination,
+    historyEntries,
+    travelMode,
+    saveHistoryRoute,
+    unsaveHistoryRoute,
+  });
 
   const canSearch = (useMyLocation && currentLocation || originPlace) && destPlace && !isSearching;
   const {
