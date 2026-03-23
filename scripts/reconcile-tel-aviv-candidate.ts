@@ -36,6 +36,8 @@ async function main() {
 
     console.log(`Wrote Tel Aviv reconciliation report: ${reportPath}`);
     console.log(`Wrote reconciled shelter candidate: ${outputPath}`);
+    console.log(`Safe coordinate moves: ${result.report.safeMoveCount}`);
+    console.log(`Safe enrichments without moving coordinates: ${result.report.safeEnrichCount}`);
     console.log(`Promoted high-confidence matches: ${result.report.promotedCount}`);
     console.log(`Ambiguous matches left unchanged: ${result.report.ambiguousCount}`);
     console.log(`Current-only shelters left unchanged: ${result.report.currentOnlyCount}`);

@@ -45,6 +45,8 @@ describe('tel-aviv-reconcile', () => {
 
     const result = reconcileTelAvivShelters(makeDataset([current]), [candidate]);
 
+    expect(result.report.safeMoveCount).toBe(1);
+    expect(result.report.safeEnrichCount).toBe(0);
     expect(result.report.promotedCount).toBe(1);
     expect(result.report.ambiguousCount).toBe(0);
     expect(result.candidateDataset.shelters[0]).toEqual({
@@ -54,6 +56,33 @@ describe('tel-aviv-reconcile', () => {
       lng: candidate.lng,
       description: current.description,
       source: current.source,
+      sources: [
+        'miklat-isr-2026-03-06.kmz',
+        'miklat-tlv-2026-03-06.kmz',
+        'tel-aviv-arcgis',
+        TEL_AVIV_RECONCILED_SOURCE,
+      ],
+    });
+  });
+
+  it('enriches high-confidence matches without moving coordinates when the distance is larger', () => {
+    const current = makeShelter();
+    const candidate = makeShelter({
+      id: 999,
+      lat: 32.04342,
+      lng: 34.75137,
+      description: 'יפת 120 תל אביב',
+      source: 'tel-aviv-arcgis',
+      sources: ['tel-aviv-arcgis'],
+    });
+
+    const result = reconcileTelAvivShelters(makeDataset([current]), [candidate]);
+
+    expect(result.report.safeMoveCount).toBe(0);
+    expect(result.report.safeEnrichCount).toBe(1);
+    expect(result.candidateDataset.shelters[0]).toEqual({
+      ...current,
+      description: 'יפת 120 תל אביב',
       sources: [
         'miklat-isr-2026-03-06.kmz',
         'miklat-tlv-2026-03-06.kmz',
@@ -77,6 +106,8 @@ describe('tel-aviv-reconcile', () => {
     const result = reconcileTelAvivShelters(makeDataset([current]), [candidate]);
 
     expect(result.report.promotedCount).toBe(0);
+    expect(result.report.safeMoveCount).toBe(0);
+    expect(result.report.safeEnrichCount).toBe(0);
     expect(result.report.ambiguousCount).toBe(1);
     expect(result.report.candidateOnlyCount).toBe(0);
     expect(result.candidateDataset.shelters[0]).toEqual(current);

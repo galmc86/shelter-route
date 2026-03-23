@@ -4,9 +4,12 @@ import { haversineMeters } from './shelter-id';
 
 export const TEL_AVIV_RECONCILED_SOURCE = 'miklat-tlv-arcgis';
 
-const SAME_NAME_DISTANCE_METERS = 20;
-const HIGH_CONFIDENCE_DISTANCE_METERS = 35;
+const SAFE_MOVE_DISTANCE_METERS = 20;
+const SAFE_ENRICH_DISTANCE_METERS = 35;
 const PLAUSIBLE_MATCH_DISTANCE_METERS = 120;
+const LOW_CONFIDENCE_DISTANCE_METERS = 60;
+
+export type ReconcileAction = 'safe_move' | 'safe_enrich' | 'review';
 
 export interface ReconcileMatch {
   current: MiklatShelter;
@@ -15,12 +18,15 @@ export interface ReconcileMatch {
   nameOverlap: number;
   descriptionOverlap: number;
   confidence: 'high' | 'medium' | 'low';
+  action: ReconcileAction;
 }
 
 export interface TelAvivReconcileReport {
   generatedAt: string;
   currentCount: number;
   candidateCount: number;
+  safeMoveCount: number;
+  safeEnrichCount: number;
   promotedCount: number;
   ambiguousCount: number;
   currentOnlyCount: number;
@@ -101,7 +107,7 @@ function classifyMatch(
   const strongTextSignal = nameOverlap >= 0.5 || descriptionOverlap >= 0.75;
   const plausibleTextSignal = nameOverlap >= 0.5 || descriptionOverlap >= 0.5;
 
-  if (distanceMeters <= SAME_NAME_DISTANCE_METERS && (exactishName || exactishDescription)) {
+  if (distanceMeters <= SAFE_MOVE_DISTANCE_METERS && (exactishName || exactishDescription)) {
     return {
       current,
       candidate,
@@ -109,10 +115,11 @@ function classifyMatch(
       nameOverlap,
       descriptionOverlap,
       confidence: 'high',
+      action: 'safe_move',
     };
   }
 
-  if (distanceMeters <= HIGH_CONFIDENCE_DISTANCE_METERS && strongTextSignal) {
+  if (distanceMeters <= SAFE_ENRICH_DISTANCE_METERS && strongTextSignal) {
     return {
       current,
       candidate,
@@ -120,6 +127,7 @@ function classifyMatch(
       nameOverlap,
       descriptionOverlap,
       confidence: 'high',
+      action: 'safe_enrich',
     };
   }
 
@@ -131,10 +139,11 @@ function classifyMatch(
       nameOverlap,
       descriptionOverlap,
       confidence: 'medium',
+      action: 'review',
     };
   }
 
-  if (distanceMeters <= 60 && (nameOverlap >= 0.4 || descriptionOverlap >= 0.4)) {
+  if (distanceMeters <= LOW_CONFIDENCE_DISTANCE_METERS && (nameOverlap >= 0.4 || descriptionOverlap >= 0.4)) {
     return {
       current,
       candidate,
@@ -142,6 +151,7 @@ function classifyMatch(
       nameOverlap,
       descriptionOverlap,
       confidence: 'low',
+      action: 'review',
     };
   }
 
@@ -165,24 +175,32 @@ function preferDescription(current: MiklatShelter, candidate: MiklatShelter): st
 }
 
 function mergePromotedShelter(match: ReconcileMatch): MiklatShelter {
+  const mergedSources = sortSourcesByPriority(
+    Array.from(
+      new Set([
+        ...match.current.sources,
+        ...match.candidate.sources,
+        TEL_AVIV_RECONCILED_SOURCE,
+      ])
+    )
+  );
+
+  if (match.action === 'safe_enrich') {
+    return {
+      ...match.current,
+      description: preferDescription(match.current, match.candidate),
+      sources: mergedSources,
+    };
+  }
+
   return {
     id: match.current.id,
-    name: match.distanceMeters <= HIGH_CONFIDENCE_DISTANCE_METERS
-      ? match.candidate.name
-      : match.current.name,
+    name: match.current.name,
     lat: match.candidate.lat,
     lng: match.candidate.lng,
     description: preferDescription(match.current, match.candidate),
     source: match.current.source,
-    sources: sortSourcesByPriority(
-      Array.from(
-        new Set([
-          ...match.current.sources,
-          ...match.candidate.sources,
-          TEL_AVIV_RECONCILED_SOURCE,
-        ])
-      )
-    ),
+    sources: mergedSources,
   };
 }
 
@@ -286,6 +304,8 @@ export function reconcileTelAvivShelters(
       generatedAt: new Date().toISOString(),
       currentCount: currentTelAviv.length,
       candidateCount: candidateShelters.length,
+      safeMoveCount: promoted.filter((match) => match.action === 'safe_move').length,
+      safeEnrichCount: promoted.filter((match) => match.action === 'safe_enrich').length,
       promotedCount: promoted.length,
       ambiguousCount: ambiguous.length,
       currentOnlyCount: currentOnly.length,
