@@ -14,6 +14,9 @@
   --color-input-bg-focus: white;
   --color-input-border: #E0E0E0;
   --color-input-placeholder: #BDBDBD;
+  --color-text-secondary: #757575;
+  --color-border: #E0E0E0;
+  --color-hover: #F5F5F5;
   --color-divider: #EEEEEE;
   --color-divider-light: #F0F0F0;
   --color-autocomplete-hover: #F5F5F5;
@@ -90,6 +93,9 @@
   --color-input-bg-focus: #333333;
   --color-input-border: #444444;
   --color-input-placeholder: #666666;
+  --color-text-secondary: #aaaaaa;
+  --color-border: #444444;
+  --color-hover: #333333;
   --color-divider: #333333;
   --color-divider-light: #2a2a2a;
   --color-autocomplete-hover: #333333;
@@ -171,6 +177,9 @@
   --color-input-bg-focus: #1a1a1a;
   --color-input-border: #FFD700;
   --color-input-placeholder: #999999;
+  --color-text-secondary: #FFD700;
+  --color-border: #FFFFFF;
+  --color-hover: #1a1a1a;
   --color-divider: #FFD700;
   --color-divider-light: #333300;
   --color-autocomplete-hover: #1a1a00;
