@@ -1,6 +1,9 @@
 import path from 'path';
 
 const DATED_SOURCE_SUFFIX_RE = /-\d{4}-\d{2}-\d{2}$/;
+const CANONICAL_SOURCE_ALIASES: Record<string, string> = {
+  'tel-aviv-arcgis': 'miklat-tlv',
+};
 
 export const CANONICAL_SOURCE_PRIORITY = [
   'miklat-isr',
@@ -18,7 +21,8 @@ export function stripSourceExtension(source: string): string {
 
 export function canonicalSourceKey(source: string): string {
   const base = stripSourceExtension(source);
-  return base.replace(DATED_SOURCE_SUFFIX_RE, '');
+  const normalized = base.replace(DATED_SOURCE_SUFFIX_RE, '');
+  return CANONICAL_SOURCE_ALIASES[normalized] ?? normalized;
 }
 
 export function isKmzSource(source: string): boolean {

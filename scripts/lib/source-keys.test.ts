@@ -19,6 +19,11 @@ describe('source-keys', () => {
     expect(canonicalSourceKey('/tmp/miklat-tlv-2025-12-31.kmz')).toBe('miklat-tlv');
   });
 
+  it('maps alternate source families into the same canonical key', () => {
+    expect(canonicalSourceKey('tel-aviv-arcgis')).toBe('miklat-tlv');
+    expect(canonicalSourceKey('tel-aviv-arcgis.json')).toBe('miklat-tlv');
+  });
+
   it('leaves unknown sources stable after removing extension', () => {
     expect(canonicalSourceKey('custom-source-v2.kmz')).toBe('custom-source-v2');
     expect(canonicalSourceKey('nested/foo.csv')).toBe('foo');

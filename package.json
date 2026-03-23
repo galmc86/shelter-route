@@ -13,7 +13,10 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "data:verify": "node scripts/verify-shelter-data.mjs",
-    "data:rebuild": "tsx scripts/rebuild-shelters.ts"
+    "data:rebuild": "tsx scripts/rebuild-shelters.ts",
+    "data:probe-tlv": "tsx scripts/probe-tel-aviv-source.ts",
+    "data:import-tlv-candidate": "tsx scripts/import-tel-aviv-candidate.ts",
+    "data:diff-tlv-candidate": "tsx scripts/diff-tel-aviv-candidate.ts"
   },
   "dependencies": {
     "@googlemaps/js-api-loader": "^2.0.2",
