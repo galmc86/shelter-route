@@ -11,13 +11,13 @@ const mockShelter: ShelterWithDistance = {
   name: 'Shelter 1',
   address: 'Test Address',
   lat: 32.11,
-  lng: 34.81,
+  lon: 34.81,
+  city: 'Tel Aviv',
   distanceFromRoute: 120,
-  distance: 120,
   walkingTimeMinutes: 2,
   isAccessible: true,
   capacity: 20,
-  occupancy: 3,
+  currentOccupancy: 3,
 };
 
 let latestRouteContext: any;

@@ -28,9 +28,9 @@ function isOnboardingCompleted(): boolean {
 }
 
 export interface AppControllerState {
-  language: string;
+  language: ReturnType<typeof useLanguage>['language'];
   theme: string;
-  t: (key: string) => string;
+  t: ReturnType<typeof useLanguage>['t'];
   mapsError: string | null;
   routes: ReturnType<typeof useRoute>['routes'];
   currentLocation: ReturnType<typeof useCurrentLocation>['location'];
