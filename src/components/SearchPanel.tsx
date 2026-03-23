@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { LocationInput } from './LocationInput';
 import './SearchPanel.css';
 import { TravelModeSelector } from './TravelModeSelector';
@@ -11,8 +11,9 @@ import { useSavedLocations } from '../hooks/useSavedLocations';
 import { useRouteContext } from '../contexts/RouteContext';
 import { useEmergencyContext } from '../contexts/EmergencyContext';
 import { useShelterContext } from '../contexts/ShelterContext';
-import type { TravelMode, LatLng, ShelterSortMode, SearchHistoryEntry, SavedRouteData } from '../types';
-import type { PlaceResult } from '../types';
+import { useSearchPanelSheet } from '../hooks/useSearchPanelSheet';
+import { useSearchPanelRoutePlanner } from '../hooks/useSearchPanelRoutePlanner';
+import type { ShelterSortMode, SavedRouteData } from '../types';
 import { getCapacityColor, getCapacityStatusKey } from '../services/capacityService';
 import { getAggregatedStatus, getStatusBadgeColor } from '../services/shelterReportsService';
 
@@ -65,42 +66,47 @@ export function SearchPanel({
     allShelters,
   } = useShelterContext();
   const { t } = useLanguage();
-  const [originText, setOriginText] = useState('');
-  const [destText, setDestText] = useState('');
-  const [originPlace, setOriginPlace] = useState<PlaceResult | null>(null);
-  const [destPlace, setDestPlace] = useState<PlaceResult | null>(null);
-  const [travelMode, setTravelModeState] = useState<TravelMode>('WALKING');
-  const [useMyLocation, setUseMyLocation] = useState(false);
-  const [showCopiedToast, setShowCopiedToast] = useState(false);
-  const hasSearchedRef = useRef(false);
   const [sortMode, setSortMode] = useState<ShelterSortMode>('distance');
   const [showAccessibleOnly, setShowAccessibleOnly] = useState(false);
   const [routePlannerExpanded, setRoutePlannerExpanded] = useState(false);
   const [showShelterScore, setShowShelterScore] = useState(false);
   const { entries: historyEntries, addEntry: addHistoryEntry, removeEntry: removeHistoryEntry, clearAll: clearHistory, togglePin: toggleHistoryPin, renameEntry: renameHistoryEntry, updateShelterCount: updateHistoryShelterCount, saveRoute: saveHistoryRoute, unsaveRoute: unsaveHistoryRoute } = useSearchHistory();
   const { locations: savedLocations, addLocation: addSavedLocation, removeLocation: removeSavedLocation, isMaxReached: savedLocationsMaxReached } = useSavedLocations();
-
-  // Mark as searched when route info arrives (e.g. from shared URL)
-  useEffect(() => {
-    if (routeInfo) {
-      hasSearchedRef.current = true;
-    }
-  }, [routeInfo]);
-
-  // Update shelter count in history when shelters finish loading for current route
-  useEffect(() => {
-    if (routeInfo && !sheltersLoading && nearbyShelters.length > 0) {
-      const origin = shareOrigin || (useMyLocation && currentLocation
-        ? { lat: currentLocation.lat, lng: currentLocation.lng }
-        : originPlace ? { lat: originPlace.lat, lng: originPlace.lng } : null);
-      const destination = shareDestination || (destPlace
-        ? { lat: destPlace.lat, lng: destPlace.lng }
-        : null);
-      if (origin && destination) {
-        updateHistoryShelterCount(origin, destination, travelMode, nearbyShelters.length);
-      }
-    }
-  }, [routeInfo, sheltersLoading, nearbyShelters.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  const {
+    originText,
+    setOriginText,
+    destText,
+    setDestText,
+    originPlace,
+    setOriginPlace,
+    destPlace,
+    setDestPlace,
+    travelMode,
+    setTravelMode,
+    useMyLocation,
+    setUseMyLocation,
+    showCopiedToast,
+    currentOrigin,
+    currentDestination,
+    handleShare,
+    handleUseCurrentLocation,
+    handleSearch,
+    handleSavedLocationSelect,
+    handleHistorySelect,
+  } = useSearchPanelRoutePlanner({
+    routeInfo,
+    sheltersLoading,
+    nearbyShelters,
+    shareOrigin,
+    shareDestination,
+    shareTravelMode,
+    currentLocation: currentLocation ? { lat: currentLocation.lat, lng: currentLocation.lng } : null,
+    onSearch,
+    onGetLocation,
+    addHistoryEntry,
+    updateHistoryShelterCount,
+    t,
+  });
 
   // Filter and sort shelters based on user preferences
   const displayedShelters = useMemo(() => {
@@ -135,147 +141,17 @@ export function SearchPanel({
     return bestIdx;
   }, [routesWithShelters]);
 
-  // Auto-hide copied toast after 2 seconds
-  useEffect(() => {
-    if (showCopiedToast) {
-      const timer = setTimeout(() => setShowCopiedToast(false), 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [showCopiedToast]);
-
-  // eslint-disable-next-line react-hooks/preserve-manual-memoization
-  const handleShare = useCallback(async () => {
-    if (!shareOrigin || !shareDestination) return;
-
-    const params = new URLSearchParams({
-      from: `${shareOrigin.lat},${shareOrigin.lng}`,
-      to: `${shareDestination.lat},${shareDestination.lng}`,
-      mode: shareTravelMode || 'WALKING',
-    });
-
-    const shareUrl = `${window.location.origin}${window.location.pathname}?${params.toString()}`;
-    const shelterCount = nearbyShelters.length;
-    const origin = originText || t('search.myLocation');
-    const dest = destText || '';
-    const shareText = t('share.richText')
-      .replace('{{count}}', String(shelterCount))
-      .replace('{{origin}}', origin)
-      .replace('{{destination}}', dest);
-
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: t('share.title'),
-          text: shareText,
-          url: shareUrl,
-        });
-        return;
-      } catch {
-        // User cancelled or share failed, fall through to clipboard
-      }
-    }
-
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-      setShowCopiedToast(true);
-    } catch {
-      // Clipboard API not available, show URL in alert as last resort
-      alert(shareUrl);
-    }
-  }, [shareOrigin, shareDestination, shareTravelMode, nearbyShelters.length, t]);
-
-  // Auto-recalculate route when travel mode changes (if a route has already been searched)
-  // eslint-disable-next-line react-hooks/preserve-manual-memoization
-  const setTravelMode = useCallback((newMode: TravelMode) => {
-    setTravelModeState(newMode);
-
-    if (!hasSearchedRef.current) return;
-
-    let origin: LatLng | null = null;
-    if (useMyLocation && currentLocation) {
-      origin = { lat: currentLocation.lat, lng: currentLocation.lng };
-    } else if (originPlace) {
-      origin = { lat: originPlace.lat, lng: originPlace.lng };
-    }
-
-    const destination: LatLng | null = destPlace
-      ? { lat: destPlace.lat, lng: destPlace.lng }
-      : null;
-
-    if (origin && destination) {
-      onSearch(origin, destination, newMode);
-    }
-  }, [useMyLocation, currentLocation, originPlace, destPlace, onSearch]);
-
-  const handleUseCurrentLocation = useCallback(() => {
-    onGetLocation();
-    setUseMyLocation(true);
-    setOriginText(t('search.myLocation'));
-  }, [onGetLocation, t]);
-
-  const handleSearch = useCallback(() => {
-    let origin: LatLng | null = null;
-
-    if (useMyLocation && currentLocation) {
-      origin = { lat: currentLocation.lat, lng: currentLocation.lng };
-    } else if (originPlace) {
-      origin = { lat: originPlace.lat, lng: originPlace.lng };
-    }
-
-    const destination: LatLng | null = destPlace
-      ? { lat: destPlace.lat, lng: destPlace.lng }
-      : null;
-
-    if (!origin || !destination) return;
-
-    hasSearchedRef.current = true;
-    onSearch(origin, destination, travelMode);
-
-    addHistoryEntry({
-      origin,
-      destination,
-      originName: originText || t('search.myLocation'),
-      destName: destText,
-      travelMode,
-    });
-  }, [useMyLocation, currentLocation, originPlace, destPlace, travelMode, onSearch, addHistoryEntry, originText, destText, t]);
-
-  const handleSavedLocationSelect = useCallback((location: { lat: number; lng: number }) => {
-    // Set the saved location as origin and trigger near-me style search
-    setOriginText(t('savedLocations.savedPoint'));
-    setOriginPlace({ lat: location.lat, lng: location.lng, displayName: t('savedLocations.savedPoint') });
-    setUseMyLocation(false);
-  }, [t]);
-
-  const handleHistorySelect = useCallback((entry: SearchHistoryEntry) => {
-    setOriginText(entry.originName);
-    setDestText(entry.destName);
-    setOriginPlace({ lat: entry.origin.lat, lng: entry.origin.lng, displayName: entry.originName });
-    setDestPlace({ lat: entry.destination.lat, lng: entry.destination.lng, displayName: entry.destName });
-    setTravelModeState(entry.travelMode);
-    setUseMyLocation(false);
-    hasSearchedRef.current = true;
-    onSearch(entry.origin, entry.destination, entry.travelMode);
-  }, [onSearch]);
-
   // Find the history entry matching the current route for save/unsave
   const currentRouteEntry = useMemo(() => {
-    if (!routeInfo) return null;
-    const origin = shareOrigin || (useMyLocation && currentLocation
-      ? { lat: currentLocation.lat, lng: currentLocation.lng }
-      : originPlace ? { lat: originPlace.lat, lng: originPlace.lng } : null);
-    const destination = shareDestination || (destPlace
-      ? { lat: destPlace.lat, lng: destPlace.lng }
-      : null);
-    if (!origin || !destination) return null;
+    if (!routeInfo || !currentOrigin || !currentDestination) return null;
     return historyEntries.find((e) =>
-      Math.abs(e.origin.lat - origin.lat) < 0.001 &&
-      Math.abs(e.origin.lng - origin.lng) < 0.001 &&
-      Math.abs(e.destination.lat - destination.lat) < 0.001 &&
-      Math.abs(e.destination.lng - destination.lng) < 0.001 &&
+      Math.abs(e.origin.lat - currentOrigin.lat) < 0.001 &&
+      Math.abs(e.origin.lng - currentOrigin.lng) < 0.001 &&
+      Math.abs(e.destination.lat - currentDestination.lat) < 0.001 &&
+      Math.abs(e.destination.lng - currentDestination.lng) < 0.001 &&
       e.travelMode === travelMode
     ) ?? null;
-  }, [routeInfo, historyEntries, shareOrigin, shareDestination, useMyLocation, currentLocation, originPlace, destPlace, travelMode]);
+  }, [routeInfo, currentOrigin, currentDestination, historyEntries, travelMode]);
 
   const isRouteSaved = !!currentRouteEntry?.routeData;
 
@@ -299,146 +175,16 @@ export function SearchPanel({
   }, [currentRouteEntry, unsaveHistoryRoute]);
 
   const canSearch = (useMyLocation && currentLocation || originPlace) && destPlace && !isSearching;
-
-
-  // --- Bottom sheet swipe gesture logic (mobile only) ---
-  const panelRef = useRef<HTMLElement>(null);
-  const touchStartY = useRef(0);
-  const touchCurrentY = useRef(0);
-  const touchStartTime = useRef(0);
-  const isDragging = useRef(false);
-  const snapPointName = useRef<'peek' | 'half' | 'full'>(panelExpanded ? 'half' : 'peek');
-
-  // Snap point heights in px (computed from vh at runtime)
-  const getSnapPoints = useCallback(() => {
-    const vh = window.innerHeight;
-    return {
-      peek: 80,
-      half: vh * 0.4,
-      full: vh * 0.85,
-    };
-  }, []);
-
-  // Translate the panel to a given height (from bottom)
-  const setPanelHeight = useCallback((height: number, animate: boolean) => {
-    const el = panelRef.current;
-    if (!el) return;
-    if (animate) {
-      el.style.transition = 'max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1)';
-    } else {
-      el.style.transition = 'none';
-    }
-    el.style.maxHeight = `${height}px`;
-  }, []);
-
-  const snapTo = useCallback((point: 'peek' | 'half' | 'full', animate = true) => {
-    const snaps = getSnapPoints();
-    snapPointName.current = point;
-    setPanelHeight(snaps[point], animate);
-    // Sync the expanded/collapsed state with parent
-    if (point === 'peek' && panelExpanded && onTogglePanel) {
-      onTogglePanel();
-    } else if (point !== 'peek' && !panelExpanded && onTogglePanel) {
-      onTogglePanel();
-    }
-  }, [getSnapPoints, setPanelHeight, panelExpanded, onTogglePanel]);
-
-  // Keep snap point in sync with external panelExpanded changes
-  useEffect(() => {
-    if (window.innerWidth >= 769) return;
-    if (panelExpanded && snapPointName.current === 'peek') {
-      snapPointName.current = 'half';
-      const snaps = getSnapPoints();
-      setPanelHeight(snaps.half, true);
-    } else if (!panelExpanded && snapPointName.current !== 'peek') {
-      snapPointName.current = 'peek';
-      const snaps = getSnapPoints();
-      setPanelHeight(snaps.peek, true);
-    }
-  }, [panelExpanded, getSnapPoints, setPanelHeight]);
-
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    if (window.innerWidth >= 769) return;
-    const touch = e.touches[0];
-    touchStartY.current = touch.clientY;
-    touchCurrentY.current = touch.clientY;
-    touchStartTime.current = Date.now();
-    isDragging.current = true;
-
-    // Remove transition during drag for responsiveness
-    const el = panelRef.current;
-    if (el) {
-      el.style.transition = 'none';
-    }
-  }, []);
-
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!isDragging.current || window.innerWidth >= 769) return;
-    const touch = e.touches[0];
-    touchCurrentY.current = touch.clientY;
-
-    const delta = touchStartY.current - touch.clientY; // positive = dragging up
-    const snaps = getSnapPoints();
-    const currentHeight = snaps[snapPointName.current];
-    const newHeight = Math.max(snaps.peek, Math.min(snaps.full, currentHeight + delta));
-
-    const el = panelRef.current;
-    if (el) {
-      el.style.maxHeight = `${newHeight}px`;
-    }
-  }, [getSnapPoints]);
-
-  const handleTouchEnd = useCallback(() => {
-    if (!isDragging.current || window.innerWidth >= 769) return;
-    isDragging.current = false;
-
-    const delta = touchStartY.current - touchCurrentY.current; // positive = up
-    const elapsed = (Date.now() - touchStartTime.current) / 1000; // seconds
-    const velocity = elapsed > 0 ? delta / elapsed : 0; // px/s, positive = up
-
-    const snaps = getSnapPoints();
-    const currentHeight = snaps[snapPointName.current] + delta;
-    const VELOCITY_THRESHOLD = 400; // px/s
-
-    let target: 'peek' | 'half' | 'full';
-
-    if (Math.abs(velocity) > VELOCITY_THRESHOLD) {
-      // Fast flick: snap to next/previous point
-      const ordered: Array<'peek' | 'half' | 'full'> = ['peek', 'half', 'full'];
-      const currentIdx = ordered.indexOf(snapPointName.current);
-      if (velocity > 0) {
-        // Flick up -> next higher point
-        target = ordered[Math.min(currentIdx + 1, ordered.length - 1)];
-      } else {
-        // Flick down -> next lower point
-        target = ordered[Math.max(currentIdx - 1, 0)];
-      }
-    } else {
-      // Slow drag: snap to nearest point
-      const distances = {
-        peek: Math.abs(currentHeight - snaps.peek),
-        half: Math.abs(currentHeight - snaps.half),
-        full: Math.abs(currentHeight - snaps.full),
-      };
-      target = (Object.entries(distances) as Array<['peek' | 'half' | 'full', number]>)
-        .sort((a, b) => a[1] - b[1])[0][0];
-    }
-
-    snapTo(target, true);
-  }, [getSnapPoints, snapTo]);
-
-  // Handle click on the handle (for non-touch / desktop fallback)
-  const handleHandleClick = useCallback(() => {
-    if (window.innerWidth < 769) {
-      // On mobile, cycle through snap points on click
-      const ordered: Array<'peek' | 'half' | 'full'> = ['peek', 'half', 'full'];
-      const currentIdx = ordered.indexOf(snapPointName.current);
-      const nextIdx = (currentIdx + 1) % ordered.length;
-      snapTo(ordered[nextIdx], true);
-    } else if (onTogglePanel) {
-      onTogglePanel();
-    }
-  }, [snapTo, onTogglePanel]);
+  const {
+    panelRef,
+    handleTouchStart,
+    handleTouchMove,
+    handleTouchEnd,
+    handleHandleClick,
+  } = useSearchPanelSheet({
+    panelExpanded: panelExpanded ?? false,
+    onTogglePanel,
+  });
 
   return (
     <aside
