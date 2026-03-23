@@ -29,6 +29,14 @@ Run `npm run data:verify` from the repo root to validate:
 - the current cache-busting hash can be derived deterministically
 - checked-in `.kmz` files are actual KMZ archives rather than HTML/error pages
 
+Run `npm run data:rebuild -- --dry-run <kmz-files...>` to exercise the rebuild pipeline without writing output. The rebuild path:
+
+- parses KMZ/KML placemarks into shelter records
+- preserves stable shelter IDs by reusing IDs from the current dataset when shelters still match within a small same-source tolerance
+- falls back to deterministic IDs for new shelters
+- deduplicates within and across canonical source families
+- supports `--merge-existing` to preserve untouched shelters verbatim
+
 ## Client-side Caching
 
 The app caches shelter data in `localStorage` under the key `shelter-route:shelters` with a version number (`STORAGE_VERSION`). When `STORAGE_VERSION` is bumped in `src/services/shelterApi.ts`, the cached data is discarded and re-fetched. The service worker also caches `shelters.json` requests for offline use.
@@ -49,4 +57,4 @@ Both files are HTML documents rather than the expected ZIP-compressed KML. They 
 
 The shelter data currently in `public/shelters.json` was generated from a valid KMZ snapshot (`miklat-isr-2026-03-06.kmz`) that is no longer present in this directory.
 
-Until valid KMZ source files are restored, `npm run data:verify` is the supported maintenance command for this pipeline.
+Until valid KMZ source files are restored, `npm run data:verify` and `npm run data:rebuild -- --dry-run ...` are the supported maintenance commands for this pipeline.

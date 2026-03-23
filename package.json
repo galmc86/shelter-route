@@ -12,7 +12,8 @@
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
-    "data:verify": "node scripts/verify-shelter-data.mjs"
+    "data:verify": "node scripts/verify-shelter-data.mjs",
+    "data:rebuild": "tsx scripts/rebuild-shelters.ts"
   },
   "dependencies": {
     "@googlemaps/js-api-loader": "^2.0.2",
@@ -41,8 +42,11 @@
     "eslint": "^10.0.3",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",
+    "fast-xml-parser": "^5.5.8",
     "globals": "^17.4.0",
     "jsdom": "^29.0.0",
+    "jszip": "^3.10.1",
+    "tsx": "^4.21.0",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.56.1",
     "vite": "^8.0.0",
