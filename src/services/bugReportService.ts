@@ -21,6 +21,17 @@ function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
+function saveQueuedReports(reports: BugReport[]): void {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(reports));
+  } catch (err) {
+    console.warn(
+      '[BugReport] Failed to persist queue:',
+      new ServiceError('UNKNOWN', 'Bug report queue persistence failed', undefined, false, err).message
+    );
+  }
+}
+
 /** Get all queued (unsent) bug reports from localStorage */
 export function getQueuedReports(): BugReport[] {
   try {
@@ -36,14 +47,14 @@ export function queueReport(report: Omit<BugReport, 'id'>): BugReport {
   const full: BugReport = { ...report, id: generateId() };
   const existing = getQueuedReports();
   existing.push(full);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(existing));
+  saveQueuedReports(existing);
   return full;
 }
 
 /** Remove a successfully sent report from the queue */
 function removeFromQueue(id: string): void {
   const reports = getQueuedReports().filter((r) => r.id !== id);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(reports));
+  saveQueuedReports(reports);
 }
 
 /**
@@ -51,7 +62,7 @@ function removeFromQueue(id: string): void {
  * Returns true on success (or if no endpoint is configured — treats as logged locally).
  */
 async function sendReport(report: BugReport): Promise<boolean> {
-  const endpoint = import.meta.env.VITE_BUG_REPORT_URL as string | undefined;
+  const endpoint = (import.meta.env.VITE_BUG_REPORT_URL as string | undefined)?.trim();
   if (!endpoint) {
     // No endpoint configured — report stays queued locally
     return false;

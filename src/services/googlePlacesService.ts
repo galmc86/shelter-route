@@ -13,6 +13,14 @@ interface UsageData {
   count: number;
 }
 
+function saveUsage(usage: UsageData): void {
+  try {
+    localStorage.setItem(RATE_LIMIT_KEY, JSON.stringify(usage));
+  } catch {
+    // Storage unavailable — allow search rather than failing autocomplete.
+  }
+}
+
 function getUsage(): UsageData {
   try {
     const raw = localStorage.getItem(RATE_LIMIT_KEY);
@@ -26,7 +34,7 @@ function incrementUsage(): boolean {
   const usage = getUsage();
 
   if (usage.date !== today) {
-    localStorage.setItem(RATE_LIMIT_KEY, JSON.stringify({ date: today, count: 1 }));
+    saveUsage({ date: today, count: 1 });
     return true;
   }
 
@@ -35,7 +43,7 @@ function incrementUsage(): boolean {
   }
 
   usage.count++;
-  localStorage.setItem(RATE_LIMIT_KEY, JSON.stringify(usage));
+  saveUsage(usage);
   return true;
 }
 
