@@ -113,6 +113,69 @@ describe('tel-aviv-reconcile', () => {
     expect(result.candidateDataset.shelters[0]).toEqual(current);
   });
 
+  it('promotes exact-name address-style matches as safe enrichments without moving coordinates', () => {
+    const current = makeShelter({
+      description: 'המקלט נמצא מול בית מספר 12 ברחבה הציבורית. ניתן להגיע גם דרך רחוב יפת 120.',
+    });
+    const candidate = makeShelter({
+      id: 999,
+      lat: 32.04287759,
+      lng: 34.75052125,
+      description: 'הלוטוס 12',
+      source: 'tel-aviv-arcgis',
+      sources: ['tel-aviv-arcgis'],
+    });
+
+    const result = reconcileTelAvivShelters(makeDataset([current]), [candidate]);
+
+    expect(result.report.safeEnrichCount).toBe(1);
+    expect(result.report.safeMoveCount).toBe(0);
+    expect(result.report.ambiguousCount).toBe(0);
+    expect(result.candidateDataset.shelters[0]).toEqual({
+      ...current,
+      sources: [
+        'miklat-isr-2026-03-06.kmz',
+        'miklat-tlv-2026-03-06.kmz',
+        'tel-aviv-arcgis',
+        TEL_AVIV_RECONCILED_SOURCE,
+      ],
+    });
+  });
+
+  it('promotes school-site matches with exact address overlap as safe enrichments', () => {
+    const current = makeShelter({
+      id: 2040,
+      name: 'מקלט פנימי בשטח בית ספר',
+      lat: 32.0465021,
+      lng: 34.7575232,
+      description: 'פסטלוצי 34',
+    });
+    const candidate = makeShelter({
+      id: 999,
+      name: "בית ספר אג'יאל",
+      lat: 32.04668856,
+      lng: 34.75712409,
+      description: 'פסטלוצי 34',
+      source: 'tel-aviv-arcgis',
+      sources: ['tel-aviv-arcgis'],
+    });
+
+    const result = reconcileTelAvivShelters(makeDataset([current]), [candidate]);
+
+    expect(result.report.safeEnrichCount).toBe(1);
+    expect(result.report.safeMoveCount).toBe(0);
+    expect(result.report.ambiguousCount).toBe(0);
+    expect(result.candidateDataset.shelters[0]).toEqual({
+      ...current,
+      sources: [
+        'miklat-isr-2026-03-06.kmz',
+        'miklat-tlv-2026-03-06.kmz',
+        'tel-aviv-arcgis',
+        TEL_AVIV_RECONCILED_SOURCE,
+      ],
+    });
+  });
+
   it('reports unmatched candidate shelters without adding them automatically', () => {
     const current = makeShelter();
     const candidate = makeShelter({

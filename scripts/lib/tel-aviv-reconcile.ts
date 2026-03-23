@@ -6,6 +6,7 @@ export const TEL_AVIV_RECONCILED_SOURCE = 'miklat-tlv-arcgis';
 
 const SAFE_MOVE_DISTANCE_METERS = 20;
 const SAFE_ENRICH_DISTANCE_METERS = 35;
+const SAFE_ENRICH_ADDRESS_DISTANCE_METERS = 90;
 const PLAUSIBLE_MATCH_DISTANCE_METERS = 120;
 const LOW_CONFIDENCE_DISTANCE_METERS = 60;
 
@@ -89,6 +90,18 @@ function isTelAvivShelter(shelter: MiklatShelter): boolean {
   return canonicalSourceKey(shelter.source) === 'miklat-tlv';
 }
 
+function looksLikeSchoolMatch(current: MiklatShelter, candidate: MiklatShelter): boolean {
+  const combined = [
+    current.name,
+    current.description,
+    candidate.name,
+    candidate.description,
+  ]
+    .filter(Boolean)
+    .join(' ');
+  return /בית ספר|ביה"?ס|מוסדות חינוך/.test(combined);
+}
+
 function classifyMatch(
   current: MiklatShelter,
   candidate: MiklatShelter
@@ -120,6 +133,38 @@ function classifyMatch(
   }
 
   if (distanceMeters <= SAFE_ENRICH_DISTANCE_METERS && strongTextSignal) {
+    return {
+      current,
+      candidate,
+      distanceMeters,
+      nameOverlap,
+      descriptionOverlap,
+      confidence: 'high',
+      action: 'safe_enrich',
+    };
+  }
+
+  if (
+    distanceMeters <= SAFE_ENRICH_ADDRESS_DISTANCE_METERS
+    && exactishName
+    && descriptionOverlap >= 0.5
+  ) {
+    return {
+      current,
+      candidate,
+      distanceMeters,
+      nameOverlap,
+      descriptionOverlap,
+      confidence: 'high',
+      action: 'safe_enrich',
+    };
+  }
+
+  if (
+    distanceMeters <= SAFE_ENRICH_ADDRESS_DISTANCE_METERS
+    && looksLikeSchoolMatch(current, candidate)
+    && descriptionOverlap >= 1
+  ) {
     return {
       current,
       candidate,
