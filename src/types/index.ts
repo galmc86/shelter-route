@@ -1,3 +1,5 @@
+export type ShelterKind = 'shelter' | 'migunit' | 'protected-space' | 'community-protection';
+
 export interface Shelter {
   id: string;
   name: string;
@@ -5,6 +7,7 @@ export interface Shelter {
   lat: number;
   lon: number;
   city: string;
+  kind?: ShelterKind;
   walkingTimeMinutes?: number;
   isAccessible?: boolean;
   hasElevator?: boolean;

@@ -1,4 +1,4 @@
-import type { Shelter } from '../types';
+import type { Shelter, ShelterKind } from '../types';
 import { reportError } from './errorReportingService';
 import { resilientFetch } from './fetchClient';
 import { ServiceError } from './serviceResult';
@@ -9,6 +9,7 @@ interface MiklatShelter {
   lat: number;
   lng: number;
   description?: string;
+  kind?: ShelterKind;
 }
 
 const STORAGE_KEY = 'shelter-route:shelters';
@@ -332,6 +333,20 @@ function enrichShelterName(name: string, description?: string): string {
   return 'מקלט ציבורי';
 }
 
+function inferShelterKind(shelter: MiklatShelter): ShelterKind {
+  if (shelter.kind) return shelter.kind;
+
+  const haystack = `${shelter.name ?? ''} ${shelter.description ?? ''}`;
+
+  if (haystack.includes('מיגונית')) return 'migunit';
+  if (haystack.includes('מתקן מיגון קהילה')) return 'community-protection';
+  if (haystack.includes('מרחב מוגן') || haystack.includes('ממ"ד') || haystack.includes('מתקן מיגון')) {
+    return 'protected-space';
+  }
+
+  return 'shelter';
+}
+
 function parseShelters(data: MiklatShelter[]): Shelter[] {
   return data
     .filter(
@@ -350,6 +365,7 @@ function parseShelters(data: MiklatShelter[]): Shelter[] {
       lat: s.lat,
       lon: s.lng,
       city: '',
+      kind: inferShelterKind(s),
     }));
 }
 

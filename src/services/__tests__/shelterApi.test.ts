@@ -185,6 +185,32 @@ describe('fetchAllShelters', () => {
     expect(shelters[0].lon).toBe(34.8);
   });
 
+  it('preserves explicit shelter kind from the dataset', async () => {
+    const { fetchAllShelters } = await import('../shelterApi');
+
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(mockFetchResponse({
+      shelters: [
+        { id: 1, name: 'מיגונית פיקוד העורף', lat: 32.0, lng: 34.8, kind: 'migunit' },
+      ],
+    }));
+
+    const shelters = await fetchAllShelters();
+    expect(shelters[0].kind).toBe('migunit');
+  });
+
+  it('infers migunit kind from name when raw kind is missing', async () => {
+    const { fetchAllShelters } = await import('../shelterApi');
+
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(mockFetchResponse({
+      shelters: [
+        { id: 1, name: 'מיגונית פיקוד העורף', lat: 32.0, lng: 34.8, description: 'חב"ד 26' },
+      ],
+    }));
+
+    const shelters = await fetchAllShelters();
+    expect(shelters[0].kind).toBe('migunit');
+  });
+
   it('returns cached shelters even when the background refresh payload is malformed', async () => {
     const { fetchAllShelters } = await import('../shelterApi');
 

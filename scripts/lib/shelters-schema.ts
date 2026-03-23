@@ -1,9 +1,12 @@
+export type ShelterKind = 'shelter' | 'migunit' | 'protected-space' | 'community-protection';
+
 export interface MiklatShelter {
   id: number;
   name: string;
   lat: number;
   lng: number;
   description?: string;
+  kind?: ShelterKind;
   source: string;
   sources: string[];
 }
