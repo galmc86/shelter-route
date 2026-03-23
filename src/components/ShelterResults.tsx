@@ -8,6 +8,7 @@ import { getShelterKindLabel } from '../utils/shelterKind';
 
 interface ShelterResultsProps {
   emergencyMode: boolean;
+  proximityMode?: boolean;
   nearbyShelters: ShelterWithDistance[];
   displayedShelters: ShelterWithDistance[];
   sheltersLoading: boolean;
@@ -22,6 +23,7 @@ interface ShelterResultsProps {
 
 export function ShelterResults({
   emergencyMode,
+  proximityMode = false,
   nearbyShelters,
   displayedShelters,
   sheltersLoading,
@@ -78,7 +80,7 @@ export function ShelterResults({
           <path d="M12 2L3 7v10l9 5 9-5V7l-9-5z" />
           <path d="M12 6v8M8 10h8" stroke="white" strokeWidth="2" strokeLinecap="round" />
         </svg>
-        {emergencyMode ? t('shelters.nearYou') : `${t('shelters.alongRoute')} (${nearbyShelters.length})`}
+        {emergencyMode || proximityMode ? t('shelters.nearYou') : `${t('shelters.alongRoute')} (${nearbyShelters.length})`}
       </div>
 
       <div className="shelter-controls">

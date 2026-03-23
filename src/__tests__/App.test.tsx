@@ -27,6 +27,7 @@ const mockShelter: ShelterWithDistance = {
 let latestRouteContext: RouteContextValue | undefined;
 let latestEmergencyContext: EmergencyContextValue | undefined;
 let latestShelterContext: ShelterContextValue | undefined;
+const savedOrigin: LatLng = { lat: 32.33, lng: 34.91 };
 
 const mockSearchRoute = vi.fn();
 const mockSelectRoute = vi.fn();
@@ -165,6 +166,9 @@ vi.mock('../components/SearchPanel', () => ({
         search-route
       </button>
       <button onClick={() => latestEmergencyContext?.onNearMeClick()}>near-me</button>
+      <button onClick={() => latestEmergencyContext?.onSearchFromSavedLocation(savedOrigin, 'Home')}>
+        saved-place
+      </button>
       <button onClick={() => latestShelterContext?.onNavigateToShelter?.(mockShelter)}>
         navigate-shelter
       </button>
@@ -368,5 +372,25 @@ describe('App', () => {
     await waitFor(() => {
       expect(screen.getByTestId('panel-expanded')).toHaveTextContent('false');
     });
+  });
+
+  it('runs nearby shelter lookup from a saved place without entering emergency mode', async () => {
+    render(<App />);
+
+    fireEvent.click(screen.getByText('saved-place'));
+
+    await waitFor(() => {
+      expect(mockFindNearest).toHaveBeenCalledWith(
+        mockShelterState.allShelters,
+        savedOrigin.lat,
+        savedOrigin.lng
+      );
+    });
+
+    expect(mockClearNearest).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId('near-me-mode')).toHaveTextContent('true');
+    expect(screen.getByTestId('emergency-mode')).toHaveTextContent('false');
+    expect(screen.getByTestId('route-info')).toHaveTextContent('none');
+    expect(screen.getByTestId('panel-expanded')).toHaveTextContent('true');
   });
 });

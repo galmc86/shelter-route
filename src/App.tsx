@@ -22,12 +22,11 @@ function App() {
     t,
     mapsError,
     routes,
-    currentLocation,
+    mapUserLocation,
     familyGroupCode,
     panelExpanded,
     showOnboarding,
     emergencyMode,
-    nearMeMode,
     isAlertActive,
     matchedRegion,
     countdown,
@@ -110,7 +109,7 @@ function App() {
         <MapView
           routes={emergencyMode ? [] : routes}
           onSelectRoute={routeContextValue.onRouteSelect}
-          userLocation={(emergencyMode || nearMeMode || isNavigating) ? currentLocation : null}
+          userLocation={mapUserLocation}
           onMapReady={handleMapReady}
           emergencyCountdown={isAlertActive && countdown != null ? countdown : undefined}
           navigationRoute={navHookRoute}

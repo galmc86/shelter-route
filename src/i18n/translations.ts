@@ -27,7 +27,8 @@ export const translations = {
     'search.button.ariaDisabled': 'הזן נקודת מוצא ויעד כדי לחפש',
     'search.searching': 'מחפש מסלול...',
     'search.myLocation': 'המיקום הנוכחי שלי',
-    'search.sheltersNearMe': 'מקלטים קרובים אליי',
+    'search.sheltersNearMe': 'מקלטים קרובים',
+    'search.savedPlaceMode': 'מחפש מתוך מקום שמור',
     'search.planSafeRoute': 'תכנן מסלול בטוח',
 
     // Emergency
@@ -291,10 +292,10 @@ export const translations = {
     'onboarding.step': 'שלב {{current}} מתוך {{total}}',
 
     // Saved Locations
-    'savedLocations.title': 'המקומות שלי',
+    'savedLocations.title': 'מקומות שמורים',
     'savedLocations.tapToFind': 'לחץ למציאת מקלטים קרובים',
     'savedLocations.remove': 'הסר',
-    'savedLocations.addCurrent': 'שמור מיקום נוכחי',
+    'savedLocations.addCurrent': 'הוסף את המיקום הנוכחי',
     'savedLocations.namePlaceholder': 'שם המיקום...',
     'savedLocations.save': 'שמור',
     'savedLocations.savedPoint': 'מיקום שמור',
@@ -381,7 +382,8 @@ export const translations = {
     'search.button.ariaDisabled': 'Enter origin and destination to search',
     'search.searching': 'Searching for route...',
     'search.myLocation': 'My current location',
-    'search.sheltersNearMe': 'Shelters near me',
+    'search.sheltersNearMe': 'Nearby shelters',
+    'search.savedPlaceMode': 'Searching from a saved place',
     'search.planSafeRoute': 'Plan a safe route',
 
     // Emergency
@@ -645,10 +647,10 @@ export const translations = {
     'onboarding.step': 'Step {{current}} of {{total}}',
 
     // Saved Locations
-    'savedLocations.title': 'My Shelters',
+    'savedLocations.title': 'Saved Places',
     'savedLocations.tapToFind': 'Tap to find nearby shelters',
     'savedLocations.remove': 'Remove',
-    'savedLocations.addCurrent': 'Save current location',
+    'savedLocations.addCurrent': 'Add current location',
     'savedLocations.namePlaceholder': 'Location name...',
     'savedLocations.save': 'Save',
     'savedLocations.savedPoint': 'Saved location',
@@ -734,7 +736,8 @@ export const translations = {
     'search.button.ariaDisabled': 'أدخل نقطة الانطلاق والوجهة للبحث',
     'search.searching': 'جارٍ البحث عن مسار...',
     'search.myLocation': 'موقعي الحالي',
-    'search.sheltersNearMe': 'ملاجئ قريبة مني',
+    'search.sheltersNearMe': 'ملاجئ قريبة',
+    'search.savedPlaceMode': 'يتم البحث من مكان محفوظ',
     'search.planSafeRoute': 'خطط لمسار آمن',
 
     // Emergency
@@ -998,10 +1001,10 @@ export const translations = {
     'onboarding.step': 'الخطوة {{current}} من {{total}}',
 
     // Saved Locations
-    'savedLocations.title': 'ملاجئي',
+    'savedLocations.title': 'الأماكن المحفوظة',
     'savedLocations.tapToFind': 'اضغط للعثور على ملاجئ قريبة',
     'savedLocations.remove': 'إزالة',
-    'savedLocations.addCurrent': 'حفظ الموقع الحالي',
+    'savedLocations.addCurrent': 'إضافة الموقع الحالي',
     'savedLocations.namePlaceholder': 'اسم الموقع...',
     'savedLocations.save': 'حفظ',
     'savedLocations.savedPoint': 'موقع محفوظ',
@@ -1087,7 +1090,8 @@ export const translations = {
     'search.button.ariaDisabled': 'Введите начальную точку и пункт назначения для поиска',
     'search.searching': 'Поиск маршрута...',
     'search.myLocation': 'Моё текущее местоположение',
-    'search.sheltersNearMe': 'Укрытия рядом со мной',
+    'search.sheltersNearMe': 'Ближайшие укрытия',
+    'search.savedPlaceMode': 'Поиск от сохранённого места',
     'search.planSafeRoute': 'Спланировать безопасный маршрут',
 
     // Emergency
@@ -1351,10 +1355,10 @@ export const translations = {
     'onboarding.step': 'Шаг {{current}} из {{total}}',
 
     // Saved Locations
-    'savedLocations.title': 'Мои укрытия',
+    'savedLocations.title': 'Сохранённые места',
     'savedLocations.tapToFind': 'Нажмите для поиска ближайших укрытий',
     'savedLocations.remove': 'Удалить',
-    'savedLocations.addCurrent': 'Сохранить текущее местоположение',
+    'savedLocations.addCurrent': 'Добавить текущее местоположение',
     'savedLocations.namePlaceholder': 'Название места...',
     'savedLocations.save': 'Сохранить',
     'savedLocations.savedPoint': 'Сохранённое место',

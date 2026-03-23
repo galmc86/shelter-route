@@ -50,9 +50,14 @@ export function SearchPanel({
     onEmergencyClick,
     onExitEmergency,
     currentLocation,
+    activeLookupLocation,
+    activeLookupLabel,
     isLoadingLocation,
     locationError,
     onGetLocation,
+    onSearchFromSavedLocation,
+    nearMeMode,
+    onExitNearMe,
     onUseMapCenter,
   } = useEmergencyContext();
 
@@ -87,7 +92,6 @@ export function SearchPanel({
     handleShare,
     handleUseCurrentLocation,
     handleSearch,
-    handleSavedLocationSelect,
     handleHistorySelect,
   } = useSearchPanelRoutePlanner({
     routeInfo,
@@ -234,8 +238,29 @@ export function SearchPanel({
         </button>
       )}
 
+      {!emergencyMode && nearMeMode && (
+        <div className="nearby-results-banner" role="status" aria-live="polite">
+          <div className="nearby-results-banner-copy">
+            <div className="nearby-results-banner-title">{t('search.sheltersNearMe')}</div>
+            {activeLookupLabel && (
+              <div className="nearby-results-banner-subtitle">{activeLookupLabel}</div>
+            )}
+            <div className="nearby-results-banner-mode">
+              {activeLookupLabel ? t('search.savedPlaceMode') : t('search.myLocation')}
+            </div>
+          </div>
+          <button
+            className="nearby-results-banner-exit"
+            onClick={onExitNearMe}
+            aria-label={t('emergency.exit')}
+          >
+            {t('emergency.exit')}
+          </button>
+        </div>
+      )}
+
       {/* Shelter Score Toggle - shown in nearMe mode or when shelters are loaded */}
-      {(nearbyShelters.length > 0) && !emergencyMode && currentLocation && allShelters.length > 0 && (
+      {(nearbyShelters.length > 0) && !emergencyMode && activeLookupLocation && allShelters.length > 0 && (
         <>
           {!showShelterScore ? (
             <button
@@ -257,10 +282,10 @@ export function SearchPanel({
                 {t('shelterScore.hideScore')}
               </button>
               <ShelterScore
-                lat={currentLocation.lat}
-                lng={currentLocation.lng}
+                lat={activeLookupLocation.lat}
+                lng={activeLookupLocation.lng}
                 shelters={allShelters}
-                addressName={t('search.myLocation')}
+                addressName={activeLookupLabel ?? t('search.myLocation')}
               />
             </>
           )}
@@ -268,20 +293,22 @@ export function SearchPanel({
       )}
 
       {/* Saved Locations (hidden in emergency and nearMe mode) */}
-      {!emergencyMode && (
+      {!emergencyMode && !nearMeMode && (
         <SavedLocations
           locations={savedLocations}
-          onSelectLocation={handleSavedLocationSelect}
+          onSelectLocation={(location) => onSearchFromSavedLocation(
+            { lat: location.lat, lng: location.lng },
+            location.name
+          )}
           onAddLocation={addSavedLocation}
           onRemoveLocation={removeSavedLocation}
           isMaxReached={savedLocationsMaxReached}
           currentLocation={currentLocation ? { lat: currentLocation.lat, lng: currentLocation.lng } : null}
-          shelters={nearbyShelters.map((s) => ({ id: s.id, name: s.name, lat: s.lat, lon: s.lon, address: s.address }))}
         />
       )}
 
       {/* Regular search (hidden in emergency and nearMe mode) */}
-      {!emergencyMode && (
+      {!emergencyMode && !nearMeMode && (
         <>
           {/* Collapsible route planner toggle */}
           <button
@@ -379,7 +406,7 @@ export function SearchPanel({
       )}
 
       {/* Search History — shown when no route is displayed */}
-      {!routeInfo && !emergencyMode && historyEntries.length > 0 && (
+      {!routeInfo && !emergencyMode && !nearMeMode && historyEntries.length > 0 && (
         <SearchHistory
           entries={historyEntries}
           onSelect={handleHistorySelect}
@@ -394,7 +421,7 @@ export function SearchPanel({
       {searchError && (
         <div className="error-message" role="alert">{searchError}</div>
       )}
-      {locationError && !emergencyMode && (
+      {locationError && !emergencyMode && !nearMeMode && (
         <div className="error-message" role="alert">{locationError}</div>
       )}
 
@@ -474,6 +501,7 @@ export function SearchPanel({
 
       <ShelterResults
         emergencyMode={emergencyMode}
+        proximityMode={nearMeMode}
         nearbyShelters={nearbyShelters}
         displayedShelters={displayedShelters}
         sheltersLoading={sheltersLoading}

@@ -163,12 +163,6 @@ export function useSearchPanelRoutePlanner({
     });
   }, [addHistoryEntry, currentDestination, currentOrigin, destText, onSearch, originText, t, travelMode]);
 
-  const handleSavedLocationSelect = useCallback((location: { lat: number; lng: number }) => {
-    setOriginText(t('savedLocations.savedPoint'));
-    setOriginPlace({ lat: location.lat, lng: location.lng, displayName: t('savedLocations.savedPoint') });
-    setUseMyLocation(false);
-  }, [t]);
-
   const handleHistorySelect = useCallback((entry: SearchHistoryEntry) => {
     setOriginText(entry.originName);
     setDestText(entry.destName);
@@ -199,7 +193,6 @@ export function useSearchPanelRoutePlanner({
     handleShare,
     handleUseCurrentLocation,
     handleSearch,
-    handleSavedLocationSelect,
     handleHistorySelect,
   };
 }

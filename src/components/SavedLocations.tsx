@@ -1,16 +1,15 @@
 import { useState, useCallback } from 'react';
 import { useLanguage } from '../i18n';
 import type { SavedLocation, SavedLocationLabel } from '../hooks/useSavedLocations';
-import type { LatLng, Shelter } from '../types';
+import type { LatLng } from '../types';
 
 interface SavedLocationsProps {
   locations: SavedLocation[];
-  onSelectLocation: (location: LatLng) => void;
+  onSelectLocation: (location: SavedLocation) => void;
   onAddLocation: (loc: Omit<SavedLocation, 'id'>) => void;
   onRemoveLocation: (id: string) => void;
   isMaxReached: boolean;
   currentLocation: LatLng | null;
-  shelters: Array<Pick<Shelter, 'id' | 'name' | 'lat' | 'lon' | 'address'>>;
 }
 
 const LABEL_ICONS: Record<SavedLocationLabel, string> = {
@@ -29,7 +28,6 @@ export function SavedLocations({
   onRemoveLocation,
   isMaxReached,
   currentLocation,
-  shelters,
 }: SavedLocationsProps) {
   const { t } = useLanguage();
   const [showAddForm, setShowAddForm] = useState(false);
@@ -39,32 +37,21 @@ export function SavedLocations({
   const handleAdd = useCallback(() => {
     if (!currentLocation || !newName.trim()) return;
 
-    // Find 3 nearest shelters
-    const nearest = [...shelters]
-      .map((s) => ({
-        ...s,
-        dist: Math.hypot(s.lat - currentLocation.lat, s.lon - currentLocation.lng),
-      }))
-      .sort((a, b) => a.dist - b.dist)
-      .slice(0, 3)
-      .map(({ dist: _, ...rest }) => { void _; return rest; });
-
     onAddLocation({
       name: newName.trim(),
       label: newLabel,
       lat: currentLocation.lat,
       lng: currentLocation.lng,
-      nearestShelters: nearest,
     });
 
     setNewName('');
     setNewLabel('home');
     setShowAddForm(false);
-  }, [currentLocation, newName, newLabel, shelters, onAddLocation]);
+  }, [currentLocation, newName, newLabel, onAddLocation]);
 
   const handleChipClick = useCallback(
     (loc: SavedLocation) => {
-      onSelectLocation({ lat: loc.lat, lng: loc.lng });
+      onSelectLocation(loc);
     },
     [onSelectLocation]
   );
@@ -77,27 +64,32 @@ export function SavedLocations({
     <div className="saved-locations" role="region" aria-label={t('savedLocations.title')}>
       <div className="saved-locations-chips">
         {locations.map((loc) => (
-          <button
+          <div
             key={loc.id}
             className="saved-location-chip"
-            onClick={() => handleChipClick(loc)}
-            aria-label={`${loc.name} - ${t('savedLocations.tapToFind')}`}
+            role="group"
+            aria-label={loc.name}
           >
-            <span className="saved-location-chip-icon" aria-hidden="true">
-              {LABEL_ICONS[loc.label]}
-            </span>
-            <span className="saved-location-chip-name">{loc.name}</span>
             <button
+              type="button"
+              className="saved-location-chip-select"
+              onClick={() => handleChipClick(loc)}
+              aria-label={`${loc.name} - ${t('savedLocations.tapToFind')}`}
+            >
+              <span className="saved-location-chip-icon" aria-hidden="true">
+                {LABEL_ICONS[loc.label]}
+              </span>
+              <span className="saved-location-chip-name">{loc.name}</span>
+            </button>
+            <button
+              type="button"
               className="saved-location-chip-remove"
-              onClick={(e) => {
-                e.stopPropagation();
-                onRemoveLocation(loc.id);
-              }}
+              onClick={() => onRemoveLocation(loc.id)}
               aria-label={`${t('savedLocations.remove')} ${loc.name}`}
             >
               &times;
             </button>
-          </button>
+          </div>
         ))}
 
         {!isMaxReached && currentLocation && (

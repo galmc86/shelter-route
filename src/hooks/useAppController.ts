@@ -12,7 +12,7 @@ import { useLanguage } from '../i18n';
 import { useTheme } from '../theme';
 import { playAlertSound, stopAlertSound } from '../utils/alertSound';
 import { trackRouteSearch, trackEmergency } from '../services/safetyAnalyticsService';
-import type { TravelMode, LatLng, RouteWithShelters } from '../types';
+import type { TravelMode, LatLng, LocationPoint, RouteWithShelters } from '../types';
 import type { ShelterWithDistance } from './useShelters';
 import type { RouteContextValue } from '../contexts/RouteContext';
 import type { EmergencyContextValue } from '../contexts/EmergencyContext';
@@ -75,6 +75,7 @@ export interface AppControllerState {
   mapsError: string | null;
   routes: ReturnType<typeof useRoute>['routes'];
   currentLocation: ReturnType<typeof useCurrentLocation>['location'];
+  mapUserLocation: LocationPoint | null;
   familyGroupCode: string | null;
   panelExpanded: boolean;
   showOnboarding: boolean;
@@ -148,8 +149,20 @@ export function useAppController(): AppControllerState {
   const [shareTravelMode, setShareTravelMode] = useState<TravelMode>(() => initialSharedRoute?.travelMode ?? 'WALKING');
   const [showOnboarding, setShowOnboarding] = useState(() => !isOnboardingCompleted());
   const [nearMeMode, setNearMeMode] = useState(false);
+  const [savedLookupLocation, setSavedLookupLocation] = useState<{ location: LocationPoint; label: string | null } | null>(null);
   const [familyGroupCode] = useState<string | null>(() => getInitialFamilyGroupCode());
   const [panelExpanded, setPanelExpanded] = useState(() => initialSharedRoute === null);
+
+  const activeLookupLocation = useMemo<LocationPoint | null>(() => {
+    if (savedLookupLocation) return savedLookupLocation.location;
+    return currentLocation;
+  }, [currentLocation, savedLookupLocation]);
+
+  const activeLookupLabel = useMemo(() => {
+    if (savedLookupLocation?.label) return savedLookupLocation.label;
+    if (nearMeMode || emergencyMode) return t('search.myLocation');
+    return null;
+  }, [emergencyMode, nearMeMode, savedLookupLocation, t]);
 
   const dismissAlert = useCallback(() => {
     dismissAlertBase();
@@ -191,13 +204,14 @@ export function useAppController(): AppControllerState {
   }, [selectedRoute, filterByRoute]);
 
   useEffect(() => {
-    if ((emergencyMode || nearMeMode) && currentLocation && allShelters.length) {
-      findNearest(allShelters, currentLocation.lat, currentLocation.lng);
+    if ((emergencyMode || nearMeMode) && activeLookupLocation && allShelters.length) {
+      findNearest(allShelters, activeLookupLocation.lat, activeLookupLocation.lng);
     }
-  }, [emergencyMode, nearMeMode, currentLocation, allShelters, findNearest]);
+  }, [emergencyMode, nearMeMode, activeLookupLocation, allShelters, findNearest]);
 
   const activateEmergencyFromAlert = useCallback(() => {
     setEmergencyMode(true);
+    setSavedLookupLocation(null);
     setSelectedShelterId(null);
     setPanelExpanded(false);
     getLocation();
@@ -236,6 +250,7 @@ export function useAppController(): AppControllerState {
     setSelectedShelterId(null);
     setEmergencyMode(false);
     setNearMeMode(false);
+    setSavedLookupLocation(null);
     clearNearest();
     setPanelExpanded(false);
     setShareOrigin(origin);
@@ -247,10 +262,23 @@ export function useAppController(): AppControllerState {
   const handleNearMeClick = useCallback(() => {
     setNearMeMode(true);
     setEmergencyMode(false);
+    setSavedLookupLocation(null);
     setSelectedShelterId(null);
     setPanelExpanded(true);
     getLocation();
   }, [getLocation]);
+
+  const handleSearchFromSavedLocation = useCallback((location: LocationPoint, label?: string) => {
+    setNearMeMode(true);
+    setEmergencyMode(false);
+    setSavedLookupLocation({
+      location: { lat: location.lat, lng: location.lng, address: location.address },
+      label: label?.trim() || null,
+    });
+    setSelectedShelterId(null);
+    clearNearest();
+    setPanelExpanded(true);
+  }, [clearNearest]);
 
   const handleShelterClick = useCallback((shelter: ShelterWithDistance) => {
     setSelectedShelterId(shelter.id);
@@ -259,6 +287,7 @@ export function useAppController(): AppControllerState {
   const handleEmergencyClick = useCallback(() => {
     setEmergencyMode(true);
     setNearMeMode(false);
+    setSavedLookupLocation(null);
     setSelectedShelterId(null);
     setPanelExpanded(false);
     getLocation();
@@ -267,12 +296,14 @@ export function useAppController(): AppControllerState {
 
   const handleExitEmergency = useCallback(() => {
     setEmergencyMode(false);
+    setSavedLookupLocation(null);
     clearNearest();
     setSelectedShelterId(null);
   }, [clearNearest]);
 
   const handleExitNearMe = useCallback(() => {
     setNearMeMode(false);
+    setSavedLookupLocation(null);
     clearNearest();
     setSelectedShelterId(null);
   }, [clearNearest]);
@@ -294,6 +325,7 @@ export function useAppController(): AppControllerState {
   }, [allShelters, findNearest]);
 
   const displayShelters = (emergencyMode || nearMeMode) ? nearestShelters : nearbyShelters;
+  const mapUserLocation = isNavigating ? currentLocation : (emergencyMode || nearMeMode ? activeLookupLocation : null);
 
   const handleNavigateToShelter = useCallback(async (shelter: ShelterWithDistance) => {
     if (!currentLocation) {
@@ -349,16 +381,20 @@ export function useAppController(): AppControllerState {
     onEmergencyClick: handleEmergencyClick,
     onExitEmergency: handleExitEmergency,
     currentLocation,
+    activeLookupLocation,
+    activeLookupLabel,
     isLoadingLocation,
     locationError: locationError ?? null,
     onGetLocation: getLocation,
+    onSearchFromSavedLocation: handleSearchFromSavedLocation,
     nearMeMode,
     onNearMeClick: handleNearMeClick,
     onExitNearMe: handleExitNearMe,
     onUseMapCenter: handleUseMapCenter,
   }), [
     emergencyMode, handleEmergencyClick, handleExitEmergency,
-    currentLocation, isLoadingLocation, locationError, getLocation,
+    currentLocation, activeLookupLocation, activeLookupLabel,
+    isLoadingLocation, locationError, getLocation, handleSearchFromSavedLocation,
     nearMeMode, handleNearMeClick, handleExitNearMe, handleUseMapCenter,
   ]);
 
@@ -386,6 +422,7 @@ export function useAppController(): AppControllerState {
     mapsError,
     routes,
     currentLocation,
+    mapUserLocation,
     familyGroupCode,
     panelExpanded,
     showOnboarding,

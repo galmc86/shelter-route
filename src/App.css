@@ -1401,6 +1401,19 @@ body {
   text-overflow: ellipsis;
 }
 
+.saved-location-chip-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  padding: 0;
+  min-width: 0;
+}
+
 .saved-location-chip-remove {
   display: inline-flex;
   align-items: center;
@@ -1952,5 +1965,4 @@ body {
 [data-theme="dark"] .shelter-nav-stop:hover {
   background: #E53935;
 }
-
 
