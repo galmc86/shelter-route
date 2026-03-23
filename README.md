@@ -81,6 +81,7 @@ data/
 - `public/shelters.json` is the current supported runtime dataset.
 - Run `npm run data:verify` before shipping data changes. It validates `public/shelters.json`, prints the current dataset hash used for cache-busting, and checks whether the checked-in `.kmz` files are real KMZ archives.
 - `npm run data:rebuild` is now the supported rebuild entry point for valid KMZ inputs. It preserves stable shelter IDs when rebuilt shelters still match the current dataset and supports `--dry-run` plus `--merge-existing`.
+- `npm run data:probe-tlv`, `npm run data:import-tlv-candidate`, `npm run data:diff-tlv-candidate`, and `npm run data:reconcile-tlv` are non-destructive Tel Aviv analysis tools. They query the live municipal ArcGIS source, write candidate files under `tmp/`, and generate a reconciliation report plus a review-only full dataset candidate without modifying `public/shelters.json`.
 - A full raw-data rebuild is currently blocked because the checked-in files under [`/Users/gal.machluf/projects/shelter-finder/data`](/Users/gal.machluf/projects/shelter-finder/data) are invalid HTML responses rather than KMZ binaries. Replace those files with real KMZ archives before attempting to reconstruct `public/shelters.json`.
 - Partial rebuild semantics are explicit:
   - without `--merge-existing`, only rebuilt KMZ-derived shelters are written
