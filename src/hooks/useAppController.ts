@@ -7,51 +7,131 @@ import { useNearestShelters } from './useNearestShelters';
 import { useCapacity } from './useCapacity';
 import { useOrefAlerts } from './useOrefAlerts';
 import { useAlertHistory } from './useAlertHistory';
+import { useNavigation } from './useNavigation';
 import { useLanguage } from '../i18n';
 import { useTheme } from '../theme';
+import { playAlertSound, stopAlertSound } from '../utils/alertSound';
+import { trackRouteSearch, trackEmergency } from '../services/safetyAnalyticsService';
 import type { TravelMode, LatLng, RouteWithShelters } from '../types';
-import type { ShelterWithDistance } from '../utils/shelterDistance';
+import type { ShelterWithDistance } from './useShelters';
+import type { RouteContextValue } from '../contexts/RouteContext';
+import type { EmergencyContextValue } from '../contexts/EmergencyContext';
+import type { ShelterContextValue } from '../contexts/ShelterContext';
+import type L from 'leaflet';
 
-export function useAppController() {
+function isOnboardingCompleted(): boolean {
+  try {
+    return localStorage.getItem('shelter-route:onboarding-completed') === 'true';
+  } catch {
+    return false;
+  }
+}
+
+export interface AppControllerState {
+  language: string;
+  theme: string;
+  t: (key: string) => string;
+  mapsError: string | null;
+  routes: ReturnType<typeof useRoute>['routes'];
+  currentLocation: ReturnType<typeof useCurrentLocation>['location'];
+  familyGroupCode: string | null;
+  panelExpanded: boolean;
+  showOnboarding: boolean;
+  emergencyMode: boolean;
+  nearMeMode: boolean;
+  isAlertActive: boolean;
+  matchedRegion: ReturnType<typeof useOrefAlerts>['matchedRegion'];
+  countdown: ReturnType<typeof useOrefAlerts>['countdown'];
+  isNavigating: boolean;
+  isLoadingNav: boolean;
+  navError: string | null;
+  navHookRoute: ReturnType<typeof useNavigation>['navigationRoute'];
+  targetShelter: ReturnType<typeof useNavigation>['targetShelter'];
+  routeContextValue: RouteContextValue;
+  emergencyContextValue: EmergencyContextValue;
+  shelterContextValue: ShelterContextValue;
+  handleMapReady: (map: L.Map) => void;
+  handleEmergencyClick: () => void;
+  handleNavigateToShelter: (shelter: ShelterWithDistance) => Promise<void>;
+  handleCancelNavigation: () => void;
+  dismissAlert: () => void;
+  stopNavigation: () => void;
+  completeOnboarding: () => void;
+  togglePanel: () => void;
+}
+
+export function useAppController(): AppControllerState {
   const { language, t } = useLanguage();
   const { theme } = useTheme();
-  const { isLoaded, error: mapsError } = useGoogleMaps();
-  const { routes, selectedRouteIndex, selectedRoute, selectRoute, isLoading: isRouteLoading, error: routeError, searchRoute } = useRoute();
-  const { allShelters, nearbyShelters, isLoading: sheltersLoading, filterByRoute, getRoutesWithShelters } = useShelters();
-  const { location: currentLocation, isLoading: isLoadingLocation, error: locationError, getLocation } = useCurrentLocation();
-  const { nearestShelters, isSearching: isEmergencySearching, findNearest, clear: clearNearest } = useNearestShelters();
-  const capacityMap = useCapacity(allShelters);
-  const {
-    isAlertActive,
-    matchedRegion,
-    countdown,
-    dismissAlert,
-  } = useOrefAlerts(
-    currentLocation?.lat ?? null,
-    currentLocation?.lng ?? null
-  );
-  const {
-    routeRisk,
-    timeFilter,
-    setTimeFilter,
-  } = useAlertHistory(selectedRoute);
-  const prevAlertActive = useRef(false);
   const [selectedShelterId, setSelectedShelterId] = useState<string | null>(null);
   const [emergencyMode, setEmergencyMode] = useState(false);
   const [panelExpanded, setPanelExpanded] = useState(true);
+  const { error: mapsError } = useGoogleMaps();
+  const {
+    routes,
+    selectedRouteIndex,
+    selectedRoute,
+    selectRoute,
+    isLoading: isRouteLoading,
+    error: routeError,
+    searchRoute,
+  } = useRoute();
+  const { allShelters, nearbyShelters, isLoading: sheltersLoading, filterByRoute, getRoutesWithShelters } = useShelters();
+  const { location: currentLocation, isLoading: isLoadingLocation, error: locationError, getLocation } = useCurrentLocation(emergencyMode);
+  const { nearestShelters, isSearching: isEmergencySearching, findNearest, clear: clearNearest } = useNearestShelters();
+  const capacityMap = useCapacity(allShelters);
+  const { isAlertActive, matchedRegion, countdown, dismissAlert: dismissAlertBase } = useOrefAlerts(
+    currentLocation?.lat ?? null,
+    currentLocation?.lng ?? null
+  );
+  const { routeRisk, timeFilter, setTimeFilter } = useAlertHistory(selectedRoute);
+  const {
+    navigationRoute: navHookRoute,
+    targetShelter,
+    isNavigating,
+    isLoadingNav,
+    navError,
+    startNavigation,
+    stopNavigation,
+  } = useNavigation();
+
+  const prevAlertActive = useRef(false);
+  const vibrationInterval = useRef<ReturnType<typeof setInterval> | null>(null);
+  const leafletMapRef = useRef<L.Map | null>(null);
+  const pendingNavShelterRef = useRef<ShelterWithDistance | null>(null);
+  const prevRoutesLength = useRef(0);
+
   const [shareOrigin, setShareOrigin] = useState<LatLng | null>(null);
   const [shareDestination, setShareDestination] = useState<LatLng | null>(null);
   const [shareTravelMode, setShareTravelMode] = useState<TravelMode>('WALKING');
+  const [showOnboarding, setShowOnboarding] = useState(() => !isOnboardingCompleted());
+  const [nearMeMode, setNearMeMode] = useState(false);
+  const [familyGroupCode, setFamilyGroupCode] = useState<string | null>(null);
 
-  // Compute routes with shelter counts
+  const dismissAlert = useCallback(() => {
+    dismissAlertBase();
+    stopAlertSound();
+    if (vibrationInterval.current) {
+      clearInterval(vibrationInterval.current);
+      vibrationInterval.current = null;
+    }
+    if (navigator.vibrate) {
+      navigator.vibrate(0);
+    }
+  }, [dismissAlertBase]);
+
   const routesWithShelters: RouteWithShelters[] = useMemo(() => {
     if (routes.length === 0) return [];
     return getRoutesWithShelters(routes);
   }, [routes, getRoutesWithShelters]);
 
-  // Parse URL params on mount for shared routes
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    const familyCode = params.get('familyGroup');
+    if (familyCode && /^[A-Z0-9]{6}$/i.test(familyCode)) {
+      setFamilyGroupCode(familyCode.toUpperCase());
+    }
+
     const from = params.get('from');
     const to = params.get('to');
     const mode = params.get('mode') as TravelMode | null;
@@ -61,68 +141,95 @@ export function useAppController() {
       const [toLat, toLng] = to.split(',').map(Number);
 
       if (!isNaN(fromLat) && !isNaN(fromLng) && !isNaN(toLat) && !isNaN(toLng)) {
+        const isValidLat = (lat: number) => lat >= 29.0 && lat <= 34.0;
+        const isValidLng = (lng: number) => lng >= 34.0 && lng <= 36.5;
+
+        if (!isValidLat(fromLat) || !isValidLng(fromLng) || !isValidLat(toLat) || !isValidLng(toLng)) {
+          console.warn('Shared route URL contains coordinates outside Israel bounds, ignoring:', { fromLat, fromLng, toLat, toLng });
+          return;
+        }
+
         const origin: LatLng = { lat: fromLat, lng: fromLng };
         const destination: LatLng = { lat: toLat, lng: toLng };
         const travelMode: TravelMode = (mode && ['WALKING', 'BICYCLING', 'DRIVING'].includes(mode)) ? mode : 'WALKING';
 
-        // eslint-disable-next-line react-hooks/set-state-in-effect -- initializing from URL params on mount
         setShareOrigin(origin);
         setShareDestination(destination);
         setShareTravelMode(travelMode);
-
-        // Auto-trigger route search
         setPanelExpanded(false);
         searchRoute(origin, destination, travelMode);
-
-        // Clean up URL params without reload
         window.history.replaceState({}, '', window.location.pathname);
       }
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Filter shelters whenever route changes
+  useEffect(() => {
+    if (routesWithShelters.length > 0 && routesWithShelters.length !== prevRoutesLength.current) {
+      const shelterCount = routesWithShelters[selectedRouteIndex]?.shelterCount ?? 0;
+      trackRouteSearch(shelterCount);
+    }
+    prevRoutesLength.current = routesWithShelters.length;
+  }, [routesWithShelters, selectedRouteIndex]);
+
   useEffect(() => {
     filterByRoute(selectedRoute);
   }, [selectedRoute, filterByRoute]);
 
-  // When emergency mode activates and we get location, find nearest shelters
   useEffect(() => {
-    if (emergencyMode && currentLocation && allShelters.length) {
+    if ((emergencyMode || nearMeMode) && currentLocation && allShelters.length) {
       findNearest(allShelters, currentLocation.lat, currentLocation.lng);
     }
-  }, [emergencyMode, currentLocation, allShelters, findNearest]);
+  }, [emergencyMode, nearMeMode, currentLocation, allShelters, findNearest]);
 
-  // Auto-trigger emergency mode when OREF alert activates in user's area
   useEffect(() => {
     if (isAlertActive && !prevAlertActive.current) {
-      // Alert just became active - trigger emergency mode
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- responding to external alert system
       setEmergencyMode(true);
       setSelectedShelterId(null);
       setPanelExpanded(false);
       getLocation();
+      playAlertSound();
 
-      // Vibrate device if supported (long pattern for urgency)
       if (navigator.vibrate) {
         navigator.vibrate([200, 100, 200, 100, 400]);
+        vibrationInterval.current = setInterval(() => {
+          navigator.vibrate([200, 100, 200, 100, 400]);
+        }, 1200);
       }
     }
+
+    if (!isAlertActive && prevAlertActive.current) {
+      stopAlertSound();
+      if (vibrationInterval.current) {
+        clearInterval(vibrationInterval.current);
+        vibrationInterval.current = null;
+      }
+      if (navigator.vibrate) {
+        navigator.vibrate(0);
+      }
+    }
+
     prevAlertActive.current = isAlertActive;
   }, [isAlertActive, getLocation]);
 
-  const handleSearch = useCallback(
-    (origin: LatLng, destination: LatLng, travelMode: TravelMode) => {
-      setSelectedShelterId(null);
-      setEmergencyMode(false);
-      clearNearest();
-      setPanelExpanded(false);
-      setShareOrigin(origin);
-      setShareDestination(destination);
-      setShareTravelMode(travelMode);
-      searchRoute(origin, destination, travelMode);
-    },
-    [searchRoute, clearNearest]
-  );
+  const handleSearch = useCallback((origin: LatLng, destination: LatLng, travelMode: TravelMode) => {
+    setSelectedShelterId(null);
+    setEmergencyMode(false);
+    setNearMeMode(false);
+    clearNearest();
+    setPanelExpanded(false);
+    setShareOrigin(origin);
+    setShareDestination(destination);
+    setShareTravelMode(travelMode);
+    searchRoute(origin, destination, travelMode);
+  }, [searchRoute, clearNearest]);
+
+  const handleNearMeClick = useCallback(() => {
+    setNearMeMode(true);
+    setEmergencyMode(false);
+    setSelectedShelterId(null);
+    setPanelExpanded(true);
+    getLocation();
+  }, [getLocation]);
 
   const handleShelterClick = useCallback((shelter: ShelterWithDistance) => {
     setSelectedShelterId(shelter.id);
@@ -130,13 +237,21 @@ export function useAppController() {
 
   const handleEmergencyClick = useCallback(() => {
     setEmergencyMode(true);
+    setNearMeMode(false);
     setSelectedShelterId(null);
     setPanelExpanded(false);
     getLocation();
+    trackEmergency();
   }, [getLocation]);
 
   const handleExitEmergency = useCallback(() => {
     setEmergencyMode(false);
+    clearNearest();
+    setSelectedShelterId(null);
+  }, [clearNearest]);
+
+  const handleExitNearMe = useCallback(() => {
+    setNearMeMode(false);
     clearNearest();
     setSelectedShelterId(null);
   }, [clearNearest]);
@@ -146,57 +261,133 @@ export function useAppController() {
     setSelectedShelterId(null);
   }, [selectRoute]);
 
-  const displayShelters = emergencyMode ? nearestShelters : nearbyShelters;
+  const handleMapReady = useCallback((map: L.Map) => {
+    leafletMapRef.current = map;
+  }, []);
 
-  return {
-    // Language / theme
-    language,
-    t,
-    theme,
-    // Maps
-    isLoaded,
-    mapsError,
-    // Route
-    routes,
+  const handleUseMapCenter = useCallback(() => {
+    const map = leafletMapRef.current;
+    if (!map || !allShelters.length) return;
+    const center = map.getCenter();
+    findNearest(allShelters, center.lat, center.lng);
+  }, [allShelters, findNearest]);
+
+  const displayShelters = (emergencyMode || nearMeMode) ? nearestShelters : nearbyShelters;
+
+  const handleNavigateToShelter = useCallback(async (shelter: ShelterWithDistance) => {
+    if (!currentLocation) {
+      pendingNavShelterRef.current = shelter;
+      getLocation();
+      return;
+    }
+    pendingNavShelterRef.current = null;
+    await startNavigation(shelter, currentLocation, t);
+    setPanelExpanded(false);
+  }, [currentLocation, getLocation, startNavigation, t]);
+
+  useEffect(() => {
+    if (currentLocation && pendingNavShelterRef.current) {
+      const shelter = pendingNavShelterRef.current;
+      pendingNavShelterRef.current = null;
+      startNavigation(shelter, currentLocation, t).then(() => {
+        setPanelExpanded(false);
+      });
+    }
+  }, [currentLocation, startNavigation, t]);
+
+  const handleCancelNavigation = useCallback(() => {
+    stopNavigation();
+    setPanelExpanded(true);
+  }, [stopNavigation]);
+
+  const routeContextValue: RouteContextValue = useMemo(() => ({
+    routeInfo: (emergencyMode || nearMeMode) ? null : selectedRoute,
     selectedRouteIndex,
-    selectedRoute,
-    isRouteLoading,
-    routeError,
-    selectRoute,
-    // Shelters
-    displayShelters,
-    sheltersLoading,
-    isEmergencySearching,
-    capacityMap,
-    nearbyShelters,
-    // Location
-    currentLocation,
-    isLoadingLocation,
-    locationError,
-    getLocation,
-    // Alert
-    isAlertActive,
-    matchedRegion,
-    countdown,
-    dismissAlert,
-    // Alert history
-    routeRisk,
-    timeFilter,
-    setTimeFilter,
-    // UI state
-    selectedShelterId,
-    emergencyMode,
-    panelExpanded,
-    setPanelExpanded,
+    routesWithShelters: (emergencyMode || nearMeMode) ? [] : routesWithShelters,
+    nearbyShelters: displayShelters,
+    sheltersLoading: sheltersLoading || isEmergencySearching,
+    searchError: routeError,
+    isSearching: isRouteLoading,
+    onSearch: handleSearch,
+    onRouteSelect: handleRouteSelect,
     shareOrigin,
     shareDestination,
     shareTravelMode,
-    routesWithShelters,
-    // Handlers
-    handleSearch,
-    handleShelterClick,
+    routeRisk: routeRisk ?? null,
+    timeFilter,
+    onTimeFilterChange: setTimeFilter,
+  }), [
+    emergencyMode, nearMeMode, selectedRoute, selectedRouteIndex,
+    routesWithShelters, displayShelters, sheltersLoading, isEmergencySearching,
+    routeError, isRouteLoading, handleSearch, handleRouteSelect,
+    shareOrigin, shareDestination, shareTravelMode, routeRisk, timeFilter, setTimeFilter,
+  ]);
+
+  const emergencyContextValue: EmergencyContextValue = useMemo(() => ({
+    emergencyMode,
+    onEmergencyClick: handleEmergencyClick,
+    onExitEmergency: handleExitEmergency,
+    currentLocation,
+    isLoadingLocation,
+    locationError: locationError ?? null,
+    onGetLocation: getLocation,
+    nearMeMode,
+    onNearMeClick: handleNearMeClick,
+    onExitNearMe: handleExitNearMe,
+    onUseMapCenter: handleUseMapCenter,
+  }), [
+    emergencyMode, handleEmergencyClick, handleExitEmergency,
+    currentLocation, isLoadingLocation, locationError, getLocation,
+    nearMeMode, handleNearMeClick, handleExitNearMe, handleUseMapCenter,
+  ]);
+
+  const shelterContextValue: ShelterContextValue = useMemo(() => ({
+    selectedShelterId,
+    onShelterClick: handleShelterClick,
+    onNavigateToShelter: handleNavigateToShelter,
+    capacityMap,
+    isLoaded: true,
+    allShelters,
+  }), [selectedShelterId, handleShelterClick, handleNavigateToShelter, capacityMap, allShelters]);
+
+  const completeOnboarding = useCallback(() => {
+    setShowOnboarding(false);
+  }, []);
+
+  const togglePanel = useCallback(() => {
+    setPanelExpanded((value) => !value);
+  }, []);
+
+  return {
+    language,
+    theme,
+    t,
+    mapsError,
+    routes,
+    currentLocation,
+    familyGroupCode,
+    panelExpanded,
+    showOnboarding,
+    emergencyMode,
+    nearMeMode,
+    isAlertActive,
+    matchedRegion,
+    countdown,
+    isNavigating,
+    isLoadingNav,
+    navError,
+    navHookRoute,
+    targetShelter,
+    routeContextValue,
+    emergencyContextValue,
+    shelterContextValue,
+    handleMapReady,
     handleEmergencyClick,
-    handleExitEmergency,
-    handleRouteSelect,
+    handleNavigateToShelter,
+    handleCancelNavigation,
+    dismissAlert,
+    stopNavigation,
+    completeOnboarding,
+    togglePanel,
   };
 }
