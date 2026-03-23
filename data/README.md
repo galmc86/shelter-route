@@ -20,6 +20,15 @@ The main shelter dataset lives at `public/shelters.json` and is served as a stat
 2. **Processing** -- coordinates and metadata are extracted from the KMZ placemarks and converted into the JSON format above, producing `public/shelters.json`.
 3. **Cache-busting** -- at build time, Vite computes an MD5 content hash of `shelters.json` and injects it as `__SHELTER_DATA_VERSION__`. The app appends this hash as a query parameter when fetching the file, ensuring browsers pick up new data after updates.
 
+## Supported Command
+
+Run `npm run data:verify` from the repo root to validate:
+
+- `public/shelters.json` exists and parses
+- the top-level dataset shape is correct
+- the current cache-busting hash can be derived deterministically
+- checked-in `.kmz` files are actual KMZ archives rather than HTML/error pages
+
 ## Client-side Caching
 
 The app caches shelter data in `localStorage` under the key `shelter-route:shelters` with a version number (`STORAGE_VERSION`). When `STORAGE_VERSION` is bumped in `src/services/shelterApi.ts`, the cached data is discarded and re-fetched. The service worker also caches `shelters.json` requests for offline use.
@@ -39,3 +48,5 @@ data/miklat-tlv.kmz: HTML document text, Unicode text, UTF-8 text
 Both files are HTML documents rather than the expected ZIP-compressed KML. They were likely downloaded from a source that returned an HTML page (e.g. a login wall or redirect) instead of the actual KMZ binary. These files cannot be processed as-is; valid KMZ files would need to be re-downloaded from the original data source.
 
 The shelter data currently in `public/shelters.json` was generated from a valid KMZ snapshot (`miklat-isr-2026-03-06.kmz`) that is no longer present in this directory.
+
+Until valid KMZ source files are restored, `npm run data:verify` is the supported maintenance command for this pipeline.

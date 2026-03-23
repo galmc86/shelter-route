@@ -11,7 +11,8 @@
     "test": "vitest",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "data:verify": "node scripts/verify-shelter-data.mjs"
   },
   "dependencies": {
     "@googlemaps/js-api-loader": "^2.0.2",

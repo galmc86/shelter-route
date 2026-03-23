@@ -53,6 +53,7 @@ npm run test:run   # run tests once
 npm run lint       # lint with ESLint
 npm run build      # type-check + production build
 npm run preview    # preview production build locally
+npm run data:verify # verify public/shelters.json and raw KMZ source integrity
 ```
 
 ## Project Structure
@@ -73,6 +74,13 @@ public/
 data/
   *.kmz          # Raw shelter data source files (see data/README.md)
 ```
+
+## Shelter Data Workflow
+
+- `public/shelters.json` is the current supported runtime dataset.
+- Run `npm run data:verify` before shipping data changes. It validates `public/shelters.json`, prints the current dataset hash used for cache-busting, and checks whether the checked-in `.kmz` files are real KMZ archives.
+- A full raw-data rebuild is currently blocked because the checked-in files under [`/Users/gal.machluf/projects/shelter-finder/data`](/Users/gal.machluf/projects/shelter-finder/data) are invalid HTML responses rather than KMZ binaries. Replace those files with real KMZ archives before attempting to reconstruct `public/shelters.json`.
+- The production build now fails if `public/shelters.json` cannot be read, so dataset versioning stays deterministic.
 
 ## Deployment
 

@@ -8,8 +8,9 @@ function shelterDataVersion(): string {
   try {
     const data = readFileSync('public/shelters.json')
     return createHash('md5').update(data).digest('hex').slice(0, 8)
-  } catch {
-    return Date.now().toString()
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : String(err)
+    throw new Error(`Failed to read public/shelters.json for cache-busting: ${reason}`)
   }
 }
 
