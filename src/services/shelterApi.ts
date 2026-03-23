@@ -1,6 +1,7 @@
 import type { Shelter } from '../types';
 import { reportError } from './errorReportingService';
-
+import { resilientFetch } from './fetchClient';
+import { ServiceError } from './serviceResult';
 
 interface MiklatShelter {
   id: number;
@@ -179,6 +180,10 @@ interface NominatimResponse {
   address?: NominatimAddress;
 }
 
+interface SheltersResponse {
+  shelters: MiklatShelter[];
+}
+
 /**
  * Extract a meaningful Hebrew location name from a Nominatim response.
  * Prefers road (street) name, then neighbourhood, then suburb/district.
@@ -206,17 +211,16 @@ async function reverseGeocodeSingle(
   lon: number
 ): Promise<string | null> {
   const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=he&zoom=18`;
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5000);
-    const resp = await fetch(url, { signal: controller.signal });
-    clearTimeout(timeout);
-    if (!resp.ok) return null;
-    const data = await resp.json() as NominatimResponse;
-    return extractNameFromNominatim(data);
-  } catch {
+  const result = await resilientFetch<NominatimResponse>(url, {}, {
+    timeout: 5000,
+    retries: 0,
+  });
+
+  if (!result.ok) {
     return null;
   }
+
+  return extractNameFromNominatim(result.data);
 }
 
 /** Max network reverse-geocode requests per session to avoid Nominatim rate limits */
@@ -354,10 +358,20 @@ function parseShelters(data: MiklatShelter[]): Shelter[] {
  * Uses streaming when available to report download progress.
  */
 async function fetchWithProgress(url: string): Promise<string> {
-  const response = await fetch(url);
+  let response: Response;
+  try {
+    response = await fetch(url);
+  } catch (err) {
+    throw new ServiceError('NETWORK', 'Failed to fetch shelters', undefined, true, err);
+  }
 
   if (!response.ok) {
-    throw new Error(`HTTP ${response.status}`);
+    throw new ServiceError(
+      'HTTP',
+      `HTTP ${response.status}: ${response.statusText}`,
+      response.status,
+      response.status >= 500,
+    );
   }
 
   const contentLength = response.headers.get('content-length');
@@ -388,6 +402,21 @@ async function fetchWithProgress(url: string): Promise<string> {
   return text;
 }
 
+function parseSheltersResponse(text: string): SheltersResponse {
+  let json: unknown;
+  try {
+    json = JSON.parse(text);
+  } catch (err) {
+    throw new ServiceError('PARSE', 'Failed to parse shelter dataset JSON', undefined, false, err);
+  }
+
+  if (!json || typeof json !== 'object' || !Array.isArray((json as Partial<SheltersResponse>).shelters)) {
+    throw new ServiceError('PARSE', 'Shelter dataset payload is malformed');
+  }
+
+  return json as SheltersResponse;
+}
+
 /**
  * Background fetch: downloads fresh shelter data from the network, compares
  * it against the stored hash, and if different, updates cache and notifies
@@ -399,7 +428,7 @@ function backgroundRefresh(onReverseGeocodeUpdate?: () => void): void {
       const newHash = computeSimpleHash(text);
       const oldHash = loadStoredHash();
 
-      const json: { shelters: MiklatShelter[] } = JSON.parse(text);
+      const json = parseSheltersResponse(text);
       const freshShelters = parseShelters(json.shelters);
 
       if (newHash !== oldHash) {
@@ -473,7 +502,7 @@ export async function fetchAllShelters(
       `/shelters.json?v=${__SHELTER_DATA_VERSION__}`
     );
 
-    const json: { shelters: MiklatShelter[] } = JSON.parse(text);
+    const json = parseSheltersResponse(text);
     cachedShelters = parseShelters(json.shelters);
 
     saveToLocalStorage(cachedShelters);
@@ -488,7 +517,8 @@ export async function fetchAllShelters(
 
     return cachedShelters;
   } catch (err) {
-    reportError('shelter-load', 'Failed to fetch shelters', String(err));
+    const details = err instanceof ServiceError ? `${err.code}: ${err.message}` : String(err);
+    reportError('shelter-load', 'Failed to fetch shelters', details);
     throw new Error('שגיאה בטעינת מקלטים. בדוק את חיבור האינטרנט.', {
       cause: err,
     });

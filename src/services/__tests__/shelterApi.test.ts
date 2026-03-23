@@ -159,6 +159,18 @@ describe('fetchAllShelters', () => {
     );
   });
 
+  it('throws error when shelter payload is malformed and no cache exists', async () => {
+    const { fetchAllShelters } = await import('../shelterApi');
+
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      mockFetchResponse({ shelters: null })
+    );
+
+    await expect(fetchAllShelters()).rejects.toThrow(
+      'שגיאה בטעינת מקלטים'
+    );
+  });
+
   it('maps lng to lon in parsed shelters', async () => {
     const { fetchAllShelters } = await import('../shelterApi');
 
@@ -171,5 +183,28 @@ describe('fetchAllShelters', () => {
     const shelters = await fetchAllShelters();
     expect(shelters[0].lat).toBe(32.0);
     expect(shelters[0].lon).toBe(34.8);
+  });
+
+  it('returns cached shelters even when the background refresh payload is malformed', async () => {
+    const { fetchAllShelters } = await import('../shelterApi');
+
+    localStorageMock.setItem(
+      'shelter-route:shelters',
+      JSON.stringify({
+        version: 2,
+        data: [
+          { id: '1', name: 'Cached Shelter', lat: 32.0, lon: 34.8, city: '' },
+        ],
+      })
+    );
+
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      mockFetchResponse({ shelters: null })
+    );
+
+    const shelters = await fetchAllShelters();
+
+    expect(shelters).toHaveLength(1);
+    expect(shelters[0].name).toBe('Cached Shelter');
   });
 });
