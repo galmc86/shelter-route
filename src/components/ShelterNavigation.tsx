@@ -3,6 +3,7 @@ import { useLanguage } from '../i18n';
 import type { LatLng } from '../types';
 import type { ShelterWithDistance } from '../hooks/useShelters';
 import { computeWalkingRoute } from '../services/routeService';
+import { getShelterKindLabel } from '../utils/shelterKind';
 
 interface ShelterNavigationProps {
   shelter: ShelterWithDistance;
@@ -56,6 +57,7 @@ function formatNavTime(seconds: number): string {
 
 export function ShelterNavigation({ shelter, userLocation, onStop, onRouteCalculated }: ShelterNavigationProps) {
   const { t } = useLanguage();
+  const kindLabel = getShelterKindLabel(shelter.kind, t);
   const [isCalculating, setIsCalculating] = useState(true);
   const [routeDistance, setRouteDistance] = useState<number | null>(null);
   const [routeDuration, setRouteDuration] = useState<number | null>(null);
@@ -130,7 +132,10 @@ export function ShelterNavigation({ shelter, userLocation, onStop, onRouteCalcul
               <span className="shelter-nav-distance">{formatNavDistance(displayDistance)}</span>
               <span className="shelter-nav-time">{formatNavTime(displayTime)}</span>
             </div>
-            <span className="shelter-nav-name">{shelter.name || t('shelters.publicShelter')}</span>
+            <span className="shelter-nav-name">
+              {shelter.name || t('shelters.publicShelter')}
+              {kindLabel && <span className="navigation-panel-kind-badge shelter-nav-kind-badge">{kindLabel}</span>}
+            </span>
           </div>
         )}
         {error && (

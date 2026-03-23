@@ -5,6 +5,7 @@ import type { CapacityData } from '../services/capacityService';
 import { getCapacityColor } from '../services/capacityService';
 import { getAggregatedStatus, getStatusBadgeColor } from '../services/shelterReportsService';
 import { ShelterReport } from './ShelterReport';
+import { getShelterKindLabel } from '../utils/shelterKind';
 
 interface ShelterPopupProps {
   shelter: ShelterWithDistance;
@@ -20,6 +21,7 @@ export function ShelterPopup({ shelter, hasRoute, capacityData, onNavigate }: Sh
   const aggregatedStatus = getAggregatedStatus(shelter.id);
 
   const name = shelter.name || t('shelters.publicShelter');
+  const kindLabel = getShelterKindLabel(shelter.kind, t);
   const distanceText = Math.round(shelter.distanceFromRoute);
   const distanceLabel = hasRoute ? t('shelters.fromRoute') : t('shelters.fromYou');
   const metersLabel = t('shelters.meters');
@@ -45,7 +47,14 @@ export function ShelterPopup({ shelter, hasRoute, capacityData, onNavigate }: Sh
 
   return (
     <div className="shelter-popup" style={{ direction: dir }}>
-      <div className="shelter-popup-name">{name}</div>
+      <div className="shelter-popup-heading">
+        <div className="shelter-popup-name">{name}</div>
+        {kindLabel && (
+          <span className="shelter-popup-kind-badge" aria-label={kindLabel}>
+            {kindLabel}
+          </span>
+        )}
+      </div>
 
       {shelter.address && (
         <div className="shelter-popup-address">{shelter.address}</div>

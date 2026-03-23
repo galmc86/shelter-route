@@ -1,6 +1,7 @@
 import { useLanguage } from '../i18n';
 import type { RouteOption } from '../types';
 import type { ShelterWithDistance } from '../hooks/useShelters';
+import { getShelterKindLabel } from '../utils/shelterKind';
 
 interface NavigationPanelProps {
   shelter: ShelterWithDistance;
@@ -13,6 +14,7 @@ export function NavigationPanel({ shelter, route, onCancel }: NavigationPanelPro
   const dir = language === 'he' ? 'rtl' : 'ltr';
 
   const name = shelter.name || t('shelters.publicShelter');
+  const kindLabel = getShelterKindLabel(shelter.kind, t);
   const navUrl = `https://www.google.com/maps/dir/?api=1&destination=${shelter.lat},${shelter.lon}&travelmode=walking`;
 
   return (
@@ -20,7 +22,10 @@ export function NavigationPanel({ shelter, route, onCancel }: NavigationPanelPro
       <div className="navigation-panel-content">
         <div className="navigation-panel-info">
           <div className="navigation-panel-label">{t('nav.walkingTo')}</div>
-          <div className="navigation-panel-name">{name}</div>
+          <div className="navigation-panel-name">
+            {name}
+            {kindLabel && <span className="navigation-panel-kind-badge">{kindLabel}</span>}
+          </div>
           <div className="navigation-panel-stats">
             <span className="navigation-panel-stat">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">

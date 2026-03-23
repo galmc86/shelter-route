@@ -4,6 +4,7 @@ import type { ShelterWithDistance } from '../hooks/useShelters';
 import type { CapacityData } from '../services/capacityService';
 import { getCapacityColor, getCapacityStatusKey } from '../services/capacityService';
 import { getAggregatedStatus, getStatusBadgeColor } from '../services/shelterReportsService';
+import { getShelterKindLabel } from '../utils/shelterKind';
 
 interface ShelterResultsProps {
   emergencyMode: boolean;
@@ -116,6 +117,7 @@ export function ShelterResults({
 
       <div className="shelter-list" role="list" aria-labelledby="shelter-list-label">
         {displayedShelters.map((shelter) => {
+          const kindLabel = getShelterKindLabel(shelter.kind, t);
           const capData = capacityMap?.get(shelter.id);
           const occupancyPct = capData && capData.capacity > 0
             ? Math.round((capData.currentOccupancy / capData.capacity) * 100)
@@ -143,11 +145,16 @@ export function ShelterResults({
                   <path d="M12 7v6M9 10h6" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
                 </svg>
               </div>
-              <div className="shelter-item-info">
-                <div className="shelter-item-name">
-                  {shelter.name}
-                  {shelter.isAccessible && (
-                    <span className="accessible-badge" title={t('accessibility.accessible')} aria-label={t('accessibility.accessible')}>
+                <div className="shelter-item-info">
+                  <div className="shelter-item-name">
+                    {shelter.name}
+                    {kindLabel && (
+                      <span className="shelter-kind-badge" aria-label={kindLabel} title={kindLabel}>
+                        {kindLabel}
+                      </span>
+                    )}
+                    {shelter.isAccessible && (
+                      <span className="accessible-badge" title={t('accessibility.accessible')} aria-label={t('accessibility.accessible')}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="#1B5E20" aria-hidden="true">
                         <circle cx="12" cy="4" r="2" />
                         <path d="M19 13v-2c-1.54.02-3.09-.75-4.07-1.83l-1.29-1.43c-.17-.19-.38-.34-.61-.45-.01 0-.01-.01-.02-.01H13c-.35-.2-.75-.3-1.19-.26C10.76 7.11 10 8.04 10 9.09V15c0 1.1.9 2 2 2h5v5h2v-5.5c0-1.1-.9-2-2-2h-3v-3.45c1.29 1.07 3.25 1.94 5 1.95zM12.83 18H10c-1.1 0-2-.9-2-2v-1l-3.07 3.07c-.39.39-.39 1.02 0 1.41L8 22.55c.39.39 1.02.39 1.41 0L12.83 18z" />

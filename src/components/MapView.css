@@ -190,6 +190,25 @@
   padding-inline-end: 20px;
 }
 
+.shelter-popup-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.shelter-popup-kind-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(245, 124, 0, 0.12);
+  color: #c25b00;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
 .shelter-popup-address {
   font-size: 12px;
   color: var(--color-text-secondary, #424242);
@@ -253,6 +272,14 @@
 
 [data-theme="dark"] .shelter-popup-address {
   color: #B0B0B0;
+}
+
+[data-theme="dark"] .shelter-popup-kind-badge,
+[data-theme="dark"] .shelter-kind-badge,
+[data-theme="dark"] .navigation-panel-kind-badge,
+[data-theme="dark"] .shelter-nav-kind-badge {
+  background: rgba(245, 124, 0, 0.2);
+  color: #ffcc80;
 }
 
 /* High contrast distance badges */
