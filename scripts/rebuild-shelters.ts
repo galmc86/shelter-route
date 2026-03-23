@@ -3,7 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import type { MiklatShelter, SheltersJson, SheltersMetadata } from './lib/shelters-schema';
 import { extractKml, parseKmlPlacemarks } from './lib/kmz-parser';
-import { canonicalSourceKey, isKmzSource, sortSourcesByPriority } from './lib/source-keys';
+import { canonicalSourceKey, sortSourcesByPriority } from './lib/source-keys';
 import {
   buildExistingShelterIndex,
   resolveStableShelterId,

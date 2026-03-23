@@ -10,7 +10,9 @@ function shelterDataVersion(): string {
     return createHash('md5').update(data).digest('hex').slice(0, 8)
   } catch (err) {
     const reason = err instanceof Error ? err.message : String(err)
-    throw new Error(`Failed to read public/shelters.json for cache-busting: ${reason}`)
+    throw new Error(`Failed to read public/shelters.json for cache-busting: ${reason}`, {
+      cause: err,
+    })
   }
 }
 

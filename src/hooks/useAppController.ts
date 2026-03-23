@@ -27,6 +27,47 @@ function isOnboardingCompleted(): boolean {
   }
 }
 
+function getInitialFamilyGroupCode(): string | null {
+  const familyCode = new URLSearchParams(window.location.search).get('familyGroup');
+  return familyCode && /^[A-Z0-9]{6}$/i.test(familyCode) ? familyCode.toUpperCase() : null;
+}
+
+interface InitialSharedRoute {
+  origin: LatLng;
+  destination: LatLng;
+  travelMode: TravelMode;
+}
+
+function getInitialSharedRoute(): InitialSharedRoute | null {
+  const params = new URLSearchParams(window.location.search);
+  const from = params.get('from');
+  const to = params.get('to');
+  const mode = params.get('mode') as TravelMode | null;
+
+  if (!from || !to) {
+    return null;
+  }
+
+  const [fromLat, fromLng] = from.split(',').map(Number);
+  const [toLat, toLng] = to.split(',').map(Number);
+  if ([fromLat, fromLng, toLat, toLng].some((value) => Number.isNaN(value))) {
+    return null;
+  }
+
+  const isValidLat = (lat: number) => lat >= 29.0 && lat <= 34.0;
+  const isValidLng = (lng: number) => lng >= 34.0 && lng <= 36.5;
+  if (!isValidLat(fromLat) || !isValidLng(fromLng) || !isValidLat(toLat) || !isValidLng(toLng)) {
+    console.warn('Shared route URL contains coordinates outside Israel bounds, ignoring:', { fromLat, fromLng, toLat, toLng });
+    return null;
+  }
+
+  return {
+    origin: { lat: fromLat, lng: fromLng },
+    destination: { lat: toLat, lng: toLng },
+    travelMode: mode && ['WALKING', 'BICYCLING', 'DRIVING'].includes(mode) ? mode : 'WALKING',
+  };
+}
+
 export interface AppControllerState {
   language: ReturnType<typeof useLanguage>['language'];
   theme: string;
@@ -65,7 +106,6 @@ export function useAppController(): AppControllerState {
   const { theme } = useTheme();
   const [selectedShelterId, setSelectedShelterId] = useState<string | null>(null);
   const [emergencyMode, setEmergencyMode] = useState(false);
-  const [panelExpanded, setPanelExpanded] = useState(true);
   const { error: mapsError } = useGoogleMaps();
   const {
     routes,
@@ -100,13 +140,16 @@ export function useAppController(): AppControllerState {
   const leafletMapRef = useRef<L.Map | null>(null);
   const pendingNavShelterRef = useRef<ShelterWithDistance | null>(null);
   const prevRoutesLength = useRef(0);
+  const initialSharedRoute = useMemo(() => getInitialSharedRoute(), []);
+  const sharedRouteBootstrappedRef = useRef(false);
 
-  const [shareOrigin, setShareOrigin] = useState<LatLng | null>(null);
-  const [shareDestination, setShareDestination] = useState<LatLng | null>(null);
-  const [shareTravelMode, setShareTravelMode] = useState<TravelMode>('WALKING');
+  const [shareOrigin, setShareOrigin] = useState<LatLng | null>(() => initialSharedRoute?.origin ?? null);
+  const [shareDestination, setShareDestination] = useState<LatLng | null>(() => initialSharedRoute?.destination ?? null);
+  const [shareTravelMode, setShareTravelMode] = useState<TravelMode>(() => initialSharedRoute?.travelMode ?? 'WALKING');
   const [showOnboarding, setShowOnboarding] = useState(() => !isOnboardingCompleted());
   const [nearMeMode, setNearMeMode] = useState(false);
-  const [familyGroupCode, setFamilyGroupCode] = useState<string | null>(null);
+  const [familyGroupCode] = useState<string | null>(() => getInitialFamilyGroupCode());
+  const [panelExpanded, setPanelExpanded] = useState(() => initialSharedRoute === null);
 
   const dismissAlert = useCallback(() => {
     dismissAlertBase();
@@ -126,42 +169,14 @@ export function useAppController(): AppControllerState {
   }, [routes, getRoutesWithShelters]);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const familyCode = params.get('familyGroup');
-    if (familyCode && /^[A-Z0-9]{6}$/i.test(familyCode)) {
-      setFamilyGroupCode(familyCode.toUpperCase());
+    if (!initialSharedRoute || sharedRouteBootstrappedRef.current) {
+      return;
     }
 
-    const from = params.get('from');
-    const to = params.get('to');
-    const mode = params.get('mode') as TravelMode | null;
-
-    if (from && to) {
-      const [fromLat, fromLng] = from.split(',').map(Number);
-      const [toLat, toLng] = to.split(',').map(Number);
-
-      if (!isNaN(fromLat) && !isNaN(fromLng) && !isNaN(toLat) && !isNaN(toLng)) {
-        const isValidLat = (lat: number) => lat >= 29.0 && lat <= 34.0;
-        const isValidLng = (lng: number) => lng >= 34.0 && lng <= 36.5;
-
-        if (!isValidLat(fromLat) || !isValidLng(fromLng) || !isValidLat(toLat) || !isValidLng(toLng)) {
-          console.warn('Shared route URL contains coordinates outside Israel bounds, ignoring:', { fromLat, fromLng, toLat, toLng });
-          return;
-        }
-
-        const origin: LatLng = { lat: fromLat, lng: fromLng };
-        const destination: LatLng = { lat: toLat, lng: toLng };
-        const travelMode: TravelMode = (mode && ['WALKING', 'BICYCLING', 'DRIVING'].includes(mode)) ? mode : 'WALKING';
-
-        setShareOrigin(origin);
-        setShareDestination(destination);
-        setShareTravelMode(travelMode);
-        setPanelExpanded(false);
-        searchRoute(origin, destination, travelMode);
-        window.history.replaceState({}, '', window.location.pathname);
-      }
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    sharedRouteBootstrappedRef.current = true;
+    searchRoute(initialSharedRoute.origin, initialSharedRoute.destination, initialSharedRoute.travelMode);
+    window.history.replaceState({}, '', window.location.pathname);
+  }, [initialSharedRoute, searchRoute]);
 
   useEffect(() => {
     if (routesWithShelters.length > 0 && routesWithShelters.length !== prevRoutesLength.current) {
@@ -181,20 +196,26 @@ export function useAppController(): AppControllerState {
     }
   }, [emergencyMode, nearMeMode, currentLocation, allShelters, findNearest]);
 
+  const activateEmergencyFromAlert = useCallback(() => {
+    setEmergencyMode(true);
+    setSelectedShelterId(null);
+    setPanelExpanded(false);
+    getLocation();
+    playAlertSound();
+
+    if (navigator.vibrate) {
+      navigator.vibrate([200, 100, 200, 100, 400]);
+      vibrationInterval.current = setInterval(() => {
+        navigator.vibrate([200, 100, 200, 100, 400]);
+      }, 1200);
+    }
+  }, [getLocation]);
+
   useEffect(() => {
     if (isAlertActive && !prevAlertActive.current) {
-      setEmergencyMode(true);
-      setSelectedShelterId(null);
-      setPanelExpanded(false);
-      getLocation();
-      playAlertSound();
-
-      if (navigator.vibrate) {
-        navigator.vibrate([200, 100, 200, 100, 400]);
-        vibrationInterval.current = setInterval(() => {
-          navigator.vibrate([200, 100, 200, 100, 400]);
-        }, 1200);
-      }
+      setTimeout(() => {
+        activateEmergencyFromAlert();
+      }, 0);
     }
 
     if (!isAlertActive && prevAlertActive.current) {
@@ -209,7 +230,7 @@ export function useAppController(): AppControllerState {
     }
 
     prevAlertActive.current = isAlertActive;
-  }, [isAlertActive, getLocation]);
+  }, [activateEmergencyFromAlert, isAlertActive]);
 
   const handleSearch = useCallback((origin: LatLng, destination: LatLng, travelMode: TravelMode) => {
     setSelectedShelterId(null);

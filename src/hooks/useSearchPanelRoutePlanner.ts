@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { LatLng, PlaceResult, SearchHistoryEntry, TravelMode } from '../types';
 import type { ShelterWithDistance } from './useShelters';
+import type { TranslationKey } from '../i18n/translations';
 
 interface UseSearchPanelRoutePlannerOptions {
   routeInfo: unknown;
@@ -25,7 +26,7 @@ interface UseSearchPanelRoutePlannerOptions {
     travelMode: TravelMode,
     shelterCount: number
   ) => void;
-  t: (key: any) => string;
+  t: (key: TranslationKey) => string;
 }
 
 export function useSearchPanelRoutePlanner({
