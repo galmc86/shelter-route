@@ -1,12 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { LocationInput } from './LocationInput';
 import './SearchPanel.css';
-import { TravelModeSelector } from './TravelModeSelector';
-import { SearchHistory } from './SearchHistory';
-import { SavedLocations } from './SavedLocations';
 import { ShelterScore } from './ShelterScore';
 import { RouteSummary } from './RouteSummary';
 import { ShelterResults } from './ShelterResults';
+import { SearchPanelNearbyMode } from './SearchPanelNearbyMode';
+import { SearchPanelRouteMode } from './SearchPanelRouteMode';
 import { useLanguage } from '../i18n';
 import { useSearchHistory } from '../hooks/useSearchHistory';
 import { useSavedLocations } from '../hooks/useSavedLocations';
@@ -382,125 +380,46 @@ export function SearchPanel({
       )}
 
       {!emergencyMode && !nearMeMode && activeSearchMode === 'nearby' && (
-        <>
-          <div className="nearby-actions">
-            <button
-              type="button"
-              className="nearby-primary-btn"
-              onClick={onNearMeClick}
-            >
-              {t('search.sheltersNearMe')}
-            </button>
-            <button
-              type="button"
-              className="nearby-secondary-btn"
-              onClick={onGetLocation}
-              disabled={isLoadingLocation}
-            >
-              {isLoadingLocation ? t('location.locating') : t('location.useMyLocation')}
-            </button>
-          </div>
-          <div className="nearby-mode-hint">
-            {t('search.nearbyHint')}
-          </div>
-          <SavedLocations
-            locations={savedLocations}
-            onSelectLocation={(location) => onSearchFromSavedLocation(
-              { lat: location.lat, lng: location.lng },
-              location.name
-            )}
-            onAddLocation={addSavedLocation}
-            onRemoveLocation={removeSavedLocation}
-            isMaxReached={savedLocationsMaxReached}
-            currentLocation={currentLocation ? { lat: currentLocation.lat, lng: currentLocation.lng } : null}
-          />
-        </>
+        <SearchPanelNearbyMode
+          t={t}
+          isLoadingLocation={isLoadingLocation}
+          currentLocation={currentLocation ? { lat: currentLocation.lat, lng: currentLocation.lng } : null}
+          savedLocations={savedLocations}
+          savedLocationsMaxReached={savedLocationsMaxReached}
+          onNearMeClick={onNearMeClick}
+          onGetLocation={onGetLocation}
+          onSearchFromSavedLocation={onSearchFromSavedLocation}
+          onAddSavedLocation={addSavedLocation}
+          onRemoveSavedLocation={removeSavedLocation}
+        />
       )}
 
       {/* Regular search */}
       {!emergencyMode && !nearMeMode && activeSearchMode === 'route' && (
-        <>
-          <div className="panel-section">
-            <div className="section-label" id="route-label">{t('search.sectionRoute')}</div>
-            <div className="inputs-container" role="group" aria-labelledby="route-label">
-              <LocationInput
-                placeholder={t('search.placeholder.origin')}
-                value={originText}
-                onChange={(v) => {
-                  setOriginText(v);
-                  setUseMyLocation(false);
-                }}
-                onPlaceSelect={(place) => {
-                  setOriginPlace(place);
-                  setUseMyLocation(false);
-                }}
-                isLoaded={isLoaded}
-                icon="origin"
-                showMyLocation
-                onUseCurrentLocation={handleUseCurrentLocation}
-                isLoadingLocation={isLoadingLocation}
-                currentLocation={currentLocation}
-              />
-              <LocationInput
-                placeholder={t('search.placeholder.dest')}
-                value={destText}
-                onChange={setDestText}
-                onPlaceSelect={setDestPlace}
-                isLoaded={isLoaded}
-                icon="dest"
-              />
-            </div>
-          </div>
-
-          <div className="panel-section">
-            <div className="section-label" id="travel-label">{t('search.sectionTransport')}</div>
-            <TravelModeSelector
-              selected={travelMode}
-              onSelect={setTravelMode}
-            />
-          </div>
-
-          <div className="search-btn-wrapper">
-            <button
-              className="search-btn"
-              onClick={handleSearch}
-              disabled={!canSearch}
-              title={!canSearch ? t('search.button.tooltip') : undefined}
-              aria-label={canSearch ? t('search.button.ariaEnabled') : t('search.button.ariaDisabled')}
-            >
-              {isSearching ? (
-                <>
-                  <span className="loading-spinner small" aria-hidden="true" />
-                  {t('search.searching')}
-                </>
-              ) : (
-                <>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <circle cx="10.5" cy="10.5" r="7" stroke="white" strokeWidth="2.5" />
-                    <path d="M16 16l5.5 5.5" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
-                  </svg>
-                  {t('search.button')}
-                </>
-              )}
-            </button>
-            {!canSearch && (
-              <span className="search-btn-tooltip" aria-hidden="true">
-                {t('search.button.tooltip')}
-              </span>
-            )}
-          </div>
-        </>
-      )}
-
-      {/* Search History — shown when no route is displayed */}
-      {!routeInfo && !emergencyMode && !nearMeMode && activeSearchMode === 'route' && historyEntries.length > 0 && (
-        <SearchHistory
-          entries={historyEntries}
-          onSelect={handleHistorySelect}
-          onRemove={removeHistoryEntry}
-          onClearAll={clearHistory}
-          onTogglePin={toggleHistoryPin}
-          onRename={renameHistoryEntry}
+        <SearchPanelRouteMode
+          t={t}
+          originText={originText}
+          destText={destText}
+          travelMode={travelMode}
+          isLoaded={isLoaded}
+          isSearching={isSearching}
+          isLoadingLocation={isLoadingLocation}
+          currentLocation={currentLocation}
+          canSearch={Boolean(canSearch)}
+          historyEntries={!routeInfo ? historyEntries : []}
+          onSetOriginText={setOriginText}
+          onSetDestText={setDestText}
+          onSetOriginPlace={setOriginPlace}
+          onSetDestPlace={setDestPlace}
+          onSetTravelMode={setTravelMode}
+          onSetUseMyLocation={setUseMyLocation}
+          onUseCurrentLocation={handleUseCurrentLocation}
+          onSearch={handleSearch}
+          onHistorySelect={handleHistorySelect}
+          onRemoveHistory={removeHistoryEntry}
+          onClearHistory={clearHistory}
+          onToggleHistoryPin={toggleHistoryPin}
+          onRenameHistory={renameHistoryEntry}
         />
       )}
 

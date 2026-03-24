@@ -44,12 +44,12 @@ Notes:
 
 ### Epic 3: App-State Refactor Foundation
 Objective: reduce mode coupling and regression risk.
-Status: `[ ]`
+Status: `[~]`
 
 - [ ] Refactor `useAppController` into clearer domain state slices
 - [ ] Define state boundaries for `routeSession`, `proximitySearch`, `emergencyAlert`, and `navigation`
 - [ ] Keep contexts as projections of state instead of primary orchestration
-- [ ] Split `SearchPanel` into mode-specific subviews
+- [x] Split `SearchPanel` into mode-specific subviews
 - [ ] Add provider-level integration tests around the new state model
 
 Notes:
