@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { LocationInput } from './LocationInput';
 import './SearchPanel.css';
 import { TravelModeSelector } from './TravelModeSelector';
@@ -16,6 +16,8 @@ import { useShelterContext } from '../contexts/ShelterContext';
 import { useSearchPanelSheet } from '../hooks/useSearchPanelSheet';
 import { useSearchPanelRoutePlanner } from '../hooks/useSearchPanelRoutePlanner';
 import { useSearchPanelShelters } from '../hooks/useSearchPanelShelters';
+import { useOnlineStatus } from '../hooks/useOnlineStatus';
+import { isShelterDataStale } from '../services/shelterApi';
 
 interface SearchPanelProps {
   panelExpanded?: boolean;
@@ -72,6 +74,7 @@ export function SearchPanel({
     allShelters,
   } = useShelterContext();
   const { t } = useLanguage();
+  const isOnline = useOnlineStatus();
   const [showShelterScore, setShowShelterScore] = useState(false);
   const [activeSearchMode, setActiveSearchMode] = useState<SearchSurfaceMode>('route');
   const { entries: historyEntries, addEntry: addHistoryEntry, removeEntry: removeHistoryEntry, clearAll: clearHistory, togglePin: toggleHistoryPin, renameEntry: renameHistoryEntry, updateShelterCount: updateHistoryShelterCount, saveRoute: saveHistoryRoute, unsaveRoute: unsaveHistoryRoute } = useSearchHistory();
@@ -145,6 +148,45 @@ export function SearchPanel({
     panelExpanded: panelExpanded ?? false,
     onTogglePanel,
   });
+  const dataStale = useMemo(() => isShelterDataStale(), []);
+
+  const contextualChips = useMemo(() => {
+    if (emergencyMode || nearMeMode) {
+      return [];
+    }
+
+    const chips: string[] = [];
+
+    if (activeSearchMode === 'nearby' && savedLocations.length > 0) {
+      chips.push(t('search.context.savedPlaces').replace('{count}', String(savedLocations.length)));
+    }
+
+    if (!isOnline) {
+      chips.push(t('search.context.offline'));
+    }
+
+    if (currentLocation) {
+      chips.push(t('search.context.locationReady'));
+    } else if (locationError) {
+      chips.push(t('search.context.locationUnavailable'));
+    }
+
+    if (dataStale) {
+      chips.push(t('search.context.dataStale'));
+    }
+
+    return chips.slice(0, 3);
+  }, [
+    activeSearchMode,
+    currentLocation,
+    dataStale,
+    emergencyMode,
+    isOnline,
+    locationError,
+    nearMeMode,
+    savedLocations.length,
+    t,
+  ]);
 
   useEffect(() => {
     if (nearMeMode) {
@@ -272,6 +314,16 @@ export function SearchPanel({
           >
             {t('search.mode.route')}
           </button>
+        </div>
+      )}
+
+      {!emergencyMode && !nearMeMode && contextualChips.length > 0 && (
+        <div className="search-context-row" role="status" aria-live="polite">
+          {contextualChips.map((chip) => (
+            <span key={chip} className="search-context-chip">
+              {chip}
+            </span>
+          ))}
         </div>
       )}
 

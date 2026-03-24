@@ -133,6 +133,14 @@ vi.mock('../../hooks/useSearchPanelShelters', () => ({
   }),
 }));
 
+vi.mock('../../hooks/useOnlineStatus', () => ({
+  useOnlineStatus: () => true,
+}));
+
+vi.mock('../../services/shelterApi', () => ({
+  isShelterDataStale: () => false,
+}));
+
 vi.mock('../LocationInput', () => ({
   LocationInput: () => <div>location-input</div>,
 }));

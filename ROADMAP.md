@@ -27,6 +27,7 @@ Notes:
 - This is the highest-leverage UX change because it reduces cognitive load across the whole app.
 - The temporary utility tabs were replaced by section-level navigation because they were effectively hidden on mobile.
 - The initial mobile bottom-nav experiment was superseded by a lighter glass overlay switcher to avoid creating a second competing bottom surface.
+- A global status strip was tested locally and rejected because it made the mobile shell feel crowded; contextual state should live inside the active surface instead.
 
 ### Epic 2: Shelter Decision Quality
 Objective: help users choose the best shelter, not just the nearest one.

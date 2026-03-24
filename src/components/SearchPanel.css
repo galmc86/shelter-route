@@ -50,6 +50,32 @@
   color: var(--color-primary, #1565c0);
 }
 
+.search-context-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.search-context-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(227, 242, 253, 0.72);
+  border: 1px solid rgba(21, 101, 192, 0.08);
+  color: var(--color-primary, #1565c0);
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+[data-theme="dark"] .search-context-chip {
+  background: rgba(26, 42, 58, 0.9);
+  border-color: rgba(80, 112, 145, 0.24);
+  color: #9ed0ff;
+}
+
 .nearby-actions {
   display: flex;
   flex-direction: column;
