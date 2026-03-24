@@ -393,4 +393,21 @@ describe('App', () => {
     expect(screen.getByTestId('route-info')).toHaveTextContent('none');
     expect(screen.getByTestId('panel-expanded')).toHaveTextContent('true');
   });
+
+  it('shows utility panels as tabs instead of stacking them', () => {
+    render(<App />);
+
+    expect(screen.getByText('family-safety')).toBeInTheDocument();
+    expect(screen.queryByText('safety-dashboard')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('tab', { name: 'panel.tab.dashboard' }));
+
+    expect(screen.getByText('safety-dashboard')).toBeInTheDocument();
+    expect(screen.queryByText('family-safety')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('tab', { name: 'panel.tab.family' }));
+
+    expect(screen.getByText('family-safety')).toBeInTheDocument();
+    expect(screen.queryByText('safety-dashboard')).not.toBeInTheDocument();
+  });
 });

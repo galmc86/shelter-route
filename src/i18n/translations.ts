@@ -30,6 +30,9 @@ export const translations = {
     'search.sheltersNearMe': 'מקלטים קרובים',
     'search.savedPlaceMode': 'מחפש מתוך מקום שמור',
     'search.planSafeRoute': 'תכנן מסלול בטוח',
+    'panel.toolsLabel': 'כלי בטיחות',
+    'panel.tab.family': 'משפחה',
+    'panel.tab.dashboard': 'לוח אישי',
 
     // Emergency
     'emergency.findShelter': 'מצא מקלט קרוב עכשיו',
@@ -385,6 +388,9 @@ export const translations = {
     'search.sheltersNearMe': 'Nearby shelters',
     'search.savedPlaceMode': 'Searching from a saved place',
     'search.planSafeRoute': 'Plan a safe route',
+    'panel.toolsLabel': 'Safety tools',
+    'panel.tab.family': 'Family',
+    'panel.tab.dashboard': 'Dashboard',
 
     // Emergency
     'emergency.findShelter': 'Find nearest shelter now',
@@ -739,6 +745,9 @@ export const translations = {
     'search.sheltersNearMe': 'ملاجئ قريبة',
     'search.savedPlaceMode': 'يتم البحث من مكان محفوظ',
     'search.planSafeRoute': 'خطط لمسار آمن',
+    'panel.toolsLabel': 'أدوات السلامة',
+    'panel.tab.family': 'العائلة',
+    'panel.tab.dashboard': 'اللوحة',
 
     // Emergency
     'emergency.findShelter': 'ابحث عن أقرب ملجأ الآن',
@@ -1093,6 +1102,9 @@ export const translations = {
     'search.sheltersNearMe': 'Ближайшие укрытия',
     'search.savedPlaceMode': 'Поиск от сохранённого места',
     'search.planSafeRoute': 'Спланировать безопасный маршрут',
+    'panel.toolsLabel': 'Инструменты безопасности',
+    'panel.tab.family': 'Семья',
+    'panel.tab.dashboard': 'Панель',
 
     // Emergency
     'emergency.findShelter': 'Найти ближайшее укрытие',

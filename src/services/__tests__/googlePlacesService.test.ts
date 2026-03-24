@@ -109,9 +109,10 @@ describe('googlePlacesService', () => {
 
   it('falls back to empty results when the daily local rate limit is exhausted', async () => {
     installGoogleMock();
+    const today = new Date().toISOString().slice(0, 10);
     localStorage.setItem(
       'shelter-route:places-usage',
-      JSON.stringify({ date: '2026-03-23', count: 500 })
+      JSON.stringify({ date: today, count: 500 })
     );
     const { searchPlaces } = await import('../googlePlacesService');
 

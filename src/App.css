@@ -409,6 +409,49 @@ body {
   max-height: 100%;
 }
 
+.panel-utility-area {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0 12px 12px;
+}
+
+.panel-utility-tabs {
+  display: flex;
+  gap: 8px;
+}
+
+.panel-utility-tab {
+  flex: 1;
+  border: 1px solid var(--color-border, #d5dce7);
+  border-radius: 999px;
+  background: var(--color-surface, #fff);
+  color: var(--color-subtle-text, #667085);
+  padding: 10px 14px;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.panel-utility-tab:hover {
+  border-color: var(--color-primary-light, #90caf9);
+  color: var(--color-primary, #1565c0);
+}
+
+.panel-utility-tab.active {
+  border-color: var(--color-primary, #1565c0);
+  background: var(--color-primary-bg, #e3f2fd);
+  color: var(--color-primary, #1565c0);
+}
+
+.panel-utility-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
 
 
 
@@ -1965,4 +2008,3 @@ body {
 [data-theme="dark"] .shelter-nav-stop:hover {
   background: #E53935;
 }
-

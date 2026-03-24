@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Onboarding } from './components/Onboarding';
 import { AppHeader } from './components/AppHeader';
@@ -14,6 +15,8 @@ import { EmergencyProvider } from './contexts/EmergencyContext';
 import { ShelterProvider } from './contexts/ShelterContext';
 import { useAppController } from './hooks/useAppController';
 import './App.css';
+
+type UtilityPanel = 'family' | 'dashboard';
 
 function App() {
   const {
@@ -47,6 +50,13 @@ function App() {
     completeOnboarding,
     togglePanel,
   } = useAppController();
+  const [activeUtilityPanel, setActiveUtilityPanel] = useState<UtilityPanel>('family');
+
+  useEffect(() => {
+    if (emergencyMode) {
+      setActiveUtilityPanel('family');
+    }
+  }, [emergencyMode]);
 
   if (mapsError) {
     return (
@@ -96,13 +106,38 @@ function App() {
               panelExpanded={panelExpanded}
               onTogglePanel={togglePanel}
             />
-            {panelExpanded && (
-              <>
-                <div className="family-safety-wrapper">
-                  <FamilySafety initialGroupCode={familyGroupCode} />
+            {panelExpanded && !emergencyMode && (
+              <section className="panel-utility-area" aria-label={t('panel.toolsLabel')}>
+                <div className="panel-utility-tabs" role="tablist" aria-label={t('panel.toolsLabel')}>
+                  <button
+                    type="button"
+                    role="tab"
+                    className={`panel-utility-tab ${activeUtilityPanel === 'family' ? 'active' : ''}`}
+                    aria-selected={activeUtilityPanel === 'family'}
+                    onClick={() => setActiveUtilityPanel('family')}
+                  >
+                    {t('panel.tab.family')}
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    className={`panel-utility-tab ${activeUtilityPanel === 'dashboard' ? 'active' : ''}`}
+                    aria-selected={activeUtilityPanel === 'dashboard'}
+                    onClick={() => setActiveUtilityPanel('dashboard')}
+                  >
+                    {t('panel.tab.dashboard')}
+                  </button>
                 </div>
-                <SafetyDashboard />
-              </>
+                <div className="panel-utility-content">
+                  {activeUtilityPanel === 'family' ? (
+                    <div className="family-safety-wrapper">
+                      <FamilySafety initialGroupCode={familyGroupCode} />
+                    </div>
+                  ) : (
+                    <SafetyDashboard />
+                  )}
+                </div>
+              </section>
             )}
           </div>
         )}
