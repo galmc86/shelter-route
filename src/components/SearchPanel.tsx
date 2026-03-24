@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { LocationInput } from './LocationInput';
 import './SearchPanel.css';
 import { TravelModeSelector } from './TravelModeSelector';
@@ -21,6 +21,8 @@ interface SearchPanelProps {
   panelExpanded?: boolean;
   onTogglePanel?: () => void;
 }
+
+type SearchSurfaceMode = 'nearby' | 'route';
 
 export function SearchPanel({
   panelExpanded,
@@ -55,6 +57,7 @@ export function SearchPanel({
     isLoadingLocation,
     locationError,
     onGetLocation,
+    onNearMeClick,
     onSearchFromSavedLocation,
     nearMeMode,
     onExitNearMe,
@@ -71,6 +74,7 @@ export function SearchPanel({
   const { t } = useLanguage();
   const [routePlannerExpanded, setRoutePlannerExpanded] = useState(false);
   const [showShelterScore, setShowShelterScore] = useState(false);
+  const [activeSearchMode, setActiveSearchMode] = useState<SearchSurfaceMode>('route');
   const { entries: historyEntries, addEntry: addHistoryEntry, removeEntry: removeHistoryEntry, clearAll: clearHistory, togglePin: toggleHistoryPin, renameEntry: renameHistoryEntry, updateShelterCount: updateHistoryShelterCount, saveRoute: saveHistoryRoute, unsaveRoute: unsaveHistoryRoute } = useSearchHistory();
   const { locations: savedLocations, addLocation: addSavedLocation, removeLocation: removeSavedLocation, isMaxReached: savedLocationsMaxReached } = useSavedLocations();
   const {
@@ -142,6 +146,17 @@ export function SearchPanel({
     panelExpanded: panelExpanded ?? false,
     onTogglePanel,
   });
+
+  useEffect(() => {
+    if (nearMeMode) {
+      setActiveSearchMode('nearby');
+      return;
+    }
+
+    if (routeInfo) {
+      setActiveSearchMode('route');
+    }
+  }, [nearMeMode, routeInfo]);
 
   return (
     <aside
@@ -238,6 +253,29 @@ export function SearchPanel({
         </button>
       )}
 
+      {!emergencyMode && !nearMeMode && (
+        <div className="search-mode-tabs" role="tablist" aria-label={t('search.modeSwitcher')}>
+          <button
+            type="button"
+            role="tab"
+            className={`search-mode-tab ${activeSearchMode === 'nearby' ? 'active' : ''}`}
+            aria-selected={activeSearchMode === 'nearby'}
+            onClick={() => setActiveSearchMode('nearby')}
+          >
+            {t('search.mode.nearby')}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            className={`search-mode-tab ${activeSearchMode === 'route' ? 'active' : ''}`}
+            aria-selected={activeSearchMode === 'route'}
+            onClick={() => setActiveSearchMode('route')}
+          >
+            {t('search.mode.route')}
+          </button>
+        </div>
+      )}
+
       {!emergencyMode && nearMeMode && (
         <div className="nearby-results-banner" role="status" aria-live="polite">
           <div className="nearby-results-banner-copy">
@@ -292,25 +330,45 @@ export function SearchPanel({
         </>
       )}
 
-      {/* Saved Locations (hidden in emergency and nearMe mode) */}
-      {!emergencyMode && !nearMeMode && (
-        <SavedLocations
-          locations={savedLocations}
-          onSelectLocation={(location) => onSearchFromSavedLocation(
-            { lat: location.lat, lng: location.lng },
-            location.name
-          )}
-          onAddLocation={addSavedLocation}
-          onRemoveLocation={removeSavedLocation}
-          isMaxReached={savedLocationsMaxReached}
-          currentLocation={currentLocation ? { lat: currentLocation.lat, lng: currentLocation.lng } : null}
-        />
+      {!emergencyMode && !nearMeMode && activeSearchMode === 'nearby' && (
+        <>
+          <div className="nearby-actions">
+            <button
+              type="button"
+              className="nearby-primary-btn"
+              onClick={onNearMeClick}
+            >
+              {t('search.sheltersNearMe')}
+            </button>
+            <button
+              type="button"
+              className="nearby-secondary-btn"
+              onClick={onGetLocation}
+              disabled={isLoadingLocation}
+            >
+              {isLoadingLocation ? t('location.locating') : t('location.useMyLocation')}
+            </button>
+          </div>
+          <div className="nearby-mode-hint">
+            {t('search.nearbyHint')}
+          </div>
+          <SavedLocations
+            locations={savedLocations}
+            onSelectLocation={(location) => onSearchFromSavedLocation(
+              { lat: location.lat, lng: location.lng },
+              location.name
+            )}
+            onAddLocation={addSavedLocation}
+            onRemoveLocation={removeSavedLocation}
+            isMaxReached={savedLocationsMaxReached}
+            currentLocation={currentLocation ? { lat: currentLocation.lat, lng: currentLocation.lng } : null}
+          />
+        </>
       )}
 
-      {/* Regular search (hidden in emergency and nearMe mode) */}
-      {!emergencyMode && !nearMeMode && (
+      {/* Regular search */}
+      {!emergencyMode && !nearMeMode && activeSearchMode === 'route' && (
         <>
-          {/* Collapsible route planner toggle */}
           <button
             className="route-planner-toggle"
             onClick={() => setRoutePlannerExpanded((v) => !v)}
@@ -406,7 +464,7 @@ export function SearchPanel({
       )}
 
       {/* Search History — shown when no route is displayed */}
-      {!routeInfo && !emergencyMode && !nearMeMode && historyEntries.length > 0 && (
+      {!routeInfo && !emergencyMode && !nearMeMode && activeSearchMode === 'route' && historyEntries.length > 0 && (
         <SearchHistory
           entries={historyEntries}
           onSelect={handleHistorySelect}

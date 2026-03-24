@@ -13,8 +13,10 @@ Status key:
 
 ### Epic 1: Mode-Based App Experience
 Objective: make the app immediately understandable under stress.
-Status: `[ ]`
+Status: `[~]`
 
+- [x] Introduce utility-panel tabs so Family and Dashboard no longer stack beneath Search
+- [x] Introduce top-level `Nearby` and `Route` search surface tabs inside `SearchPanel`
 - [ ] Redesign the main panel into explicit modes: `Emergency`, `Nearby`, `Route`, `Family`
 - [ ] Replace the stacked-utility panel with clearer task-specific views
 - [ ] Make the primary task visible by default instead of hiding route planning behind a toggle
