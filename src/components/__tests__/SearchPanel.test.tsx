@@ -170,7 +170,10 @@ describe('SearchPanel', () => {
     render(<SearchPanel panelExpanded={true} onTogglePanel={vi.fn()} />);
 
     expect(screen.getByRole('tab', { name: 'search.mode.route' })).toHaveAttribute('aria-selected', 'true');
-    expect(screen.getByText('search.planSafeRoute')).toBeInTheDocument();
+    expect(screen.getByText('search.sectionRoute')).toBeInTheDocument();
+    expect(screen.getAllByText('location-input')).toHaveLength(2);
+    expect(screen.getByText('travel-mode-selector')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'search.button.ariaDisabled' })).toBeInTheDocument();
     expect(screen.getByText('search-history')).toBeInTheDocument();
     expect(screen.queryByText('saved-locations')).not.toBeInTheDocument();
   });

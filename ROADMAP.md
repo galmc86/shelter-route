@@ -17,15 +17,16 @@ Status: `[~]`
 
 - [x] Introduce utility-panel tabs so Family and Dashboard no longer stack beneath Search
 - [x] Introduce top-level `Nearby` and `Route` search surface tabs inside `SearchPanel`
-- [x] Replace the stacked-utility panel with app-level section navigation and a mobile bottom nav
+- [x] Replace the stacked-utility panel with app-level section navigation and a mobile glass overlay switcher
 - [ ] Redesign the main panel into explicit modes: `Emergency`, `Nearby`, `Route`, `Family`
-- [ ] Make the primary task visible by default instead of hiding route planning behind a toggle
+- [x] Make the primary task visible by default instead of hiding route planning behind a toggle
 - [ ] Add a persistent status strip for alert state, location mode, connectivity, and data freshness
 - [ ] Validate the new mode model on mobile and desktop layouts
 
 Notes:
 - This is the highest-leverage UX change because it reduces cognitive load across the whole app.
 - The temporary utility tabs were replaced by section-level navigation because they were effectively hidden on mobile.
+- The initial mobile bottom-nav experiment was superseded by a lighter glass overlay switcher to avoid creating a second competing bottom surface.
 
 ### Epic 2: Shelter Decision Quality
 Objective: help users choose the best shelter, not just the nearest one.

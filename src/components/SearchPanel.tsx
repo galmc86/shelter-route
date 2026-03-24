@@ -72,7 +72,6 @@ export function SearchPanel({
     allShelters,
   } = useShelterContext();
   const { t } = useLanguage();
-  const [routePlannerExpanded, setRoutePlannerExpanded] = useState(false);
   const [showShelterScore, setShowShelterScore] = useState(false);
   const [activeSearchMode, setActiveSearchMode] = useState<SearchSurfaceMode>('route');
   const { entries: historyEntries, addEntry: addHistoryEntry, removeEntry: removeHistoryEntry, clearAll: clearHistory, togglePin: toggleHistoryPin, renameEntry: renameHistoryEntry, updateShelterCount: updateHistoryShelterCount, saveRoute: saveHistoryRoute, unsaveRoute: unsaveHistoryRoute } = useSearchHistory();
@@ -369,97 +368,75 @@ export function SearchPanel({
       {/* Regular search */}
       {!emergencyMode && !nearMeMode && activeSearchMode === 'route' && (
         <>
-          <button
-            className="route-planner-toggle"
-            onClick={() => setRoutePlannerExpanded((v) => !v)}
-            aria-expanded={routePlannerExpanded}
-          >
-            <svg
-              className={`route-planner-toggle-chevron ${routePlannerExpanded ? 'expanded' : ''}`}
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              aria-hidden="true"
+          <div className="panel-section">
+            <div className="section-label" id="route-label">{t('search.sectionRoute')}</div>
+            <div className="inputs-container" role="group" aria-labelledby="route-label">
+              <LocationInput
+                placeholder={t('search.placeholder.origin')}
+                value={originText}
+                onChange={(v) => {
+                  setOriginText(v);
+                  setUseMyLocation(false);
+                }}
+                onPlaceSelect={(place) => {
+                  setOriginPlace(place);
+                  setUseMyLocation(false);
+                }}
+                isLoaded={isLoaded}
+                icon="origin"
+                showMyLocation
+                onUseCurrentLocation={handleUseCurrentLocation}
+                isLoadingLocation={isLoadingLocation}
+                currentLocation={currentLocation}
+              />
+              <LocationInput
+                placeholder={t('search.placeholder.dest')}
+                value={destText}
+                onChange={setDestText}
+                onPlaceSelect={setDestPlace}
+                isLoaded={isLoaded}
+                icon="dest"
+              />
+            </div>
+          </div>
+
+          <div className="panel-section">
+            <div className="section-label" id="travel-label">{t('search.sectionTransport')}</div>
+            <TravelModeSelector
+              selected={travelMode}
+              onSelect={setTravelMode}
+            />
+          </div>
+
+          <div className="search-btn-wrapper">
+            <button
+              className="search-btn"
+              onClick={handleSearch}
+              disabled={!canSearch}
+              title={!canSearch ? t('search.button.tooltip') : undefined}
+              aria-label={canSearch ? t('search.button.ariaEnabled') : t('search.button.ariaDisabled')}
             >
-              <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            {t('search.planSafeRoute')}
-          </button>
-
-          {routePlannerExpanded && (
-            <>
-              <div className="panel-section">
-                <div className="section-label" id="route-label">{t('search.sectionRoute')}</div>
-                <div className="inputs-container" role="group" aria-labelledby="route-label">
-                  <LocationInput
-                    placeholder={t('search.placeholder.origin')}
-                    value={originText}
-                    onChange={(v) => {
-                      setOriginText(v);
-                      setUseMyLocation(false);
-                    }}
-                    onPlaceSelect={(place) => {
-                      setOriginPlace(place);
-                      setUseMyLocation(false);
-                    }}
-                    isLoaded={isLoaded}
-                    icon="origin"
-                    showMyLocation
-                    onUseCurrentLocation={handleUseCurrentLocation}
-                    isLoadingLocation={isLoadingLocation}
-                    currentLocation={currentLocation}
-                  />
-                  <LocationInput
-                    placeholder={t('search.placeholder.dest')}
-                    value={destText}
-                    onChange={setDestText}
-                    onPlaceSelect={setDestPlace}
-                    isLoaded={isLoaded}
-                    icon="dest"
-                  />
-                </div>
-              </div>
-
-              <div className="panel-section">
-                <div className="section-label" id="travel-label">{t('search.sectionTransport')}</div>
-                <TravelModeSelector
-                  selected={travelMode}
-                  onSelect={setTravelMode}
-                />
-              </div>
-
-              <div className="search-btn-wrapper">
-                <button
-                  className="search-btn"
-                  onClick={handleSearch}
-                  disabled={!canSearch}
-                  title={!canSearch ? t('search.button.tooltip') : undefined}
-                  aria-label={canSearch ? t('search.button.ariaEnabled') : t('search.button.ariaDisabled')}
-                >
-                  {isSearching ? (
-                    <>
-                      <span className="loading-spinner small" aria-hidden="true" />
-                      {t('search.searching')}
-                    </>
-                  ) : (
-                    <>
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                        <circle cx="10.5" cy="10.5" r="7" stroke="white" strokeWidth="2.5" />
-                        <path d="M16 16l5.5 5.5" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
-                      </svg>
-                      {t('search.button')}
-                    </>
-                  )}
-                </button>
-                {!canSearch && (
-                  <span className="search-btn-tooltip" aria-hidden="true">
-                    {t('search.button.tooltip')}
-                  </span>
-                )}
-              </div>
-            </>
-          )}
+              {isSearching ? (
+                <>
+                  <span className="loading-spinner small" aria-hidden="true" />
+                  {t('search.searching')}
+                </>
+              ) : (
+                <>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <circle cx="10.5" cy="10.5" r="7" stroke="white" strokeWidth="2.5" />
+                    <path d="M16 16l5.5 5.5" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+                  </svg>
+                  {t('search.button')}
+                </>
+              )}
+            </button>
+            {!canSearch && (
+              <span className="search-btn-tooltip" aria-hidden="true">
+                {t('search.button.tooltip')}
+              </span>
+            )}
+          </div>
         </>
       )}
 
