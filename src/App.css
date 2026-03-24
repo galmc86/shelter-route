@@ -836,11 +836,17 @@ body {
   }
 
   .app-section-nav {
-    width: min(344px, calc(100% - 28px));
-    margin: 8px auto 0;
+    position: absolute;
+    top: 72px;
+    inset-inline-end: 16px;
+    left: auto;
+    transform: none;
+    width: min(272px, calc(100% - 120px));
+    margin: 0;
     gap: 6px;
     padding: 5px;
     border-radius: 20px;
+    z-index: 11;
   }
 
   .app-section-nav-item {
@@ -1039,7 +1045,6 @@ body {
 
   /* Emergency FAB — above the bottom sheet */
   .emergency-fab {
-    bottom: calc(140px + env(safe-area-inset-bottom, 0px));
     left: 16px;
     width: 48px;
     height: 48px;
@@ -1052,7 +1057,11 @@ body {
     pointer-events: auto;
     transform: scale(1);
     z-index: 1002;
-    bottom: calc(75vh + 8px);
+  }
+
+  .emergency-fab.fab-section-open {
+    opacity: 1;
+    pointer-events: auto;
   }
 
   /* Hotline at bottom */

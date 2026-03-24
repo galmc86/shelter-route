@@ -3,18 +3,20 @@ import './EmergencyButton.css';
 
 interface EmergencyButtonProps {
   onClick: () => void;
-  panelExpanded?: boolean;
+  anchorState?: 'collapsed' | 'expanded' | 'section';
+  bottomOffsetPx?: number | null;
 }
 
-export function EmergencyButton({ onClick, panelExpanded }: EmergencyButtonProps) {
+export function EmergencyButton({ onClick, anchorState = 'collapsed', bottomOffsetPx }: EmergencyButtonProps) {
   const { t } = useLanguage();
 
   return (
     <button
-      className={`emergency-fab${panelExpanded ? ' fab-panel-expanded' : ''}`}
+      className={`emergency-fab${anchorState === 'expanded' ? ' fab-panel-expanded' : ''}${anchorState === 'section' ? ' fab-section-open' : ''}`}
       onClick={onClick}
       aria-label={t('emergency.findShelter')}
       title={t('emergency.findShelter')}
+      style={bottomOffsetPx != null ? { bottom: `${bottomOffsetPx}px` } : undefined}
     >
       <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
         <path

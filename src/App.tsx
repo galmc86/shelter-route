@@ -70,12 +70,66 @@ function App() {
     togglePanel,
   } = useAppController();
   const [activeSection, setActiveSection] = useState<AppSection>('search');
+  const [fabBottomOffset, setFabBottomOffset] = useState<number | null>(null);
 
   useEffect(() => {
     if (emergencyMode) {
       setActiveSection('search');
     }
   }, [emergencyMode]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    if (typeof window.matchMedia !== 'function') {
+      setFabBottomOffset(null);
+      return;
+    }
+
+    const mediaQuery = window.matchMedia('(max-width: 768px)');
+    let resizeObserver: ResizeObserver | null = null;
+
+    const updateFabOffset = () => {
+      if (!mediaQuery.matches || isNavigating) {
+        setFabBottomOffset(null);
+        return;
+      }
+
+      const panelElement = document.querySelector(
+        activeSection === 'search' ? '.search-panel' : '.app-section-panel'
+      ) as HTMLElement | null;
+
+      if (!panelElement) {
+        setFabBottomOffset(null);
+        return;
+      }
+
+      const rect = panelElement.getBoundingClientRect();
+      setFabBottomOffset(Math.max(24, window.innerHeight - rect.top + 20));
+    };
+
+    updateFabOffset();
+
+    const panelElement = document.querySelector(
+      activeSection === 'search' ? '.search-panel' : '.app-section-panel'
+    ) as HTMLElement | null;
+
+    if (panelElement && 'ResizeObserver' in window) {
+      resizeObserver = new ResizeObserver(() => updateFabOffset());
+      resizeObserver.observe(panelElement);
+    }
+
+    window.addEventListener('resize', updateFabOffset);
+    mediaQuery.addEventListener('change', updateFabOffset);
+
+    return () => {
+      resizeObserver?.disconnect();
+      window.removeEventListener('resize', updateFabOffset);
+      mediaQuery.removeEventListener('change', updateFabOffset);
+    };
+  }, [activeSection, panelExpanded, isNavigating]);
 
   const renderPanelContent = () => {
     switch (activeSection) {
@@ -202,7 +256,14 @@ function App() {
       {!isNavigating && (
         <EmergencyButton
           onClick={handleEmergencyClick}
-          panelExpanded={activeSection === 'search' ? panelExpanded : false}
+          anchorState={
+            activeSection !== 'search'
+              ? 'section'
+              : panelExpanded
+                ? 'expanded'
+                : 'collapsed'
+          }
+          bottomOffsetPx={fabBottomOffset}
         />
       )}
     </div>
