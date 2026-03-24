@@ -12,16 +12,20 @@ import {
 
 interface FamilySafetyProps {
   initialGroupCode?: string | null;
+  presentation?: 'accordion' | 'section';
 }
 
-export function FamilySafety({ initialGroupCode }: FamilySafetyProps) {
+export function FamilySafety({
+  initialGroupCode,
+  presentation = 'accordion',
+}: FamilySafetyProps) {
   const { t } = useLanguage();
   const [group, setGroup] = useState<FamilyGroup | null>(null);
   const [nameInput, setNameInput] = useState('');
   const [codeInput, setCodeInput] = useState('');
   const [showJoinInput, setShowJoinInput] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(presentation === 'section');
 
   // Load existing group on mount
   useEffect(() => {
@@ -36,6 +40,12 @@ export function FamilySafety({ initialGroupCode }: FamilySafetyProps) {
       });
     }
   }, [initialGroupCode]);
+
+  useEffect(() => {
+    if (presentation === 'section') {
+      setIsExpanded(true);
+    }
+  }, [presentation]);
 
   const handleCreate = useCallback(() => {
     if (!nameInput.trim()) return;
@@ -89,28 +99,8 @@ export function FamilySafety({ initialGroupCode }: FamilySafetyProps) {
   const currentMember = group?.members.find((m) => m.name === group.memberName);
   const isSafe = currentMember?.isSafe ?? false;
 
-  return (
-    <div className="family-safety">
-      <button
-        className="family-safety-header"
-        onClick={() => setIsExpanded(!isExpanded)}
-        aria-expanded={isExpanded}
-      >
-        <span className="family-safety-header-icon">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" />
-          </svg>
-        </span>
-        <span className="family-safety-header-title">{t('family.title')}</span>
-        <span className={`family-safety-chevron ${isExpanded ? 'expanded' : ''}`}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z" />
-          </svg>
-        </span>
-      </button>
-
-      {isExpanded && (
-        <div className="family-safety-content">
+  const content = (
+    <div className="family-safety-content">
           {!group ? (
             <div className="family-safety-setup">
               <p className="family-safety-desc">{t('family.description')}</p>
@@ -220,8 +210,32 @@ export function FamilySafety({ initialGroupCode }: FamilySafetyProps) {
               </div>
             </div>
           )}
-        </div>
+    </div>
+  );
+
+  return (
+    <div className={`family-safety${presentation === 'section' ? ' family-safety--section' : ''}`}>
+      {presentation === 'accordion' && (
+        <button
+          className="family-safety-header"
+          onClick={() => setIsExpanded(!isExpanded)}
+          aria-expanded={isExpanded}
+        >
+          <span className="family-safety-header-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" />
+            </svg>
+          </span>
+          <span className="family-safety-header-title">{t('family.title')}</span>
+          <span className={`family-safety-chevron ${isExpanded ? 'expanded' : ''}`}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z" />
+            </svg>
+          </span>
+        </button>
       )}
+
+      {isExpanded && content}
     </div>
   );
 }

@@ -21,13 +21,14 @@ Status: `[~]`
 - [ ] Redesign the main panel into explicit modes: `Emergency`, `Nearby`, `Route`, `Family`
 - [x] Make the primary task visible by default instead of hiding route planning behind a toggle
 - [ ] Add a persistent status strip for alert state, location mode, connectivity, and data freshness
-- [ ] Validate the new mode model on mobile and desktop layouts
+- [x] Validate the new mode model on mobile and desktop layouts
 
 Notes:
 - This is the highest-leverage UX change because it reduces cognitive load across the whole app.
 - The temporary utility tabs were replaced by section-level navigation because they were effectively hidden on mobile.
 - The initial mobile bottom-nav experiment was superseded by a lighter glass overlay switcher to avoid creating a second competing bottom surface.
 - A global status strip was tested locally and rejected because it made the mobile shell feel crowded; contextual state should live inside the active surface instead.
+- Dedicated `Family` and `Dashboard` sections now open as content-first sheets instead of requiring a second accordion tap after section switching.
 
 ### Epic 2: Shelter Decision Quality
 Objective: help users choose the best shelter, not just the nearest one.

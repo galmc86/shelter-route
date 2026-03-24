@@ -37,6 +37,11 @@ const sectionIcons: Record<AppSection, ReactNode> = {
   ),
 };
 
+const sectionPanelIcons: Record<Exclude<AppSection, 'search'>, ReactNode> = {
+  family: sectionIcons.family,
+  dashboard: sectionIcons.dashboard,
+};
+
 function App() {
   const {
     language,
@@ -71,6 +76,21 @@ function App() {
   } = useAppController();
   const [activeSection, setActiveSection] = useState<AppSection>('search');
   const [fabBottomOffset, setFabBottomOffset] = useState<number | null>(null);
+
+  const renderSectionSheet = (section: Exclude<AppSection, 'search'>, content: ReactNode) => (
+    <section className="app-section-panel app-section-sheet" aria-label={t(`app.section.${section}`)}>
+      <div className="app-section-sheet-header">
+        <span className="app-section-sheet-icon" aria-hidden="true">{sectionPanelIcons[section]}</span>
+        <div className="app-section-sheet-copy">
+          <div className="app-section-sheet-title">{t(`app.section.${section}`)}</div>
+          <div className="app-section-sheet-subtitle">{t('app.sectionSheetSubtitle')}</div>
+        </div>
+      </div>
+      <div className="app-section-panel-scroll app-section-sheet-body">
+        {content}
+      </div>
+    </section>
+  );
 
   useEffect(() => {
     if (emergencyMode) {
@@ -134,20 +154,14 @@ function App() {
   const renderPanelContent = () => {
     switch (activeSection) {
       case 'family':
-        return (
-          <section className="app-section-panel" aria-label={t('app.section.family')}>
-            <div className="app-section-panel-scroll">
-              <FamilySafety initialGroupCode={familyGroupCode} />
-            </div>
-          </section>
+        return renderSectionSheet(
+          'family',
+          <FamilySafety initialGroupCode={familyGroupCode} presentation="section" />
         );
       case 'dashboard':
-        return (
-          <section className="app-section-panel" aria-label={t('app.section.dashboard')}>
-            <div className="app-section-panel-scroll">
-              <SafetyDashboard />
-            </div>
-          </section>
+        return renderSectionSheet(
+          'dashboard',
+          <SafetyDashboard presentation="section" />
         );
       case 'search':
       default:

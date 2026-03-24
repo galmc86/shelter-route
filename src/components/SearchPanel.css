@@ -2116,6 +2116,11 @@
   overflow: hidden;
 }
 
+.safety-dashboard--section {
+  margin: 0;
+  border-radius: 16px;
+}
+
 .safety-dashboard-toggle {
   display: flex;
   align-items: center;
@@ -2146,6 +2151,10 @@
 
 .safety-dashboard-content {
   padding: 0 16px 16px;
+}
+
+.safety-dashboard--section .safety-dashboard-content {
+  padding: 16px;
 }
 
 .safety-dashboard-stats {

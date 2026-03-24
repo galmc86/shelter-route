@@ -1,12 +1,22 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { getAnalytics } from '../services/safetyAnalyticsService';
 import { useLanguage } from '../i18n';
 
-export function SafetyDashboard() {
+interface SafetyDashboardProps {
+  presentation?: 'accordion' | 'section';
+}
+
+export function SafetyDashboard({ presentation = 'accordion' }: SafetyDashboardProps) {
   const { t } = useLanguage();
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(presentation === 'section');
 
   const toggle = useCallback(() => setExpanded((v) => !v), []);
+
+  useEffect(() => {
+    if (presentation === 'section') {
+      setExpanded(true);
+    }
+  }, [presentation]);
 
   const analytics = useMemo(() => {
     if (!expanded) return null;
@@ -18,22 +28,8 @@ export function SafetyDashboard() {
     return Math.max(...analytics.recentShelterCounts, 1);
   }, [analytics]);
 
-  return (
-    <section className="safety-dashboard" aria-label={t('dashboard.title')}>
-      <button
-        className="safety-dashboard-toggle"
-        onClick={toggle}
-        aria-expanded={expanded}
-        type="button"
-      >
-        <span className="safety-dashboard-icon" aria-hidden="true">&#x1F4CA;</span>
-        <span>{t('dashboard.title')}</span>
-        <span className="safety-dashboard-chevron" aria-hidden="true">
-          {expanded ? '\u25B2' : '\u25BC'}
-        </span>
-      </button>
-      {expanded && analytics && (
-        <div className="safety-dashboard-content">
+  const content = analytics && (
+    <div className="safety-dashboard-content">
           <div className="safety-dashboard-stats">
             <div className="safety-dashboard-stat">
               <span className="safety-dashboard-stat-value">{analytics.totalRoutes}</span>
@@ -65,8 +61,29 @@ export function SafetyDashboard() {
               </div>
             </div>
           )}
-        </div>
+    </div>
+  );
+
+  return (
+    <section
+      className={`safety-dashboard${presentation === 'section' ? ' safety-dashboard--section' : ''}`}
+      aria-label={t('dashboard.title')}
+    >
+      {presentation === 'accordion' && (
+        <button
+          className="safety-dashboard-toggle"
+          onClick={toggle}
+          aria-expanded={expanded}
+          type="button"
+        >
+          <span className="safety-dashboard-icon" aria-hidden="true">&#x1F4CA;</span>
+          <span>{t('dashboard.title')}</span>
+          <span className="safety-dashboard-chevron" aria-hidden="true">
+            {expanded ? '\u25B2' : '\u25BC'}
+          </span>
+        </button>
       )}
+      {expanded && content}
     </section>
   );
 }
