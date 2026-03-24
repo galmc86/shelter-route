@@ -52,13 +52,17 @@ Status: `[~]`
 - [ ] Define state boundaries for `routeSession`, `proximitySearch`, `emergencyAlert`, and `navigation`
 - [ ] Keep contexts as projections of state instead of primary orchestration
 - [x] Split `SearchPanel` into mode-specific subviews
-- [ ] Add provider-level integration tests around the new state model
+- [x] Add provider-level integration tests around the new state model
 
 Notes:
 - This is the main architecture cleanup needed before larger feature growth.
 - Lookup-mode transitions for `emergency`, `nearby`, saved-place lookup, and panel expansion now live in `useLookupModeState`, giving `useAppController` a first extracted domain seam without changing the UI model.
 - Alert-triggered emergency activation, sound, vibration, and dismiss cleanup now live in `useEmergencyAlertEffects`, separating emergency alert side effects from the main controller flow.
 - Shared-route URL bootstrap, share metadata, and route-search analytics now live in `useRouteSessionState`, reducing route-session concerns inside `useAppController`.
+- Shelter navigation handoff, deferred location retry, and panel open/close behavior now live in `useShelterNavigationFlow`, giving navigation its own explicit seam.
+- Active lookup derivation, nearest-shelter triggering, and proximity-vs-route shelter selection now live in `useProximitySearchState`, separating proximity search behavior from the main controller.
+- Route, emergency, and shelter context payloads now live in `useAppControllerContexts`, so `useAppController` is mostly orchestration plus returned API shape.
+- `useAppController` now has direct integration coverage for saved-place lookup, route-search reset behavior, and alert-triggered emergency activation through the composed controller state.
 
 ### Epic 4: Safety-Critical Test Hardening
 Objective: lock down the core emergency and lookup flows.

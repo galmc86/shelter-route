@@ -11,6 +11,9 @@ import { useNavigation } from './useNavigation';
 import { useLookupModeState } from './useLookupModeState';
 import { useEmergencyAlertEffects } from './useEmergencyAlertEffects';
 import { useRouteSessionState } from './useRouteSessionState';
+import { useShelterNavigationFlow } from './useShelterNavigationFlow';
+import { useProximitySearchState } from './useProximitySearchState';
+import { useAppControllerContexts } from './useAppControllerContexts';
 import { useLanguage } from '../i18n';
 import { useTheme } from '../theme';
 import { trackEmergency } from '../services/safetyAnalyticsService';
@@ -84,7 +87,6 @@ export function useAppController(): AppControllerState {
   } = useRoute();
   const { allShelters, nearbyShelters, isLoading: sheltersLoading, filterByRoute, getRoutesWithShelters } = useShelters();
   const leafletMapRef = useRef<L.Map | null>(null);
-  const pendingNavShelterRef = useRef<ShelterWithDistance | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(() => !isOnboardingCompleted());
   const [familyGroupCode] = useState<string | null>(() => getInitialFamilyGroupCode());
   const routesWithShelters: RouteWithShelters[] = useMemo(() => {
@@ -136,26 +138,26 @@ export function useAppController(): AppControllerState {
     stopNavigation,
   } = useNavigation();
 
-  const activeLookupLocation = useMemo<LocationPoint | null>(() => {
-    if (savedLookupLocation) return savedLookupLocation.location;
-    return currentLocation;
-  }, [currentLocation, savedLookupLocation]);
-
-  const activeLookupLabel = useMemo(() => {
-    if (savedLookupLocation?.label) return savedLookupLocation.label;
-    if (nearMeMode || emergencyMode) return t('search.myLocation');
-    return null;
-  }, [emergencyMode, nearMeMode, savedLookupLocation, t]);
-
   useEffect(() => {
     filterByRoute(selectedRoute);
   }, [selectedRoute, filterByRoute]);
-
-  useEffect(() => {
-    if ((emergencyMode || nearMeMode) && activeLookupLocation && allShelters.length) {
-      findNearest(allShelters, activeLookupLocation.lat, activeLookupLocation.lng);
-    }
-  }, [emergencyMode, nearMeMode, activeLookupLocation, allShelters, findNearest]);
+  const {
+    activeLookupLocation,
+    activeLookupLabel,
+    displayShelters,
+    mapUserLocation,
+  } = useProximitySearchState({
+    currentLocation,
+    savedLookupLocation,
+    emergencyMode,
+    nearMeMode,
+    allShelters,
+    nearbyShelters,
+    nearestShelters,
+    isNavigating,
+    myLocationLabel: t('search.myLocation'),
+    findNearest,
+  });
 
   const activateEmergencyFromAlert = useCallback(() => {
     enterEmergencyMode();
@@ -226,88 +228,59 @@ export function useAppController(): AppControllerState {
     findNearest(allShelters, center.lat, center.lng);
   }, [allShelters, findNearest]);
 
-  const displayShelters = (emergencyMode || nearMeMode) ? nearestShelters : nearbyShelters;
-  const mapUserLocation = isNavigating ? currentLocation : (emergencyMode || nearMeMode ? activeLookupLocation : null);
+  const {
+    handleNavigateToShelter,
+    handleCancelNavigation,
+  } = useShelterNavigationFlow({
+    currentLocation,
+    getLocation,
+    startNavigation,
+    stopNavigation,
+    setPanelExpanded,
+    t,
+  });
 
-  const handleNavigateToShelter = useCallback(async (shelter: ShelterWithDistance) => {
-    if (!currentLocation) {
-      pendingNavShelterRef.current = shelter;
-      getLocation();
-      return;
-    }
-    pendingNavShelterRef.current = null;
-    await startNavigation(shelter, currentLocation, t);
-    setPanelExpanded(false);
-  }, [currentLocation, getLocation, startNavigation, t]);
-
-  useEffect(() => {
-    if (currentLocation && pendingNavShelterRef.current) {
-      const shelter = pendingNavShelterRef.current;
-      pendingNavShelterRef.current = null;
-      startNavigation(shelter, currentLocation, t).then(() => {
-        setPanelExpanded(false);
-      });
-    }
-  }, [currentLocation, startNavigation, t]);
-
-  const handleCancelNavigation = useCallback(() => {
-    stopNavigation();
-    setPanelExpanded(true);
-  }, [stopNavigation]);
-
-  const routeContextValue: RouteContextValue = useMemo(() => ({
-    routeInfo: (emergencyMode || nearMeMode) ? null : selectedRoute,
+  const {
+    routeContextValue,
+    emergencyContextValue,
+    shelterContextValue,
+  } = useAppControllerContexts({
+    emergencyMode,
+    nearMeMode,
+    selectedRoute,
     selectedRouteIndex,
-    routesWithShelters: (emergencyMode || nearMeMode) ? [] : routesWithShelters,
-    nearbyShelters: displayShelters,
-    sheltersLoading: sheltersLoading || isEmergencySearching,
-    searchError: routeError,
-    isSearching: isRouteLoading,
-    onSearch: handleSearch,
-    onRouteSelect: handleRouteSelect,
+    routesWithShelters,
+    displayShelters,
+    sheltersLoading,
+    isEmergencySearching,
+    routeError,
+    isRouteLoading,
+    handleSearch,
+    handleRouteSelect,
     shareOrigin,
     shareDestination,
     shareTravelMode,
     routeRisk: routeRisk ?? null,
     timeFilter,
-    onTimeFilterChange: setTimeFilter,
-  }), [
-    emergencyMode, nearMeMode, selectedRoute, selectedRouteIndex,
-    routesWithShelters, displayShelters, sheltersLoading, isEmergencySearching,
-    routeError, isRouteLoading, handleSearch, handleRouteSelect,
-    shareOrigin, shareDestination, shareTravelMode, routeRisk, timeFilter, setTimeFilter,
-  ]);
-
-  const emergencyContextValue: EmergencyContextValue = useMemo(() => ({
-    emergencyMode,
-    onEmergencyClick: handleEmergencyClick,
-    onExitEmergency: handleExitEmergency,
+    setTimeFilter,
+    handleEmergencyClick,
+    handleExitEmergency,
     currentLocation,
     activeLookupLocation,
     activeLookupLabel,
     isLoadingLocation,
     locationError: locationError ?? null,
-    onGetLocation: getLocation,
-    onSearchFromSavedLocation: handleSearchFromSavedLocation,
-    nearMeMode,
-    onNearMeClick: handleNearMeClick,
-    onExitNearMe: handleExitNearMe,
-    onUseMapCenter: handleUseMapCenter,
-  }), [
-    emergencyMode, handleEmergencyClick, handleExitEmergency,
-    currentLocation, activeLookupLocation, activeLookupLabel,
-    isLoadingLocation, locationError, getLocation, handleSearchFromSavedLocation,
-    nearMeMode, handleNearMeClick, handleExitNearMe, handleUseMapCenter,
-  ]);
-
-  const shelterContextValue: ShelterContextValue = useMemo(() => ({
+    getLocation,
+    handleSearchFromSavedLocation,
+    handleNearMeClick,
+    handleExitNearMe,
+    handleUseMapCenter,
     selectedShelterId,
-    onShelterClick: handleShelterClick,
-    onNavigateToShelter: handleNavigateToShelter,
+    handleShelterClick,
+    handleNavigateToShelter,
     capacityMap,
-    isLoaded: true,
     allShelters,
-  }), [selectedShelterId, handleShelterClick, handleNavigateToShelter, capacityMap, allShelters]);
+  });
 
   const completeOnboarding = useCallback(() => {
     setShowOnboarding(false);

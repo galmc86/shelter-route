@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import type { LocationPoint } from '../types';
 
-interface SavedLookupLocation {
+export interface SavedLookupLocation {
   location: LocationPoint;
   label: string | null;
 }
