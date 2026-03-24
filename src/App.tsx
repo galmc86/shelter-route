@@ -147,26 +147,26 @@ function App() {
       )}
       <OfflineIndicator />
       <AppHeader />
+      {!emergencyMode && (
+        <nav className="app-section-nav" aria-label={t('app.sectionNav')}>
+          {(['search', 'family', 'dashboard'] as AppSection[]).map((section) => (
+            <button
+              type="button"
+              key={section}
+              className={`app-section-nav-item ${activeSection === section ? 'active' : ''}`}
+              aria-current={activeSection === section ? 'page' : undefined}
+              onClick={() => setActiveSection(section)}
+            >
+              <span className="app-section-nav-icon">{sectionIcons[section]}</span>
+              <span className="app-section-nav-label">{t(`app.section.${section}`)}</span>
+            </button>
+          ))}
+        </nav>
+      )}
       <main className="main-content" id="main-content">
         {!isNavigating && (
           <div className="panel-column">
             {renderPanelContent()}
-            {!emergencyMode && (
-              <nav className="app-section-nav" aria-label={t('app.sectionNav')}>
-                {(['search', 'family', 'dashboard'] as AppSection[]).map((section) => (
-                  <button
-                    type="button"
-                    key={section}
-                    className={`app-section-nav-item ${activeSection === section ? 'active' : ''}`}
-                    aria-current={activeSection === section ? 'page' : undefined}
-                    onClick={() => setActiveSection(section)}
-                  >
-                    <span className="app-section-nav-icon">{sectionIcons[section]}</span>
-                    <span className="app-section-nav-label">{t(`app.section.${section}`)}</span>
-                  </button>
-                ))}
-              </nav>
-            )}
           </div>
         )}
         <MapView
