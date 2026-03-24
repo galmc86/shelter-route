@@ -18,7 +18,7 @@ Status: `[~]`
 - [x] Introduce utility-panel tabs so Family and Dashboard no longer stack beneath Search
 - [x] Introduce top-level `Nearby` and `Route` search surface tabs inside `SearchPanel`
 - [x] Replace the stacked-utility panel with app-level section navigation and a mobile glass overlay switcher
-- [ ] Redesign the main panel into explicit modes: `Emergency`, `Nearby`, `Route`, `Family`
+- [x] Redesign the main panel into explicit modes: `Emergency`, `Nearby`, `Route`, `Family`
 - [x] Make the primary task visible by default instead of hiding route planning behind a toggle
 - [ ] Add a persistent status strip for alert state, location mode, connectivity, and data freshness
 - [x] Validate the new mode model on mobile and desktop layouts
@@ -29,6 +29,7 @@ Notes:
 - The initial mobile bottom-nav experiment was superseded by a lighter glass overlay switcher to avoid creating a second competing bottom surface.
 - A global status strip was tested locally and rejected because it made the mobile shell feel crowded; contextual state should live inside the active surface instead.
 - Dedicated `Family` and `Dashboard` sections now open as content-first sheets instead of requiring a second accordion tap after section switching.
+- Emergency mode now renders as a dedicated surface and auto-expands the mobile sheet so it does not inherit stale route UI or hide behind the collapsed state.
 
 ### Epic 2: Shelter Decision Quality
 Objective: help users choose the best shelter, not just the nearest one.
@@ -55,6 +56,9 @@ Status: `[~]`
 
 Notes:
 - This is the main architecture cleanup needed before larger feature growth.
+- Lookup-mode transitions for `emergency`, `nearby`, saved-place lookup, and panel expansion now live in `useLookupModeState`, giving `useAppController` a first extracted domain seam without changing the UI model.
+- Alert-triggered emergency activation, sound, vibration, and dismiss cleanup now live in `useEmergencyAlertEffects`, separating emergency alert side effects from the main controller flow.
+- Shared-route URL bootstrap, share metadata, and route-search analytics now live in `useRouteSessionState`, reducing route-session concerns inside `useAppController`.
 
 ### Epic 4: Safety-Critical Test Hardening
 Objective: lock down the core emergency and lookup flows.

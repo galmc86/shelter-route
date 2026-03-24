@@ -319,7 +319,7 @@ describe('App', () => {
 
     expect(mockPlayAlertSound).toHaveBeenCalledTimes(1);
     expect(screen.getByTestId('emergency-mode')).toHaveTextContent('true');
-    expect(screen.getByTestId('panel-expanded')).toHaveTextContent('false');
+    expect(screen.getByTestId('panel-expanded')).toHaveTextContent('true');
     expect(screen.getByTestId('route-info')).toHaveTextContent('none');
     expect(screen.getByTestId('nearby-count')).toHaveTextContent('1');
   });

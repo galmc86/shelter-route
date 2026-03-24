@@ -4,6 +4,52 @@ import { SearchPanel } from '../SearchPanel';
 
 const mockOnNearMeClick = vi.fn();
 const mockOnGetLocation = vi.fn();
+const mockOnEmergencyClick = vi.fn();
+const mockOnExitEmergency = vi.fn();
+
+const mockRouteState = {
+  routeInfo: null as unknown,
+  selectedRouteIndex: 0,
+  routesWithShelters: [] as Array<{
+    route: { distance: string; duration: string; isFastest?: boolean };
+    shelterCount: number;
+  }>,
+  nearbyShelters: [] as Array<{
+    id: string;
+    name: string;
+    lat: number;
+    lon: number;
+    walkingTimeMinutes: number;
+  }>,
+  sheltersLoading: false,
+  searchError: null as string | null,
+  isSearching: false,
+  onSearch: vi.fn(),
+  onRouteSelect: vi.fn(),
+  shareOrigin: null,
+  shareDestination: null,
+  shareTravelMode: 'WALKING',
+  routeRisk: null,
+  timeFilter: 1,
+  onTimeFilterChange: vi.fn(),
+};
+
+const mockEmergencyState = {
+  emergencyMode: false,
+  onEmergencyClick: mockOnEmergencyClick,
+  onExitEmergency: mockOnExitEmergency,
+  currentLocation: { lat: 32.1, lng: 34.8 },
+  activeLookupLocation: null as { lat: number; lng: number } | null,
+  activeLookupLabel: null as string | null,
+  isLoadingLocation: false,
+  locationError: null as string | null,
+  onGetLocation: mockOnGetLocation,
+  onSearchFromSavedLocation: vi.fn(),
+  nearMeMode: false,
+  onNearMeClick: mockOnNearMeClick,
+  onExitNearMe: vi.fn(),
+  onUseMapCenter: vi.fn(),
+};
 
 vi.mock('../../i18n', () => ({
   useLanguage: () => ({
@@ -36,42 +82,11 @@ vi.mock('../../hooks/useSavedLocations', () => ({
 }));
 
 vi.mock('../../contexts/RouteContext', () => ({
-  useRouteContext: () => ({
-    routeInfo: null,
-    selectedRouteIndex: 0,
-    routesWithShelters: [],
-    nearbyShelters: [],
-    sheltersLoading: false,
-    searchError: null,
-    isSearching: false,
-    onSearch: vi.fn(),
-    onRouteSelect: vi.fn(),
-    shareOrigin: null,
-    shareDestination: null,
-    shareTravelMode: 'WALKING',
-    routeRisk: null,
-    timeFilter: 1,
-    onTimeFilterChange: vi.fn(),
-  }),
+  useRouteContext: () => mockRouteState,
 }));
 
 vi.mock('../../contexts/EmergencyContext', () => ({
-  useEmergencyContext: () => ({
-    emergencyMode: false,
-    onEmergencyClick: vi.fn(),
-    onExitEmergency: vi.fn(),
-    currentLocation: { lat: 32.1, lng: 34.8 },
-    activeLookupLocation: null,
-    activeLookupLabel: null,
-    isLoadingLocation: false,
-    locationError: null,
-    onGetLocation: mockOnGetLocation,
-    onSearchFromSavedLocation: vi.fn(),
-    nearMeMode: false,
-    onNearMeClick: mockOnNearMeClick,
-    onExitNearMe: vi.fn(),
-    onUseMapCenter: vi.fn(),
-  }),
+  useEmergencyContext: () => mockEmergencyState,
 }));
 
 vi.mock('../../contexts/ShelterContext', () => ({
@@ -172,6 +187,16 @@ vi.mock('../ShelterResults', () => ({
 describe('SearchPanel', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockRouteState.routeInfo = null;
+    mockRouteState.routesWithShelters = [];
+    mockRouteState.nearbyShelters = [];
+    mockRouteState.searchError = null;
+    mockEmergencyState.emergencyMode = false;
+    mockEmergencyState.nearMeMode = false;
+    mockEmergencyState.locationError = null;
+    mockEmergencyState.isLoadingLocation = false;
+    mockEmergencyState.activeLookupLocation = null;
+    mockEmergencyState.activeLookupLabel = null;
   });
 
   it('defaults to the route mode surface', () => {
@@ -200,5 +225,26 @@ describe('SearchPanel', () => {
 
     expect(mockOnNearMeClick).toHaveBeenCalledTimes(1);
     expect(mockOnGetLocation).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders emergency as a dedicated mode and hides route-specific surfaces', () => {
+    mockEmergencyState.emergencyMode = true;
+    mockRouteState.routeInfo = { distance: '1 km' };
+    mockRouteState.routesWithShelters = [
+      { route: { distance: '1 km', duration: '10 min' }, shelterCount: 2 },
+      { route: { distance: '1.2 km', duration: '11 min' }, shelterCount: 3 },
+    ];
+    mockRouteState.nearbyShelters = [
+      { id: 's1', name: 'Shelter One', lat: 32.1, lon: 34.8, walkingTimeMinutes: 2 },
+    ];
+
+    render(<SearchPanel panelExpanded={true} onTogglePanel={vi.fn()} />);
+
+    expect(screen.getByText('emergency.findShelter')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'emergency.exitAriaLabel' })).toBeInTheDocument();
+    expect(screen.queryByRole('tablist', { name: 'search.modeSwitcher' })).not.toBeInTheDocument();
+    expect(screen.queryByText('route-summary')).not.toBeInTheDocument();
+    expect(screen.queryByRole('radiogroup', { name: 'routes.selectRoute' })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'emergency.navigateNow - Shelter One' })).toBeInTheDocument();
   });
 });

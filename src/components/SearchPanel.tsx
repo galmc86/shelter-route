@@ -3,6 +3,7 @@ import './SearchPanel.css';
 import { ShelterScore } from './ShelterScore';
 import { RouteSummary } from './RouteSummary';
 import { ShelterResults } from './ShelterResults';
+import { SearchPanelEmergencyMode } from './SearchPanelEmergencyMode';
 import { SearchPanelNearbyMode } from './SearchPanelNearbyMode';
 import { SearchPanelRouteMode } from './SearchPanelRouteMode';
 import { useLanguage } from '../i18n';
@@ -23,6 +24,7 @@ interface SearchPanelProps {
 }
 
 type SearchSurfaceMode = 'nearby' | 'route';
+type SearchPanelMode = 'emergency' | 'nearby-results' | SearchSurfaceMode;
 
 export function SearchPanel({
   panelExpanded,
@@ -147,6 +149,14 @@ export function SearchPanel({
     onTogglePanel,
   });
   const dataStale = useMemo(() => isShelterDataStale(), []);
+  const activePanelMode: SearchPanelMode = emergencyMode
+    ? 'emergency'
+    : nearMeMode
+      ? 'nearby-results'
+      : activeSearchMode;
+  const nearestEmergencyShelter = emergencyMode && nearbyShelters.length > 0
+    ? nearbyShelters[0]
+    : null;
 
   const contextualChips = useMemo(() => {
     if (emergencyMode || nearMeMode) {
@@ -197,10 +207,30 @@ export function SearchPanel({
     }
   }, [nearMeMode, routeInfo]);
 
+  const collapsedHandleLabel = useMemo(() => {
+    if (panelExpanded) {
+      return t('search.showMap');
+    }
+
+    if (activePanelMode === 'emergency') {
+      return t('emergency.bannerTitle');
+    }
+
+    if (activePanelMode === 'nearby-results') {
+      return nearbyShelters.length > 0
+        ? `${nearbyShelters.length} ${t('search.showDetails')}`
+        : t('search.sheltersNearMe');
+    }
+
+    return (routeInfo || nearbyShelters.length > 0)
+      ? `${nearbyShelters.length} ${t('search.showDetails')}`
+      : t('search.planRoute');
+  }, [activePanelMode, nearbyShelters.length, panelExpanded, routeInfo, t]);
+
   return (
     <aside
       ref={panelRef}
-      className={`search-panel ${panelExpanded ? 'panel-expanded' : 'panel-collapsed'}`}
+      className={`search-panel search-panel-mode-${activePanelMode} ${panelExpanded ? 'panel-expanded' : 'panel-collapsed'}`}
       role="complementary"
       aria-label={t('search.ariaLabel')}
     >
@@ -215,71 +245,20 @@ export function SearchPanel({
         aria-expanded={panelExpanded}
       >
         <div className="handle-bar" />
-        <span className="handle-label">
-          {panelExpanded ? t('search.showMap') : (routeInfo || nearbyShelters.length > 0) ? `${nearbyShelters.length} ${t('search.showDetails')}` : t('search.planRoute')}
-        </span>
+        <span className="handle-label">{collapsedHandleLabel}</span>
       </button>
 
-      {/* Emergency Mode Banner */}
       {emergencyMode && (
-        <div className="emergency-banner" role="alert">
-          <div className="emergency-banner-content">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="white" aria-hidden="true">
-              <path d="M12 2L3 7v10l9 5 9-5V7l-9-5z" />
-              <path d="M12 7v6M12 15v1" stroke="#D32F2F" strokeWidth="2.5" strokeLinecap="round" />
-            </svg>
-            <div>
-              <div className="emergency-banner-title">{t('emergency.bannerTitle')}</div>
-              <div className="emergency-banner-subtitle">
-                {isLoadingLocation
-                  ? t('emergency.locating')
-                  : locationError
-                    ? locationError
-                    : `${nearbyShelters.length} ${t('emergency.nearbyShelters')}`}
-              </div>
-              {locationError && !isLoadingLocation && (
-                <div className="emergency-fallback">
-                  <button
-                    className="emergency-map-center-btn"
-                    onClick={onUseMapCenter}
-                  >
-                    {t('emergency.useMapCenter')}
-                  </button>
-                  <div className="emergency-permission-hint">
-                    {t('emergency.locationPermissionHint')}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-          <button className="emergency-exit-btn" onClick={onExitEmergency} aria-label={t('emergency.exitAriaLabel')}>
-            {t('emergency.exit')}
-          </button>
-        </div>
+        <SearchPanelEmergencyMode
+          t={t}
+          nearbyShelterCount={nearbyShelters.length}
+          nearestShelter={nearestEmergencyShelter}
+          isLoadingLocation={isLoadingLocation}
+          locationError={locationError}
+          onUseMapCenter={onUseMapCenter}
+          onExitEmergency={onExitEmergency}
+        />
       )}
-
-      {/* Navigate to Nearest Shelter - One-Tap Emergency Navigation */}
-      {emergencyMode && nearbyShelters.length > 0 && (() => {
-        const nearest = nearbyShelters[0];
-        const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${nearest.lat},${nearest.lon}&travelmode=walking`;
-        return (
-          <a
-            href={mapsUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="emergency-navigate-now-btn"
-            aria-label={`${t('emergency.navigateNow')} - ${nearest.name}`}
-          >
-            <span className="emergency-navigate-now-icon" aria-hidden="true">&#x27A4;</span>
-            <span className="emergency-navigate-now-text">
-              <span className="emergency-navigate-now-label">{t('emergency.navigateNow')}</span>
-              <span className="emergency-navigate-now-detail">
-                {nearest.name} &middot; {t('emergency.walkingTime')}: ~{nearest.walkingTimeMinutes} {t('capacity.minutes')}
-              </span>
-            </span>
-          </a>
-        );
-      })()}
 
       {/* Emergency Quick Button */}
       {!emergencyMode && (
@@ -424,7 +403,7 @@ export function SearchPanel({
       )}
 
       {/* Errors */}
-      {searchError && (
+      {searchError && !emergencyMode && (
         <div className="error-message" role="alert">{searchError}</div>
       )}
       {locationError && !emergencyMode && !nearMeMode && (
@@ -432,7 +411,7 @@ export function SearchPanel({
       )}
 
       {/* Route Selector — show when multiple alternatives exist (our shelter-count version) */}
-      {routesWithShelters.length > 1 && (
+      {!emergencyMode && routesWithShelters.length > 1 && (
         <>
           <div className="divider" />
           <div className="route-selector" role="radiogroup" aria-label={t('routes.selectRoute')}>
@@ -478,7 +457,7 @@ export function SearchPanel({
       )}
 
       {/* Route Info */}
-      {routeInfo && (
+      {!emergencyMode && routeInfo && (
         <>
           <div className="divider" />
           <RouteSummary
@@ -499,7 +478,7 @@ export function SearchPanel({
       )}
 
       {/* Copied Toast */}
-      {showCopiedToast && (
+      {showCopiedToast && !emergencyMode && (
         <div className="copied-toast" role="status" aria-live="polite">
           {t('share.copied')}
         </div>

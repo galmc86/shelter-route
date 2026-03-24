@@ -8,10 +8,12 @@ import { useCapacity } from './useCapacity';
 import { useOrefAlerts } from './useOrefAlerts';
 import { useAlertHistory } from './useAlertHistory';
 import { useNavigation } from './useNavigation';
+import { useLookupModeState } from './useLookupModeState';
+import { useEmergencyAlertEffects } from './useEmergencyAlertEffects';
+import { useRouteSessionState } from './useRouteSessionState';
 import { useLanguage } from '../i18n';
 import { useTheme } from '../theme';
-import { playAlertSound, stopAlertSound } from '../utils/alertSound';
-import { trackRouteSearch, trackEmergency } from '../services/safetyAnalyticsService';
+import { trackEmergency } from '../services/safetyAnalyticsService';
 import type { TravelMode, LatLng, LocationPoint, RouteWithShelters } from '../types';
 import type { ShelterWithDistance } from './useShelters';
 import type { RouteContextValue } from '../contexts/RouteContext';
@@ -30,42 +32,6 @@ function isOnboardingCompleted(): boolean {
 function getInitialFamilyGroupCode(): string | null {
   const familyCode = new URLSearchParams(window.location.search).get('familyGroup');
   return familyCode && /^[A-Z0-9]{6}$/i.test(familyCode) ? familyCode.toUpperCase() : null;
-}
-
-interface InitialSharedRoute {
-  origin: LatLng;
-  destination: LatLng;
-  travelMode: TravelMode;
-}
-
-function getInitialSharedRoute(): InitialSharedRoute | null {
-  const params = new URLSearchParams(window.location.search);
-  const from = params.get('from');
-  const to = params.get('to');
-  const mode = params.get('mode') as TravelMode | null;
-
-  if (!from || !to) {
-    return null;
-  }
-
-  const [fromLat, fromLng] = from.split(',').map(Number);
-  const [toLat, toLng] = to.split(',').map(Number);
-  if ([fromLat, fromLng, toLat, toLng].some((value) => Number.isNaN(value))) {
-    return null;
-  }
-
-  const isValidLat = (lat: number) => lat >= 29.0 && lat <= 34.0;
-  const isValidLng = (lng: number) => lng >= 34.0 && lng <= 36.5;
-  if (!isValidLat(fromLat) || !isValidLng(fromLng) || !isValidLat(toLat) || !isValidLng(toLng)) {
-    console.warn('Shared route URL contains coordinates outside Israel bounds, ignoring:', { fromLat, fromLng, toLat, toLng });
-    return null;
-  }
-
-  return {
-    origin: { lat: fromLat, lng: fromLng },
-    destination: { lat: toLat, lng: toLng },
-    travelMode: mode && ['WALKING', 'BICYCLING', 'DRIVING'].includes(mode) ? mode : 'WALKING',
-  };
 }
 
 export interface AppControllerState {
@@ -106,7 +72,6 @@ export function useAppController(): AppControllerState {
   const { language, t } = useLanguage();
   const { theme } = useTheme();
   const [selectedShelterId, setSelectedShelterId] = useState<string | null>(null);
-  const [emergencyMode, setEmergencyMode] = useState(false);
   const { error: mapsError } = useGoogleMaps();
   const {
     routes,
@@ -118,6 +83,41 @@ export function useAppController(): AppControllerState {
     searchRoute,
   } = useRoute();
   const { allShelters, nearbyShelters, isLoading: sheltersLoading, filterByRoute, getRoutesWithShelters } = useShelters();
+  const leafletMapRef = useRef<L.Map | null>(null);
+  const pendingNavShelterRef = useRef<ShelterWithDistance | null>(null);
+  const [showOnboarding, setShowOnboarding] = useState(() => !isOnboardingCompleted());
+  const [familyGroupCode] = useState<string | null>(() => getInitialFamilyGroupCode());
+  const routesWithShelters: RouteWithShelters[] = useMemo(() => {
+    if (routes.length === 0) return [];
+    return getRoutesWithShelters(routes);
+  }, [routes, getRoutesWithShelters]);
+  const {
+    initialSharedRoute,
+    shareOrigin,
+    shareDestination,
+    shareTravelMode,
+    runRouteSearch,
+  } = useRouteSessionState({
+    searchRoute,
+    routesWithShelters,
+    selectedRouteIndex,
+  });
+  const {
+    panelExpanded,
+    setPanelExpanded,
+    togglePanel,
+    emergencyMode,
+    nearMeMode,
+    savedLookupLocation,
+    collapseForRouteSearch,
+    enterNearMeMode,
+    enterSavedLocationMode,
+    enterEmergencyMode,
+    exitEmergencyMode,
+    exitNearMeMode,
+  } = useLookupModeState({
+    initialPanelExpanded: initialSharedRoute === null,
+  });
   const { location: currentLocation, isLoading: isLoadingLocation, error: locationError, getLocation } = useCurrentLocation(emergencyMode);
   const { nearestShelters, isSearching: isEmergencySearching, findNearest, clear: clearNearest } = useNearestShelters();
   const capacityMap = useCapacity(allShelters);
@@ -136,23 +136,6 @@ export function useAppController(): AppControllerState {
     stopNavigation,
   } = useNavigation();
 
-  const prevAlertActive = useRef(false);
-  const vibrationInterval = useRef<ReturnType<typeof setInterval> | null>(null);
-  const leafletMapRef = useRef<L.Map | null>(null);
-  const pendingNavShelterRef = useRef<ShelterWithDistance | null>(null);
-  const prevRoutesLength = useRef(0);
-  const initialSharedRoute = useMemo(() => getInitialSharedRoute(), []);
-  const sharedRouteBootstrappedRef = useRef(false);
-
-  const [shareOrigin, setShareOrigin] = useState<LatLng | null>(() => initialSharedRoute?.origin ?? null);
-  const [shareDestination, setShareDestination] = useState<LatLng | null>(() => initialSharedRoute?.destination ?? null);
-  const [shareTravelMode, setShareTravelMode] = useState<TravelMode>(() => initialSharedRoute?.travelMode ?? 'WALKING');
-  const [showOnboarding, setShowOnboarding] = useState(() => !isOnboardingCompleted());
-  const [nearMeMode, setNearMeMode] = useState(false);
-  const [savedLookupLocation, setSavedLookupLocation] = useState<{ location: LocationPoint; label: string | null } | null>(null);
-  const [familyGroupCode] = useState<string | null>(() => getInitialFamilyGroupCode());
-  const [panelExpanded, setPanelExpanded] = useState(() => initialSharedRoute === null);
-
   const activeLookupLocation = useMemo<LocationPoint | null>(() => {
     if (savedLookupLocation) return savedLookupLocation.location;
     return currentLocation;
@@ -163,41 +146,6 @@ export function useAppController(): AppControllerState {
     if (nearMeMode || emergencyMode) return t('search.myLocation');
     return null;
   }, [emergencyMode, nearMeMode, savedLookupLocation, t]);
-
-  const dismissAlert = useCallback(() => {
-    dismissAlertBase();
-    stopAlertSound();
-    if (vibrationInterval.current) {
-      clearInterval(vibrationInterval.current);
-      vibrationInterval.current = null;
-    }
-    if (navigator.vibrate) {
-      navigator.vibrate(0);
-    }
-  }, [dismissAlertBase]);
-
-  const routesWithShelters: RouteWithShelters[] = useMemo(() => {
-    if (routes.length === 0) return [];
-    return getRoutesWithShelters(routes);
-  }, [routes, getRoutesWithShelters]);
-
-  useEffect(() => {
-    if (!initialSharedRoute || sharedRouteBootstrappedRef.current) {
-      return;
-    }
-
-    sharedRouteBootstrappedRef.current = true;
-    searchRoute(initialSharedRoute.origin, initialSharedRoute.destination, initialSharedRoute.travelMode);
-    window.history.replaceState({}, '', window.location.pathname);
-  }, [initialSharedRoute, searchRoute]);
-
-  useEffect(() => {
-    if (routesWithShelters.length > 0 && routesWithShelters.length !== prevRoutesLength.current) {
-      const shelterCount = routesWithShelters[selectedRouteIndex]?.shelterCount ?? 0;
-      trackRouteSearch(shelterCount);
-    }
-    prevRoutesLength.current = routesWithShelters.length;
-  }, [routesWithShelters, selectedRouteIndex]);
 
   useEffect(() => {
     filterByRoute(selectedRoute);
@@ -210,103 +158,57 @@ export function useAppController(): AppControllerState {
   }, [emergencyMode, nearMeMode, activeLookupLocation, allShelters, findNearest]);
 
   const activateEmergencyFromAlert = useCallback(() => {
-    setEmergencyMode(true);
-    setSavedLookupLocation(null);
+    enterEmergencyMode();
     setSelectedShelterId(null);
-    setPanelExpanded(false);
     getLocation();
-    playAlertSound();
-
-    if (navigator.vibrate) {
-      navigator.vibrate([200, 100, 200, 100, 400]);
-      vibrationInterval.current = setInterval(() => {
-        navigator.vibrate([200, 100, 200, 100, 400]);
-      }, 1200);
-    }
-  }, [getLocation]);
-
-  useEffect(() => {
-    if (isAlertActive && !prevAlertActive.current) {
-      setTimeout(() => {
-        activateEmergencyFromAlert();
-      }, 0);
-    }
-
-    if (!isAlertActive && prevAlertActive.current) {
-      stopAlertSound();
-      if (vibrationInterval.current) {
-        clearInterval(vibrationInterval.current);
-        vibrationInterval.current = null;
-      }
-      if (navigator.vibrate) {
-        navigator.vibrate(0);
-      }
-    }
-
-    prevAlertActive.current = isAlertActive;
-  }, [activateEmergencyFromAlert, isAlertActive]);
+  }, [enterEmergencyMode, getLocation]);
+  const { dismissAlert } = useEmergencyAlertEffects({
+    isAlertActive,
+    onDismissBase: dismissAlertBase,
+    onActivateEmergency: activateEmergencyFromAlert,
+  });
 
   const handleSearch = useCallback((origin: LatLng, destination: LatLng, travelMode: TravelMode) => {
     setSelectedShelterId(null);
-    setEmergencyMode(false);
-    setNearMeMode(false);
-    setSavedLookupLocation(null);
+    collapseForRouteSearch();
     clearNearest();
-    setPanelExpanded(false);
-    setShareOrigin(origin);
-    setShareDestination(destination);
-    setShareTravelMode(travelMode);
-    searchRoute(origin, destination, travelMode);
-  }, [searchRoute, clearNearest]);
+    runRouteSearch(origin, destination, travelMode);
+  }, [clearNearest, collapseForRouteSearch, runRouteSearch]);
 
   const handleNearMeClick = useCallback(() => {
-    setNearMeMode(true);
-    setEmergencyMode(false);
-    setSavedLookupLocation(null);
+    enterNearMeMode();
     setSelectedShelterId(null);
-    setPanelExpanded(true);
     getLocation();
-  }, [getLocation]);
+  }, [enterNearMeMode, getLocation]);
 
   const handleSearchFromSavedLocation = useCallback((location: LocationPoint, label?: string) => {
-    setNearMeMode(true);
-    setEmergencyMode(false);
-    setSavedLookupLocation({
-      location: { lat: location.lat, lng: location.lng, address: location.address },
-      label: label?.trim() || null,
-    });
+    enterSavedLocationMode(location, label);
     setSelectedShelterId(null);
     clearNearest();
-    setPanelExpanded(true);
-  }, [clearNearest]);
+  }, [clearNearest, enterSavedLocationMode]);
 
   const handleShelterClick = useCallback((shelter: ShelterWithDistance) => {
     setSelectedShelterId(shelter.id);
   }, []);
 
   const handleEmergencyClick = useCallback(() => {
-    setEmergencyMode(true);
-    setNearMeMode(false);
-    setSavedLookupLocation(null);
+    enterEmergencyMode();
     setSelectedShelterId(null);
-    setPanelExpanded(false);
     getLocation();
     trackEmergency();
-  }, [getLocation]);
+  }, [enterEmergencyMode, getLocation]);
 
   const handleExitEmergency = useCallback(() => {
-    setEmergencyMode(false);
-    setSavedLookupLocation(null);
+    exitEmergencyMode();
     clearNearest();
     setSelectedShelterId(null);
-  }, [clearNearest]);
+  }, [clearNearest, exitEmergencyMode]);
 
   const handleExitNearMe = useCallback(() => {
-    setNearMeMode(false);
-    setSavedLookupLocation(null);
+    exitNearMeMode();
     clearNearest();
     setSelectedShelterId(null);
-  }, [clearNearest]);
+  }, [clearNearest, exitNearMeMode]);
 
   const handleRouteSelect = useCallback((index: number) => {
     selectRoute(index);
@@ -409,10 +311,6 @@ export function useAppController(): AppControllerState {
 
   const completeOnboarding = useCallback(() => {
     setShowOnboarding(false);
-  }, []);
-
-  const togglePanel = useCallback(() => {
-    setPanelExpanded((value) => !value);
   }, []);
 
   return {

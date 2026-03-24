@@ -1405,36 +1405,95 @@
   background: rgba(255, 255, 255, 0.35);
 }
 
-/* Emergency Banner */
-.emergency-banner {
-  background: linear-gradient(135deg, #D32F2F, #B71C1C);
-  color: white;
+/* Emergency Mode */
+.emergency-mode-surface {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
   padding: 16px;
-  border-radius: 12px;
+  border-radius: 16px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0)),
+    linear-gradient(135deg, #D32F2F, #B71C1C);
+  color: white;
+  box-shadow: 0 10px 24px rgba(183, 28, 28, 0.24);
+}
+
+.emergency-mode-topline {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
 }
 
-.emergency-banner-content {
+.emergency-mode-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.emergency-mode-exit {
+  background: rgba(255,255,255,0.18);
+  border: 1px solid rgba(255,255,255,0.36);
+  color: white;
+  padding: 8px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: inherit;
+  font-weight: 600;
+  white-space: nowrap;
+  min-height: 36px;
+  transition: background 0.2s;
+}
+
+.emergency-mode-exit:hover {
+  background: rgba(255,255,255,0.28);
+}
+
+.emergency-mode-main {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
-.emergency-banner-title {
-  font-size: 16px;
+.emergency-mode-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.14);
+  color: white;
+  flex-shrink: 0;
+}
+
+.emergency-mode-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.emergency-mode-title {
+  font-size: 1rem;
   font-weight: 700;
 }
 
-.emergency-banner-subtitle {
-  font-size: 13px;
-  opacity: 0.9;
+.emergency-mode-subtitle {
+  font-size: 0.86rem;
+  opacity: 0.92;
 }
 
-.emergency-fallback {
-  margin-top: 8px;
+.emergency-mode-fallback {
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -1463,25 +1522,6 @@
   opacity: 0.75;
 }
 
-.emergency-exit-btn {
-  background: rgba(255,255,255,0.2);
-  border: 1px solid rgba(255,255,255,0.4);
-  color: white;
-  padding: 8px 16px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 13px;
-  font-family: inherit;
-  font-weight: 500;
-  transition: background 0.2s;
-  white-space: nowrap;
-  min-height: 36px;
-}
-
-.emergency-exit-btn:hover {
-  background: rgba(255,255,255,0.3);
-}
-
 /* Emergency Navigate Now Button */
 .emergency-navigate-now-btn {
   display: flex;
@@ -1500,6 +1540,10 @@
   box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
   transition: background 0.15s, box-shadow 0.15s;
   animation: emergencyPulse 1.5s ease-in-out infinite;
+}
+
+.emergency-mode-surface .emergency-navigate-now-btn {
+  margin: 0;
 }
 
 .emergency-navigate-now-btn:hover {

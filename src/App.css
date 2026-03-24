@@ -983,7 +983,7 @@ body {
   }
 
   /* When collapsed, hide content after handle (keep emergency-quick-btn visible) */
-  .search-panel.panel-collapsed .emergency-banner,
+  .search-panel.panel-collapsed .emergency-mode-surface,
   .search-panel.panel-collapsed .panel-section,
   .search-panel.panel-collapsed .search-btn-wrapper,
   .search-panel.panel-collapsed .search-btn,
