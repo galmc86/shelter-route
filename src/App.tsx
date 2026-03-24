@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Onboarding } from './components/Onboarding';
 import { AppHeader } from './components/AppHeader';
@@ -16,7 +16,26 @@ import { ShelterProvider } from './contexts/ShelterContext';
 import { useAppController } from './hooks/useAppController';
 import './App.css';
 
-type UtilityPanel = 'family' | 'dashboard';
+type AppSection = 'search' | 'family' | 'dashboard';
+
+const sectionIcons: Record<AppSection, ReactNode> = {
+  search: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M10.5 18a7.5 7.5 0 1 0 0-15 7.5 7.5 0 0 0 0 15Z" stroke="currentColor" strokeWidth="2" />
+      <path d="m16 16 5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  ),
+  family: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3Zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3Zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5Zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5Z" />
+    </svg>
+  ),
+  dashboard: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M3 13h6v8H3v-8Zm12-10h6v18h-6V3ZM9 8h6v13H9V8Z" />
+    </svg>
+  ),
+};
 
 function App() {
   const {
@@ -50,13 +69,42 @@ function App() {
     completeOnboarding,
     togglePanel,
   } = useAppController();
-  const [activeUtilityPanel, setActiveUtilityPanel] = useState<UtilityPanel>('family');
+  const [activeSection, setActiveSection] = useState<AppSection>('search');
 
   useEffect(() => {
     if (emergencyMode) {
-      setActiveUtilityPanel('family');
+      setActiveSection('search');
     }
   }, [emergencyMode]);
+
+  const renderPanelContent = () => {
+    switch (activeSection) {
+      case 'family':
+        return (
+          <section className="app-section-panel" aria-label={t('app.section.family')}>
+            <div className="app-section-panel-scroll">
+              <FamilySafety initialGroupCode={familyGroupCode} />
+            </div>
+          </section>
+        );
+      case 'dashboard':
+        return (
+          <section className="app-section-panel" aria-label={t('app.section.dashboard')}>
+            <div className="app-section-panel-scroll">
+              <SafetyDashboard />
+            </div>
+          </section>
+        );
+      case 'search':
+      default:
+        return (
+          <SearchPanel
+            panelExpanded={panelExpanded}
+            onTogglePanel={togglePanel}
+          />
+        );
+    }
+  };
 
   if (mapsError) {
     return (
@@ -102,42 +150,22 @@ function App() {
       <main className="main-content" id="main-content">
         {!isNavigating && (
           <div className="panel-column">
-            <SearchPanel
-              panelExpanded={panelExpanded}
-              onTogglePanel={togglePanel}
-            />
-            {panelExpanded && !emergencyMode && (
-              <section className="panel-utility-area" aria-label={t('panel.toolsLabel')}>
-                <div className="panel-utility-tabs" role="tablist" aria-label={t('panel.toolsLabel')}>
+            {renderPanelContent()}
+            {!emergencyMode && (
+              <nav className="app-section-nav" aria-label={t('app.sectionNav')}>
+                {(['search', 'family', 'dashboard'] as AppSection[]).map((section) => (
                   <button
                     type="button"
-                    role="tab"
-                    className={`panel-utility-tab ${activeUtilityPanel === 'family' ? 'active' : ''}`}
-                    aria-selected={activeUtilityPanel === 'family'}
-                    onClick={() => setActiveUtilityPanel('family')}
+                    key={section}
+                    className={`app-section-nav-item ${activeSection === section ? 'active' : ''}`}
+                    aria-current={activeSection === section ? 'page' : undefined}
+                    onClick={() => setActiveSection(section)}
                   >
-                    {t('panel.tab.family')}
+                    <span className="app-section-nav-icon">{sectionIcons[section]}</span>
+                    <span className="app-section-nav-label">{t(`app.section.${section}`)}</span>
                   </button>
-                  <button
-                    type="button"
-                    role="tab"
-                    className={`panel-utility-tab ${activeUtilityPanel === 'dashboard' ? 'active' : ''}`}
-                    aria-selected={activeUtilityPanel === 'dashboard'}
-                    onClick={() => setActiveUtilityPanel('dashboard')}
-                  >
-                    {t('panel.tab.dashboard')}
-                  </button>
-                </div>
-                <div className="panel-utility-content">
-                  {activeUtilityPanel === 'family' ? (
-                    <div className="family-safety-wrapper">
-                      <FamilySafety initialGroupCode={familyGroupCode} />
-                    </div>
-                  ) : (
-                    <SafetyDashboard />
-                  )}
-                </div>
-              </section>
+                ))}
+              </nav>
             )}
           </div>
         )}
@@ -172,7 +200,10 @@ function App() {
         />
       )}
       {!isNavigating && (
-        <EmergencyButton onClick={handleEmergencyClick} panelExpanded={panelExpanded} />
+        <EmergencyButton
+          onClick={handleEmergencyClick}
+          panelExpanded={activeSection === 'search' ? panelExpanded : false}
+        />
       )}
     </div>
     </ShelterProvider>

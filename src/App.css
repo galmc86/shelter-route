@@ -378,6 +378,7 @@ body {
 }
 
 .app {
+  --app-bottom-nav-height: 0px;
   display: flex;
   flex-direction: column;
   height: 100vh;
@@ -405,51 +406,82 @@ body {
 .panel-column {
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
+  overflow: hidden;
   max-height: 100%;
 }
 
-.panel-utility-area {
+.app-section-panel {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 0 12px 12px;
+  width: 380px;
+  min-width: 380px;
+  background: var(--color-panel-bg);
+  box-shadow: var(--shadow-panel);
+  z-index: 5;
+  overflow: hidden;
 }
 
-.panel-utility-tabs {
+.app-section-panel-scroll {
   display: flex;
-  gap: 8px;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  overflow-y: auto;
+  min-height: 0;
 }
 
-.panel-utility-tab {
-  flex: 1;
-  border: 1px solid var(--color-border, #d5dce7);
-  border-radius: 999px;
-  background: var(--color-surface, #fff);
+.app-section-nav {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.94);
+  border-top: 1px solid rgba(21, 101, 192, 0.12);
+  box-shadow: 0 -10px 24px rgba(8, 43, 81, 0.08);
+  z-index: 6;
+  backdrop-filter: blur(18px);
+}
+
+.app-section-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 60px;
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  border-radius: 16px;
+  background: transparent;
   color: var(--color-subtle-text, #667085);
-  padding: 10px 14px;
   font: inherit;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 700;
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
 }
 
-.panel-utility-tab:hover {
-  border-color: var(--color-primary-light, #90caf9);
+.app-section-nav-item:hover {
+  border-color: rgba(21, 101, 192, 0.14);
   color: var(--color-primary, #1565c0);
+  background: rgba(21, 101, 192, 0.05);
 }
 
-.panel-utility-tab.active {
+.app-section-nav-item.active {
   border-color: var(--color-primary, #1565c0);
-  background: var(--color-primary-bg, #e3f2fd);
+  background: linear-gradient(180deg, rgba(21, 101, 192, 0.12), rgba(21, 101, 192, 0.06));
   color: var(--color-primary, #1565c0);
+  transform: translateY(-1px);
 }
 
-.panel-utility-content {
+.app-section-nav-icon {
   display: flex;
-  flex-direction: column;
-  gap: 12px;
+  align-items: center;
+  justify-content: center;
+}
+
+.app-section-nav-label {
+  line-height: 1.1;
 }
 
 
@@ -717,7 +749,7 @@ body {
   /* Bottom sheet overlay */
   .search-panel {
     position: absolute;
-    bottom: 0;
+    bottom: var(--app-bottom-nav-height);
     left: 0;
     right: 0;
     width: 100%;
@@ -734,6 +766,36 @@ body {
     will-change: max-height;
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
+  }
+
+  .app {
+    --app-bottom-nav-height: calc(84px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .app-section-panel {
+    position: absolute;
+    bottom: var(--app-bottom-nav-height);
+    left: 0;
+    right: 0;
+    width: 100%;
+    min-width: unset;
+    max-height: min(72vh, 72dvh);
+    border-radius: 20px 20px 0 0;
+    box-shadow: var(--shadow-mobile-panel);
+  }
+
+  .app-section-panel-scroll {
+    padding: 16px;
+    padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .app-section-nav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    gap: 10px;
+    padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 0px));
   }
 
   .search-panel::-webkit-scrollbar {
@@ -915,7 +977,7 @@ body {
 
   /* Emergency FAB — above the bottom sheet */
   .emergency-fab {
-    bottom: calc(140px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(var(--app-bottom-nav-height) + 72px);
     left: 16px;
     width: 48px;
     height: 48px;
@@ -928,7 +990,7 @@ body {
     pointer-events: auto;
     transform: scale(1);
     z-index: 1002;
-    bottom: calc(75vh + 8px);
+    bottom: calc(var(--app-bottom-nav-height) + 75vh + 8px);
   }
 
   /* Hotline at bottom */

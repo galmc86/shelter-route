@@ -394,20 +394,41 @@ describe('App', () => {
     expect(screen.getByTestId('panel-expanded')).toHaveTextContent('true');
   });
 
-  it('shows utility panels as tabs instead of stacking them', () => {
+  it('switches app sections through the persistent section navigation', () => {
     render(<App />);
 
-    expect(screen.getByText('family-safety')).toBeInTheDocument();
+    expect(screen.getByText('search-route')).toBeInTheDocument();
+    expect(screen.queryByText('family-safety')).not.toBeInTheDocument();
     expect(screen.queryByText('safety-dashboard')).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('tab', { name: 'panel.tab.dashboard' }));
+    fireEvent.click(screen.getByRole('button', { name: 'app.section.family' }));
+
+    expect(screen.getByText('family-safety')).toBeInTheDocument();
+    expect(screen.queryByText('search-route')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'app.section.dashboard' }));
 
     expect(screen.getByText('safety-dashboard')).toBeInTheDocument();
     expect(screen.queryByText('family-safety')).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('tab', { name: 'panel.tab.family' }));
+    fireEvent.click(screen.getByRole('button', { name: 'app.section.search' }));
 
-    expect(screen.getByText('family-safety')).toBeInTheDocument();
+    expect(screen.getByText('search-route')).toBeInTheDocument();
     expect(screen.queryByText('safety-dashboard')).not.toBeInTheDocument();
+  });
+
+  it('returns to the search section when emergency mode activates', async () => {
+    render(<App />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'app.section.family' }));
+    expect(screen.getByText('family-safety')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('emergency-button'));
+
+    await waitFor(() => {
+      expect(screen.getByText('search-route')).toBeInTheDocument();
+    });
+
+    expect(screen.queryByText('family-safety')).not.toBeInTheDocument();
   });
 });
