@@ -39,6 +39,10 @@ Introduce a repository boundary with a gateway seam:
    - can be implemented by a mock local gateway first and a real backend later
    - should be selected through a gateway factory so environments can swap implementations without changing repository code
 
+2a. `FamilyRemoteClient`
+   - encapsulates the actual backend transport details for the backend gateway
+   - gives the first real integration a place to land without leaking fetch/auth concerns into repository code
+
 3. `RemoteFamilyRepository`
    - composes local state with the remote gateway
    - handles join, membership updates, safe-status updates, and subscriptions

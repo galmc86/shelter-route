@@ -1,35 +1,43 @@
+import { getBackendFamilyRemoteClient } from './backendFamilyRemoteClient';
+import type { FamilyRemoteClient } from './familyRemoteClient';
 import type { FamilyRemoteGateway } from './familyRemoteGateway';
 import type { FamilyRemoteGroupRecord } from './familyRemoteModel';
 import type { FamilyRemoteSession } from './familyRemoteSessionService';
 
-export class FamilyRemoteGatewayNotConfiguredError extends Error {
-  constructor() {
-    super('Family remote gateway backend is not configured');
-    this.name = 'FamilyRemoteGatewayNotConfiguredError';
-  }
-}
-
 class BackendFamilyRemoteGateway implements FamilyRemoteGateway {
-  getGroup(_groupCode: string, _session: FamilyRemoteSession): FamilyRemoteGroupRecord | null {
-    return null;
+  private readonly client: FamilyRemoteClient;
+
+  constructor(client: FamilyRemoteClient) {
+    this.client = client;
   }
 
-  upsertGroup(_group: FamilyRemoteGroupRecord, _session: FamilyRemoteSession): FamilyRemoteGroupRecord {
-    throw new FamilyRemoteGatewayNotConfiguredError();
+  getGroup(groupCode: string, session: FamilyRemoteSession): FamilyRemoteGroupRecord | null {
+    return this.client.fetchGroup(groupCode, session);
   }
 
-  clearGroup(_groupCode: string, _session: FamilyRemoteSession): void {
-    throw new FamilyRemoteGatewayNotConfiguredError();
+  upsertGroup(group: FamilyRemoteGroupRecord, session: FamilyRemoteSession): FamilyRemoteGroupRecord {
+    return this.client.upsertGroup(group, session);
   }
 
-  subscribe(_groupCode: string, _session: FamilyRemoteSession, _listener: () => void): () => void {
-    return () => {};
+  clearGroup(groupCode: string, session: FamilyRemoteSession): void {
+    this.client.clearGroup(groupCode, session);
+  }
+
+  subscribe(groupCode: string, session: FamilyRemoteSession, listener: () => void): () => void {
+    return this.client.subscribe(groupCode, session, listener);
   }
 }
 
-const backendFamilyRemoteGateway = new BackendFamilyRemoteGateway();
+export function createBackendFamilyRemoteGateway({
+  client = getBackendFamilyRemoteClient(),
+}: {
+  client?: FamilyRemoteClient;
+} = {}): FamilyRemoteGateway {
+  return new BackendFamilyRemoteGateway(client);
+}
+
+const backendFamilyRemoteGateway = createBackendFamilyRemoteGateway();
 
 export function getBackendFamilyRemoteGateway(): FamilyRemoteGateway {
   return backendFamilyRemoteGateway;
 }
-

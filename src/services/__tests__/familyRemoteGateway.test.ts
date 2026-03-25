@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createFamilyRemoteGateway, getFamilyRemoteGateway } from '../familyRemoteGateway';
 import { getFamilyRemoteSession } from '../familyRemoteSessionService';
 import { FAMILY_REMOTE_GATEWAY_STORAGE_KEY } from '../familyRemoteGatewayModeService';
-import { FamilyRemoteGatewayNotConfiguredError } from '../backendFamilyRemoteGateway';
+import { FamilyRemoteClientNotConfiguredError } from '../backendFamilyRemoteClient';
 
 describe('familyRemoteGateway', () => {
   beforeEach(() => {
@@ -28,7 +28,7 @@ describe('familyRemoteGateway', () => {
       updatedAt: '2026-03-25T23:00:00.000Z',
       createdByMemberId: 'member-1',
       members: [],
-    }, session)).toThrow(FamilyRemoteGatewayNotConfiguredError);
+    }, session)).toThrow(FamilyRemoteClientNotConfiguredError);
   });
 
   it('selects the backend stub from persisted mode', () => {
@@ -36,7 +36,6 @@ describe('familyRemoteGateway', () => {
     const gateway = getFamilyRemoteGateway();
     const session = getFamilyRemoteSession();
 
-    expect(() => gateway.clearGroup('ABC123', session)).toThrow(FamilyRemoteGatewayNotConfiguredError);
+    expect(() => gateway.clearGroup('ABC123', session)).toThrow(FamilyRemoteClientNotConfiguredError);
   });
 });
-

@@ -179,6 +179,7 @@ Notes:
 - The remote gateway contract now takes an explicit remote session object, so future authenticated sync can replace the current anonymous device session without changing repository orchestration again.
 - Family sync now records persisted status metadata for pending count and last success/failure, which gives the app a stable diagnostics seam before any sync-status UI is added.
 - Remote gateway selection now goes through a dedicated factory with a backend stub mode, so the first real transport integration has a drop-in place to land without reworking the repository layer.
+- The backend remote gateway now delegates to a typed backend client contract, so the first live transport integration can land under the gateway without mixing fetch/auth concerns into repository code.
 
 ### Epic 10: Saved Places to Safety Profiles
 Objective: turn saved locations into reusable routines.
