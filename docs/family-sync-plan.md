@@ -164,6 +164,7 @@ Why:
 - add remote repository contract and adapter
 - add hybrid repository wiring
 - keep remote feature behind a flag
+- allow hybrid mode to be enabled in development with `?familySyncMode=hybrid` or `VITE_FAMILY_SYNC_MODE=hybrid`
 
 ### Phase 3
 

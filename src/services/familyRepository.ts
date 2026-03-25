@@ -11,10 +11,7 @@ import {
   type FamilyGroup,
 } from './familySafetyService';
 import { getFamilyRemoteAdapter, type FamilyRemoteAdapter } from './familyRemoteAdapter';
-
-export type FamilySyncMode = 'local' | 'hybrid';
-
-export const FAMILY_SYNC_MODE_STORAGE_KEY = 'shelter-route:family-sync-mode';
+import { getFamilySyncMode, type FamilySyncMode } from './familySyncModeService';
 
 export interface FamilyRepository {
   getSnapshot(): FamilyGroup | null;
@@ -248,16 +245,6 @@ function parseTimestamp(value: string | undefined): number {
 
 function areGroupsEqual(a: FamilyGroup | null, b: FamilyGroup | null): boolean {
   return JSON.stringify(a) === JSON.stringify(b);
-}
-
-export function getFamilySyncMode(): FamilySyncMode {
-  const envMode = import.meta.env.VITE_FAMILY_SYNC_MODE;
-  const storageMode = typeof window !== 'undefined'
-    ? window.localStorage.getItem(FAMILY_SYNC_MODE_STORAGE_KEY)
-    : null;
-  const mode = storageMode ?? envMode;
-
-  return mode === 'hybrid' ? 'hybrid' : 'local';
 }
 
 export function createFamilyRepository({

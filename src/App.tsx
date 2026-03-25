@@ -16,6 +16,7 @@ import { ShelterProvider } from './contexts/ShelterContext';
 import { FamilyRepositoryProvider } from './contexts/FamilyRepositoryContext';
 import { useAppController } from './hooks/useAppController';
 import { getFamilyRepository } from './services/familyRepository';
+import { initializeFamilySyncModeFromUrl } from './services/familySyncModeService';
 import './App.css';
 
 type AppSection = 'search' | 'family' | 'dashboard';
@@ -78,7 +79,10 @@ function App() {
   } = useAppController();
   const [activeSection, setActiveSection] = useState<AppSection>('search');
   const [fabBottomOffset, setFabBottomOffset] = useState<number | null>(null);
-  const [familyRepository] = useState(() => getFamilyRepository());
+  const [familyRepository] = useState(() => {
+    initializeFamilySyncModeFromUrl();
+    return getFamilyRepository();
+  });
   const [usesRailLayout, setUsesRailLayout] = useState(() => {
     if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
       return false;

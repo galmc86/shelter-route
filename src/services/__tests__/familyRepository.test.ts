@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createFamilyRepository, FAMILY_SYNC_MODE_STORAGE_KEY, getFamilyRepository } from '../familyRepository';
+import { createFamilyRepository, getFamilyRepository } from '../familyRepository';
 import { getFamilyRemoteAdapter } from '../familyRemoteAdapter';
+import { FAMILY_SYNC_MODE_STORAGE_KEY } from '../familySyncModeService';
 
 describe('familyRepository', () => {
   beforeEach(() => {
