@@ -1,10 +1,17 @@
-import type { Shelter } from '../types';
+import type { LatLng, Shelter, TravelMode } from '../types';
 
 const STORAGE_KEY = 'shelter-route:saved-locations';
-const STORAGE_VERSION = 1;
+const STORAGE_VERSION = 3;
 export const MAX_SAVED_LOCATIONS = 5;
 
 export type SavedLocationLabel = 'home' | 'work' | 'school' | 'other';
+const SINGLETON_LABELS: SavedLocationLabel[] = ['home', 'work', 'school'];
+const LABEL_ORDER: Record<SavedLocationLabel, number> = {
+  home: 0,
+  work: 1,
+  school: 2,
+  other: 3,
+};
 
 export interface SavedLocation {
   id: string;
@@ -12,6 +19,15 @@ export interface SavedLocation {
   label: SavedLocationLabel;
   lat: number;
   lng: number;
+  lastUsedAt?: number;
+  routePreset?: SavedLocationRoutePreset;
+}
+
+export interface SavedLocationRoutePreset {
+  destination: LatLng;
+  destinationName: string;
+  travelMode: TravelMode;
+  savedAt: number;
 }
 
 interface StorageData {
@@ -21,6 +37,44 @@ interface StorageData {
 
 function isSavedLocationLabel(value: unknown): value is SavedLocationLabel {
   return value === 'home' || value === 'work' || value === 'school' || value === 'other';
+}
+
+function isSingletonLabel(label: SavedLocationLabel): boolean {
+  return SINGLETON_LABELS.includes(label);
+}
+
+function sortSavedLocations(locations: SavedLocation[]): SavedLocation[] {
+  return [...locations].sort((left, right) => {
+    const labelDelta = LABEL_ORDER[left.label] - LABEL_ORDER[right.label];
+    if (labelDelta !== 0) return labelDelta;
+
+    const lastUsedDelta = (right.lastUsedAt ?? 0) - (left.lastUsedAt ?? 0);
+    if (lastUsedDelta !== 0) return lastUsedDelta;
+
+    return left.name.localeCompare(right.name);
+  });
+}
+
+function dedupeSingletonLocations(locations: SavedLocation[]): SavedLocation[] {
+  const byLabel = new Map<SavedLocationLabel, SavedLocation>();
+  const otherLocations: SavedLocation[] = [];
+
+  locations.forEach((location) => {
+    if (!isSingletonLabel(location.label)) {
+      otherLocations.push(location);
+      return;
+    }
+
+    const existing = byLabel.get(location.label);
+    if (!existing || (location.lastUsedAt ?? 0) >= (existing.lastUsedAt ?? 0)) {
+      byLabel.set(location.label, location);
+    }
+  });
+
+  return sortSavedLocations([
+    ...SINGLETON_LABELS.map((label) => byLabel.get(label)).filter((location): location is SavedLocation => Boolean(location)),
+    ...otherLocations,
+  ]);
 }
 
 function sanitizeLocation(raw: unknown): SavedLocation | null {
@@ -43,7 +97,42 @@ function sanitizeLocation(raw: unknown): SavedLocation | null {
     label: candidate.label,
     lat: candidate.lat,
     lng: candidate.lng,
+    lastUsedAt: typeof candidate.lastUsedAt === 'number' ? candidate.lastUsedAt : undefined,
+    routePreset: sanitizeRoutePreset(candidate.routePreset),
   };
+}
+
+function sanitizeRoutePreset(raw: unknown): SavedLocationRoutePreset | undefined {
+  if (!raw || typeof raw !== 'object') {
+    return undefined;
+  }
+
+  const candidate = raw as Partial<SavedLocationRoutePreset>;
+  if (
+    !candidate.destination ||
+    typeof candidate.destination !== 'object' ||
+    typeof candidate.destination.lat !== 'number' ||
+    typeof candidate.destination.lng !== 'number' ||
+    typeof candidate.destinationName !== 'string' ||
+    !isTravelMode(candidate.travelMode) ||
+    typeof candidate.savedAt !== 'number'
+  ) {
+    return undefined;
+  }
+
+  return {
+    destination: {
+      lat: candidate.destination.lat,
+      lng: candidate.destination.lng,
+    },
+    destinationName: candidate.destinationName,
+    travelMode: candidate.travelMode,
+    savedAt: candidate.savedAt,
+  };
+}
+
+function isTravelMode(value: unknown): value is TravelMode {
+  return value === 'WALKING' || value === 'BICYCLING' || value === 'DRIVING';
 }
 
 function generateId(): string {
@@ -58,11 +147,15 @@ export function getSavedLocations(): SavedLocation[] {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
     const parsed: StorageData = JSON.parse(raw);
-    if (parsed.version !== STORAGE_VERSION) return [];
+    if (![1, 2, STORAGE_VERSION].includes(parsed.version)) return [];
     if (!Array.isArray(parsed.locations)) return [];
-    return parsed.locations
+    const sanitized = dedupeSingletonLocations(parsed.locations
       .map((location) => sanitizeLocation(location))
-      .filter((location): location is SavedLocation => location !== null);
+      .filter((location): location is SavedLocation => location !== null));
+    if (parsed.version !== STORAGE_VERSION) {
+      persist(sanitized);
+    }
+    return sanitized;
   } catch {
     return [];
   }
@@ -70,7 +163,7 @@ export function getSavedLocations(): SavedLocation[] {
 
 function persist(locations: SavedLocation[]): void {
   try {
-    const data: StorageData = { version: STORAGE_VERSION, locations };
+    const data: StorageData = { version: STORAGE_VERSION, locations: sortSavedLocations(locations) };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch {
     // Storage full or unavailable
@@ -81,11 +174,30 @@ export function saveLocation(
   loc: Omit<SavedLocation, 'id'>
 ): SavedLocation[] {
   const locations = getSavedLocations();
-  if (locations.length >= MAX_SAVED_LOCATIONS) return locations;
-  const newLoc: SavedLocation = { ...loc, id: generateId() };
-  const updated = [...locations, newLoc];
+  const existingProfile = isSingletonLabel(loc.label)
+    ? locations.find((location) => location.label === loc.label)
+    : null;
+
+  let updated: SavedLocation[];
+  if (existingProfile) {
+    updated = locations.map((location) => (
+      location.id === existingProfile.id
+        ? {
+            ...location,
+            ...loc,
+            id: existingProfile.id,
+            lastUsedAt: existingProfile.lastUsedAt,
+          }
+        : location
+    ));
+  } else {
+    if (locations.length >= MAX_SAVED_LOCATIONS) return locations;
+    const newLoc: SavedLocation = { ...loc, id: generateId() };
+    updated = [...locations, newLoc];
+  }
+
   persist(updated);
-  return updated;
+  return sortSavedLocations(updated);
 }
 
 export function removeLocation(id: string): SavedLocation[] {
@@ -100,9 +212,42 @@ export function updateLocation(
   updates: Partial<Omit<SavedLocation, 'id'>>
 ): SavedLocation[] {
   const locations = getSavedLocations();
-  const updated = locations.map((l) =>
-    l.id === id ? { ...l, ...updates } : l
-  );
+  const current = locations.find((location) => location.id === id);
+  if (!current) return locations;
+
+  const nextLocation = { ...current, ...updates };
+  const updated = dedupeSingletonLocations(locations.map((location) => (
+    location.id === id ? nextLocation : location
+  )));
+  persist(updated);
+  return updated;
+}
+
+export function touchLocation(id: string): SavedLocation[] {
+  const locations = getSavedLocations();
+  const touchedAt = Date.now();
+  const updated = locations.map((location) => (
+    location.id === id
+      ? { ...location, lastUsedAt: touchedAt }
+      : location
+  ));
+  persist(updated);
+  return updated;
+}
+
+export function saveRoutePreset(
+  id: string,
+  routePreset: SavedLocationRoutePreset
+): SavedLocation[] {
+  const locations = getSavedLocations();
+  const updated = locations.map((location) => (
+    location.id === id
+      ? {
+          ...location,
+          routePreset,
+        }
+      : location
+  ));
   persist(updated);
   return updated;
 }

@@ -1604,8 +1604,8 @@ body {
 .saved-location-chip {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 6px 10px;
+  gap: 6px;
+  padding: 8px 10px;
   border-radius: 20px;
   border: 1px solid var(--color-border, #e0e0e0);
   background: var(--color-surface, #ffffff);
@@ -1613,7 +1613,14 @@ body {
   font-size: 0.82rem;
   color: var(--color-text, #333);
   transition: background 0.15s, box-shadow 0.15s;
-  white-space: nowrap;
+  white-space: normal;
+  min-height: 46px;
+  max-width: 100%;
+}
+
+.saved-location-chip-last-used {
+  border-color: color-mix(in srgb, var(--color-primary, #2196F3) 35%, var(--color-border, #e0e0e0));
+  background: color-mix(in srgb, var(--color-primary-light, #e3f2fd) 55%, var(--color-surface, #ffffff));
 }
 
 .saved-location-chip:hover {
@@ -1627,14 +1634,67 @@ body {
 }
 
 .saved-location-chip-name {
-  max-width: 100px;
+  max-width: 118px;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.saved-location-chip-select {
+.saved-location-chip-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
+}
+
+.saved-location-chip-heading {
   display: inline-flex;
   align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.saved-location-chip-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.saved-location-chip-signal {
+  font-size: 0.68rem;
+  color: var(--color-subtle-text, #667085);
+  line-height: 1.2;
+}
+
+.saved-location-chip-signal-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, #16a34a 12%, transparent);
+  color: #15803d;
+  font-size: 0.66rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.saved-location-chip-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-primary, #2196F3) 12%, transparent);
+  color: var(--color-primary, #2196F3);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.saved-location-chip-select {
+  display: inline-flex;
+  align-items: flex-start;
   gap: 4px;
   border: none;
   background: transparent;
@@ -1643,23 +1703,38 @@ body {
   cursor: pointer;
   padding: 0;
   min-width: 0;
+  flex: 1 1 auto;
+  text-align: inherit;
 }
 
+.saved-location-chip-action,
 .saved-location-chip-remove {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
+  width: 22px;
+  height: 22px;
   border: none;
   background: transparent;
-  color: var(--color-subtle-text, #999);
   cursor: pointer;
-  font-size: 0.9rem;
   border-radius: 50%;
   padding: 0;
-  margin-inline-start: 2px;
   line-height: 1;
+  flex: 0 0 auto;
+}
+
+.saved-location-chip-action {
+  color: var(--color-primary, #2196F3);
+}
+
+.saved-location-chip-remove {
+  color: var(--color-subtle-text, #999);
+  font-size: 0.9rem;
+  margin-inline-start: 2px;
+}
+
+.saved-location-chip-action:hover {
+  background: color-mix(in srgb, var(--color-primary-light, #e3f2fd) 80%, transparent);
 }
 
 .saved-location-chip-remove:hover {
@@ -1732,6 +1807,12 @@ body {
   gap: 8px;
 }
 
+.saved-location-form-hint {
+  margin-top: 8px;
+  font-size: 0.76rem;
+  color: var(--color-subtle-text, #6b7280);
+}
+
 .saved-location-name-input {
   flex: 1;
   padding: 8px 10px;
@@ -1772,6 +1853,20 @@ body {
 [data-theme="dark"] .saved-location-chip {
   background: var(--color-surface, #2a2a2a);
   border-color: var(--color-border, #444);
+}
+
+[data-theme="dark"] .saved-location-chip-last-used {
+  background: color-mix(in srgb, var(--color-primary, #5aa8ff) 18%, var(--color-surface, #2a2a2a));
+  border-color: color-mix(in srgb, var(--color-primary, #5aa8ff) 40%, var(--color-border, #444));
+}
+
+[data-theme="dark"] .saved-location-chip-signal {
+  color: var(--color-subtle-text, #a7b0c0);
+}
+
+[data-theme="dark"] .saved-location-chip-signal-badge {
+  background: color-mix(in srgb, #16a34a 18%, transparent);
+  color: #86efac;
 }
 
 [data-theme="dark"] .saved-location-form {

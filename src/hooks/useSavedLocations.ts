@@ -4,14 +4,19 @@ import {
   getSavedLocations,
   saveLocation as saveLocationService,
   removeLocation as removeLocationService,
+  saveRoutePreset as saveRoutePresetService,
+  touchLocation as touchLocationService,
   updateLocation as updateLocationService,
   MAX_SAVED_LOCATIONS,
 } from '../services/savedLocationsService';
+import type { SavedLocationRoutePreset } from '../services/savedLocationsService';
 
 export interface UseSavedLocationsReturn {
   locations: SavedLocation[];
   addLocation: (loc: Omit<SavedLocation, 'id'>) => void;
   removeLocation: (id: string) => void;
+  markLocationUsed: (id: string) => void;
+  saveRoutePreset: (id: string, routePreset: SavedLocationRoutePreset) => void;
   updateLocation: (id: string, updates: Partial<Omit<SavedLocation, 'id'>>) => void;
   isMaxReached: boolean;
 }
@@ -32,6 +37,16 @@ export function useSavedLocations(): UseSavedLocationsReturn {
     setLocations(updated);
   }, []);
 
+  const markLocationUsed = useCallback((id: string) => {
+    const updated = touchLocationService(id);
+    setLocations(updated);
+  }, []);
+
+  const saveRoutePreset = useCallback((id: string, routePreset: SavedLocationRoutePreset) => {
+    const updated = saveRoutePresetService(id, routePreset);
+    setLocations(updated);
+  }, []);
+
   const updateLocation = useCallback(
     (id: string, updates: Partial<Omit<SavedLocation, 'id'>>) => {
       const updated = updateLocationService(id, updates);
@@ -42,7 +57,7 @@ export function useSavedLocations(): UseSavedLocationsReturn {
 
   const isMaxReached = locations.length >= MAX_SAVED_LOCATIONS;
 
-  return { locations, addLocation, removeLocation, updateLocation, isMaxReached };
+  return { locations, addLocation, removeLocation, markLocationUsed, saveRoutePreset, updateLocation, isMaxReached };
 }
 
-export type { SavedLocation, SavedLocationLabel };
+export type { SavedLocation, SavedLocationLabel, SavedLocationRoutePreset };

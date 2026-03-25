@@ -1,6 +1,7 @@
 import { SavedLocations } from './SavedLocations';
 import type { TranslationKey } from '../i18n';
 import type { SavedLocation } from '../services/savedLocationsService';
+import type { SavedLocationSignal } from '../services/savedLocationSignalsService';
 import type { LatLng } from '../types';
 
 interface SearchPanelNearbyModeProps {
@@ -8,10 +9,12 @@ interface SearchPanelNearbyModeProps {
   isLoadingLocation: boolean;
   currentLocation: LatLng | null;
   savedLocations: SavedLocation[];
+  savedLocationSignals?: Record<string, SavedLocationSignal>;
   savedLocationsMaxReached: boolean;
   onNearMeClick: () => void;
   onGetLocation: () => void;
-  onSearchFromSavedLocation: (location: LatLng, label?: string) => void;
+  onSelectSavedLocation: (location: SavedLocation) => void;
+  onStartRouteFromSavedLocation: (location: SavedLocation) => void;
   onAddSavedLocation: (location: Omit<SavedLocation, 'id'>) => void;
   onRemoveSavedLocation: (id: string) => void;
 }
@@ -21,10 +24,12 @@ export function SearchPanelNearbyMode({
   isLoadingLocation,
   currentLocation,
   savedLocations,
+  savedLocationSignals,
   savedLocationsMaxReached,
   onNearMeClick,
   onGetLocation,
-  onSearchFromSavedLocation,
+  onSelectSavedLocation,
+  onStartRouteFromSavedLocation,
   onAddSavedLocation,
   onRemoveSavedLocation,
 }: SearchPanelNearbyModeProps) {
@@ -52,10 +57,9 @@ export function SearchPanelNearbyMode({
       </div>
       <SavedLocations
         locations={savedLocations}
-        onSelectLocation={(location) => onSearchFromSavedLocation(
-          { lat: location.lat, lng: location.lng },
-          location.name
-        )}
+        locationSignals={savedLocationSignals}
+        onSelectLocation={onSelectSavedLocation}
+        onStartRouteFromLocation={onStartRouteFromSavedLocation}
         onAddLocation={onAddSavedLocation}
         onRemoveLocation={onRemoveSavedLocation}
         isMaxReached={savedLocationsMaxReached}

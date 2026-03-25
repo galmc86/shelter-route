@@ -163,12 +163,20 @@ Status: `[ ]`
 
 ### Epic 10: Saved Places to Safety Profiles
 Objective: turn saved locations into reusable routines.
-Status: `[ ]`
+Status: `[x]`
 
-- [ ] Add richer profile behavior for Home/Work/School
-- [ ] Support one-tap actions per profile
-- [ ] Add route presets and last-used behavior
-- [ ] Expose profile-specific safety signals
+- [x] Add richer profile behavior for Home/Work/School
+- [x] Support one-tap actions per profile
+- [x] Add last-used behavior for saved profiles
+- [x] Add route presets for saved profiles
+- [x] Expose profile-specific safety signals
+
+Notes:
+- `Home`, `Work`, and `School` now behave like replaceable singleton profiles instead of consuming new slots every time the user re-saves them.
+- Saved profiles now persist `lastUsedAt` metadata and surface a lightweight recent-use badge in the nearby search UI, while still keeping `Other` locations multi-entry.
+- Saved profile chips now expose a direct route-start action that switches the panel into `Route` mode with the chosen place prefilled as the origin.
+- Saved profile chips now surface a compact proximity hint for the closest shelter, and flag profiles that already have an accessible shelter within the local nearby radius.
+- Running a route search from a saved profile origin now persists the destination and travel mode as that profile's route preset, and reusing the route action will immediately launch the saved route instead of only prefilling the origin.
 
 ### Epic 11: Adaptive Large-Screen Experience
 Objective: improve tablet/desktop usability.

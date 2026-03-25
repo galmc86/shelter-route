@@ -1,11 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { SearchPanel } from '../SearchPanel';
+import type { SavedLocation } from '../../hooks/useSavedLocations';
 
 const mockOnNearMeClick = vi.fn();
 const mockOnGetLocation = vi.fn();
 const mockOnEmergencyClick = vi.fn();
 const mockOnExitEmergency = vi.fn();
+const mockSaveRoutePreset = vi.fn();
 let mockIsOnline = true;
 let mockShelterDataStatus = {
   loaded: true,
@@ -61,6 +63,39 @@ const mockEmergencyState = {
   onUseMapCenter: vi.fn(),
 };
 
+const mockSavedLocationsState = {
+  locations: [{ id: 'saved-1', name: 'Home', label: 'home', lat: 32.1, lng: 34.8 }] as SavedLocation[],
+  addLocation: vi.fn(),
+  removeLocation: vi.fn(),
+  markLocationUsed: vi.fn(),
+  saveRoutePreset: mockSaveRoutePreset,
+  isMaxReached: false,
+};
+
+const mockRoutePlannerState = {
+  originText: '',
+  setOriginText: vi.fn(),
+  destText: '',
+  setDestText: vi.fn(),
+  originPlace: null as { lat: number; lng: number; displayName: string } | null,
+  setOriginPlace: vi.fn(),
+  destPlace: null as { lat: number; lng: number; displayName: string } | null,
+  setDestPlace: vi.fn(),
+  travelMode: 'WALKING' as const,
+  setTravelMode: vi.fn(),
+  useMyLocation: false,
+  setUseMyLocation: vi.fn(),
+  showCopiedToast: false,
+  currentOrigin: null as { lat: number; lng: number } | null,
+  currentDestination: null as { lat: number; lng: number } | null,
+  handleShare: vi.fn(),
+  handleUseCurrentLocation: vi.fn(),
+  handleSearch: vi.fn(),
+  handleHistorySelect: vi.fn(),
+  prefillOriginFromSavedLocation: vi.fn(),
+  startSavedLocationRoute: vi.fn(),
+};
+
 vi.mock('../../i18n', () => ({
   useLanguage: () => ({
     language: 'en' as const,
@@ -83,12 +118,7 @@ vi.mock('../../hooks/useSearchHistory', () => ({
 }));
 
 vi.mock('../../hooks/useSavedLocations', () => ({
-  useSavedLocations: () => ({
-    locations: [{ id: 'saved-1', name: 'Home', label: 'home', lat: 32.1, lng: 34.8 }],
-    addLocation: vi.fn(),
-    removeLocation: vi.fn(),
-    isMaxReached: false,
-  }),
+  useSavedLocations: () => mockSavedLocationsState,
 }));
 
 vi.mock('../../contexts/RouteContext', () => ({
@@ -120,27 +150,7 @@ vi.mock('../../hooks/useSearchPanelSheet', () => ({
 }));
 
 vi.mock('../../hooks/useSearchPanelRoutePlanner', () => ({
-  useSearchPanelRoutePlanner: () => ({
-    originText: '',
-    setOriginText: vi.fn(),
-    destText: '',
-    setDestText: vi.fn(),
-    originPlace: null,
-    setOriginPlace: vi.fn(),
-    destPlace: null,
-    setDestPlace: vi.fn(),
-    travelMode: 'WALKING',
-    setTravelMode: vi.fn(),
-    useMyLocation: false,
-    setUseMyLocation: vi.fn(),
-    showCopiedToast: false,
-    currentOrigin: null,
-    currentDestination: null,
-    handleShare: vi.fn(),
-    handleUseCurrentLocation: vi.fn(),
-    handleSearch: vi.fn(),
-    handleHistorySelect: vi.fn(),
-  }),
+  useSearchPanelRoutePlanner: () => mockRoutePlannerState,
 }));
 
 vi.mock('../../hooks/useSearchPanelShelters', () => ({
@@ -179,7 +189,17 @@ vi.mock('../SearchHistory', () => ({
 }));
 
 vi.mock('../SavedLocations', () => ({
-  SavedLocations: () => <div>saved-locations</div>,
+  SavedLocations: (props: {
+    locations: SavedLocation[];
+    onSelectLocation: (location: SavedLocation) => void;
+    onStartRouteFromLocation: (location: SavedLocation) => void;
+  }) => (
+    <div>
+      <div>saved-locations</div>
+      <button type="button" onClick={() => props.onSelectLocation(props.locations[0])}>select-saved-location</button>
+      <button type="button" onClick={() => props.onStartRouteFromLocation(props.locations[0])}>start-route-from-saved</button>
+    </div>
+  ),
 }));
 
 vi.mock('../ShelterScore', () => ({
@@ -207,6 +227,16 @@ describe('SearchPanel', () => {
     mockEmergencyState.isLoadingLocation = false;
     mockEmergencyState.activeLookupLocation = null;
     mockEmergencyState.activeLookupLabel = null;
+    mockSavedLocationsState.locations = [{ id: 'saved-1', name: 'Home', label: 'home', lat: 32.1, lng: 34.8 }];
+    mockSavedLocationsState.isMaxReached = false;
+    mockRoutePlannerState.originText = '';
+    mockRoutePlannerState.destText = '';
+    mockRoutePlannerState.originPlace = null;
+    mockRoutePlannerState.destPlace = null;
+    mockRoutePlannerState.currentOrigin = null;
+    mockRoutePlannerState.currentDestination = null;
+    mockRoutePlannerState.useMyLocation = false;
+    mockRoutePlannerState.travelMode = 'WALKING';
     mockIsOnline = true;
     mockShelterDataStatus = {
       loaded: true,
@@ -243,6 +273,67 @@ describe('SearchPanel', () => {
 
     expect(mockOnNearMeClick).toHaveBeenCalledTimes(1);
     expect(mockOnGetLocation).toHaveBeenCalledTimes(1);
+  });
+
+  it('switches back to route mode when starting a route from a saved location', () => {
+    render(<SearchPanel panelExpanded={true} onTogglePanel={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole('tab', { name: 'search.mode.nearby' }));
+    fireEvent.click(screen.getByRole('button', { name: 'start-route-from-saved' }));
+
+    expect(screen.getByRole('tab', { name: 'search.mode.route' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.queryByText('saved-locations')).not.toBeInTheDocument();
+    expect(mockRoutePlannerState.prefillOriginFromSavedLocation).toHaveBeenCalledWith({ lat: 32.1, lng: 34.8 }, 'Home');
+  });
+
+  it('starts a saved preset route immediately when the profile has one', () => {
+    mockSavedLocationsState.locations = [
+      {
+        id: 'saved-1',
+        name: 'Home',
+        label: 'home',
+        lat: 32.1,
+        lng: 34.8,
+        routePreset: {
+          destination: { lat: 32.2, lng: 34.9 },
+          destinationName: 'Safe Room',
+          travelMode: 'WALKING',
+          savedAt: 1_710_000_000_000,
+        },
+      },
+    ];
+
+    render(<SearchPanel panelExpanded={true} onTogglePanel={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole('tab', { name: 'search.mode.nearby' }));
+    fireEvent.click(screen.getByRole('button', { name: 'start-route-from-saved' }));
+
+    expect(mockRoutePlannerState.startSavedLocationRoute).toHaveBeenCalledWith({
+      origin: { lat: 32.1, lng: 34.8 },
+      originName: 'Home',
+      destination: { lat: 32.2, lng: 34.9 },
+      destinationName: 'Safe Room',
+      travelMode: 'WALKING',
+    });
+  });
+
+  it('stores a route preset when searching from a saved profile origin', () => {
+    mockRoutePlannerState.originPlace = { lat: 32.1, lng: 34.8, displayName: 'Home' };
+    mockRoutePlannerState.destPlace = { lat: 32.22, lng: 34.91, displayName: 'Safe Room' };
+    mockRoutePlannerState.currentOrigin = { lat: 32.1, lng: 34.8 };
+    mockRoutePlannerState.currentDestination = { lat: 32.22, lng: 34.91 };
+
+    render(<SearchPanel panelExpanded={true} onTogglePanel={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'search.button.ariaEnabled' }));
+
+    expect(mockSaveRoutePreset).toHaveBeenCalledWith('saved-1', {
+      destination: { lat: 32.22, lng: 34.91 },
+      destinationName: 'Safe Room',
+      travelMode: 'WALKING',
+      savedAt: expect.any(Number),
+    });
+    expect(mockRoutePlannerState.handleSearch).toHaveBeenCalledTimes(1);
   });
 
   it('renders emergency as a dedicated mode and hides route-specific surfaces', () => {

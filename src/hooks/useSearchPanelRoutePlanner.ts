@@ -3,6 +3,14 @@ import type { LatLng, PlaceResult, SearchHistoryEntry, TravelMode } from '../typ
 import type { ShelterWithDistance } from './useShelters';
 import type { TranslationKey } from '../i18n/translations';
 
+interface SavedLocationRouteLaunch {
+  origin: LatLng;
+  originName: string;
+  destination: LatLng;
+  destinationName: string;
+  travelMode: TravelMode;
+}
+
 interface UseSearchPanelRoutePlannerOptions {
   routeInfo: unknown;
   sheltersLoading: boolean;
@@ -174,6 +182,42 @@ export function useSearchPanelRoutePlanner({
     onSearch(entry.origin, entry.destination, entry.travelMode);
   }, [onSearch]);
 
+  const prefillOriginFromSavedLocation = useCallback((origin: LatLng, originName: string) => {
+    setUseMyLocation(false);
+    setOriginText(originName);
+    setOriginPlace({
+      lat: origin.lat,
+      lng: origin.lng,
+      displayName: originName,
+    });
+  }, []);
+
+  const startSavedLocationRoute = useCallback((launch: SavedLocationRouteLaunch) => {
+    setUseMyLocation(false);
+    setOriginText(launch.originName);
+    setOriginPlace({
+      lat: launch.origin.lat,
+      lng: launch.origin.lng,
+      displayName: launch.originName,
+    });
+    setDestText(launch.destinationName);
+    setDestPlace({
+      lat: launch.destination.lat,
+      lng: launch.destination.lng,
+      displayName: launch.destinationName,
+    });
+    setTravelModeState(launch.travelMode);
+    hasSearchedRef.current = true;
+    onSearch(launch.origin, launch.destination, launch.travelMode);
+    addHistoryEntry({
+      origin: launch.origin,
+      destination: launch.destination,
+      originName: launch.originName,
+      destName: launch.destinationName,
+      travelMode: launch.travelMode,
+    });
+  }, [addHistoryEntry, onSearch]);
+
   return {
     originText,
     setOriginText,
@@ -194,5 +238,7 @@ export function useSearchPanelRoutePlanner({
     handleUseCurrentLocation,
     handleSearch,
     handleHistorySelect,
+    prefillOriginFromSavedLocation,
+    startSavedLocationRoute,
   };
 }

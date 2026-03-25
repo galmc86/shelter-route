@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import './SearchPanel.css';
 import { ShelterScore } from './ShelterScore';
 import { RouteSummary } from './RouteSummary';
@@ -17,6 +17,9 @@ import { useSearchPanelRoutePlanner } from '../hooks/useSearchPanelRoutePlanner'
 import { useSearchPanelShelters } from '../hooks/useSearchPanelShelters';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { useShelterDataStatus } from '../hooks/useShelterDataStatus';
+import type { SavedLocation } from '../services/savedLocationsService';
+import { buildSavedLocationSignals } from '../services/savedLocationSignalsService';
+import { haversineDistance } from '../utils/geometry';
 
 interface SearchPanelProps {
   panelExpanded?: boolean;
@@ -81,7 +84,7 @@ export function SearchPanel({
   const [showShelterScore, setShowShelterScore] = useState(false);
   const [activeSearchMode, setActiveSearchMode] = useState<SearchSurfaceMode>('route');
   const { entries: historyEntries, addEntry: addHistoryEntry, removeEntry: removeHistoryEntry, clearAll: clearHistory, togglePin: toggleHistoryPin, renameEntry: renameHistoryEntry, updateShelterCount: updateHistoryShelterCount, saveRoute: saveHistoryRoute, unsaveRoute: unsaveHistoryRoute } = useSearchHistory();
-  const { locations: savedLocations, addLocation: addSavedLocation, removeLocation: removeSavedLocation, isMaxReached: savedLocationsMaxReached } = useSavedLocations();
+  const { locations: savedLocations, addLocation: addSavedLocation, removeLocation: removeSavedLocation, markLocationUsed, saveRoutePreset, isMaxReached: savedLocationsMaxReached } = useSavedLocations();
   const {
     originText,
     setOriginText,
@@ -102,6 +105,8 @@ export function SearchPanel({
     handleUseCurrentLocation,
     handleSearch,
     handleHistorySelect,
+    prefillOriginFromSavedLocation,
+    startSavedLocationRoute,
   } = useSearchPanelRoutePlanner({
     routeInfo,
     sheltersLoading,
@@ -205,6 +210,63 @@ export function SearchPanel({
     savedLocations.length,
     t,
     usingCachedShelterData,
+  ]);
+  const savedLocationSignals = useMemo(
+    () => buildSavedLocationSignals(savedLocations, allShelters),
+    [allShelters, savedLocations]
+  );
+
+  const handleSavedLocationSelect = useCallback((location: SavedLocation) => {
+    markLocationUsed(location.id);
+    onSearchFromSavedLocation({ lat: location.lat, lng: location.lng }, location.name);
+  }, [markLocationUsed, onSearchFromSavedLocation]);
+  const handleSavedLocationRouteStart = useCallback((location: SavedLocation) => {
+    markLocationUsed(location.id);
+    setActiveSearchMode('route');
+    if (location.routePreset) {
+      startSavedLocationRoute({
+        origin: { lat: location.lat, lng: location.lng },
+        originName: location.name,
+        destination: location.routePreset.destination,
+        destinationName: location.routePreset.destinationName,
+        travelMode: location.routePreset.travelMode,
+      });
+      return;
+    }
+
+    prefillOriginFromSavedLocation({ lat: location.lat, lng: location.lng }, location.name);
+  }, [markLocationUsed, prefillOriginFromSavedLocation, startSavedLocationRoute]);
+  const handleRouteSearch = useCallback(() => {
+    if (!currentOrigin || !currentDestination) {
+      return;
+    }
+
+    const matchedSavedLocation = savedLocations.find((location) => (
+      haversineDistance(
+        currentOrigin,
+        { lat: location.lat, lng: location.lng }
+      ) <= 25
+    ));
+
+    if (matchedSavedLocation) {
+      saveRoutePreset(matchedSavedLocation.id, {
+        destination: currentDestination,
+        destinationName: destPlace?.displayName || destText,
+        travelMode,
+        savedAt: Date.now(),
+      });
+    }
+
+    handleSearch();
+  }, [
+    currentDestination,
+    currentOrigin,
+    destPlace,
+    destText,
+    handleSearch,
+    saveRoutePreset,
+    savedLocations,
+    travelMode,
   ]);
 
   useEffect(() => {
@@ -396,10 +458,12 @@ export function SearchPanel({
           isLoadingLocation={isLoadingLocation}
           currentLocation={currentLocation ? { lat: currentLocation.lat, lng: currentLocation.lng } : null}
           savedLocations={savedLocations}
+          savedLocationSignals={savedLocationSignals}
           savedLocationsMaxReached={savedLocationsMaxReached}
           onNearMeClick={onNearMeClick}
           onGetLocation={onGetLocation}
-          onSearchFromSavedLocation={onSearchFromSavedLocation}
+          onSelectSavedLocation={handleSavedLocationSelect}
+          onStartRouteFromSavedLocation={handleSavedLocationRouteStart}
           onAddSavedLocation={addSavedLocation}
           onRemoveSavedLocation={removeSavedLocation}
         />
@@ -425,7 +489,7 @@ export function SearchPanel({
           onSetTravelMode={setTravelMode}
           onSetUseMyLocation={setUseMyLocation}
           onUseCurrentLocation={handleUseCurrentLocation}
-          onSearch={handleSearch}
+          onSearch={handleRouteSearch}
           onHistorySelect={handleHistorySelect}
           onRemoveHistory={removeHistoryEntry}
           onClearHistory={clearHistory}
