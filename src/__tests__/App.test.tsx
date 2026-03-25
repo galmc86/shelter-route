@@ -88,6 +88,39 @@ let mockNavigationState: {
   startNavigation: typeof mockStartNavigation;
   stopNavigation: typeof mockStopNavigation;
 };
+let mockViewportWidth = 1280;
+
+function matchesMediaQuery(query: string, width: number): boolean {
+  const minWidthMatch = query.match(/\(min-width:\s*(\d+)px\)/);
+  if (minWidthMatch) {
+    return width >= Number(minWidthMatch[1]);
+  }
+
+  const maxWidthMatch = query.match(/\(max-width:\s*(\d+)px\)/);
+  if (maxWidthMatch) {
+    return width <= Number(maxWidthMatch[1]);
+  }
+
+  return false;
+}
+
+function setViewportWidth(width: number) {
+  mockViewportWidth = width;
+
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: vi.fn().mockImplementation((query: string) => ({
+      matches: matchesMediaQuery(query, mockViewportWidth),
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  });
+}
 
 vi.mock('../i18n', () => ({
   useLanguage: () => ({
@@ -234,6 +267,7 @@ vi.mock('../services/safetyAnalyticsService', () => ({
 describe('App', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    setViewportWidth(1280);
     localStorage.clear();
     localStorage.setItem('shelter-route:onboarding-completed', 'true');
 
@@ -416,6 +450,24 @@ describe('App', () => {
     });
 
     expect(screen.queryByText('family-safety')).not.toBeInTheDocument();
+  });
+
+  it('uses the compact rail layout from the 900px breakpoint upward', () => {
+    setViewportWidth(900);
+
+    const { container } = render(<App />);
+
+    expect(container.querySelector('.app-section-nav-desktop')).toBeTruthy();
+    expect(container.querySelector('.app-section-nav-mobile')).toBeFalsy();
+  });
+
+  it('keeps the top glass navigation below the 900px breakpoint', () => {
+    setViewportWidth(899);
+
+    const { container } = render(<App />);
+
+    expect(container.querySelector('.app-section-nav-mobile')).toBeTruthy();
+    expect(container.querySelector('.app-section-nav-desktop')).toBeFalsy();
   });
 
 });
