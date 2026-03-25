@@ -33,7 +33,7 @@ Notes:
 
 ### Epic 2: Shelter Decision Quality
 Objective: help users choose the best shelter, not just the nearest one.
-Status: `[~]`
+Status: `[x]`
 
 - [x] Define a unified shelter trust/ranking model from accessibility, capacity, community reports, and freshness/confidence
 - [x] Update shelter sorting/ranking logic to reflect trust and urgency
@@ -72,13 +72,15 @@ Objective: lock down the core emergency and lookup flows.
 Status: `[~]`
 
 - [x] Add automated coverage for the saved-places flow
-- [ ] Expand automated coverage for emergency mode and location fallback
-- [ ] Expand automated coverage for route planning and route alternatives
+- [x] Expand automated coverage for emergency mode and location fallback
+- [x] Expand automated coverage for route planning and route alternatives
 - [ ] Reduce reliance on full-tree mocking in app integration tests
 - [ ] Define a stable PR test gate for safety-critical flows
 
 Notes:
 - Saved places are already covered by unit, integration, and E2E checks.
+- Emergency E2E coverage now targets the current `emergency-mode-surface`, validates the navigate CTA, and verifies the `Use map center` fallback when geolocation is unavailable.
+- Route planning and route alternatives now have deterministic integration coverage, including a StrictMode regression test that preserves shared-route bootstrap from URL params during development.
 
 ## Next
 
@@ -115,7 +117,7 @@ Objective: cover degraded and cross-browser behavior.
 Status: `[ ]`
 
 - [ ] Add E2E coverage for offline mode
-- [ ] Add E2E coverage for location fallback
+- [x] Add E2E coverage for location fallback
 - [ ] Add E2E coverage for navigation start/cancel
 - [ ] Add E2E coverage for route alternatives
 - [ ] Expand browser/device coverage once the PR suite is stable

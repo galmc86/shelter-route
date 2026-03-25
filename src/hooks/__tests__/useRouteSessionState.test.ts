@@ -1,6 +1,7 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
+import { createElement, StrictMode, type ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { useRouteSessionState } from '../useRouteSessionState';
+import { resetInitialSharedRouteCache, useRouteSessionState } from '../useRouteSessionState';
 import type { RouteWithShelters, RouteOption } from '../../types';
 
 const mockTrackRouteSearch = vi.fn();
@@ -12,6 +13,7 @@ vi.mock('../../services/safetyAnalyticsService', () => ({
 describe('useRouteSessionState', () => {
   beforeEach(() => {
     mockTrackRouteSearch.mockReset();
+    resetInitialSharedRouteCache();
     window.history.replaceState({}, '', '/');
   });
 
@@ -89,5 +91,31 @@ describe('useRouteSessionState', () => {
     });
 
     expect(mockTrackRouteSearch).toHaveBeenCalledWith(4);
+  });
+
+  it('preserves shared route bootstrap under React StrictMode', async () => {
+    const searchRoute = vi.fn();
+    window.history.replaceState({}, '', '/?from=32.1,34.8&to=32.2,34.9&mode=WALKING');
+
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      createElement(StrictMode, null, children)
+    );
+
+    renderHook(() => useRouteSessionState({
+      searchRoute,
+      routesWithShelters: [],
+      selectedRouteIndex: 0,
+    }), { wrapper });
+
+    await waitFor(() => {
+      expect(searchRoute).toHaveBeenCalledWith(
+        { lat: 32.1, lng: 34.8 },
+        { lat: 32.2, lng: 34.9 },
+        'WALKING'
+      );
+    });
+
+    expect(searchRoute).toHaveBeenCalledTimes(1);
+    expect(window.location.search).toBe('');
   });
 });

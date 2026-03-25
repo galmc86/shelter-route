@@ -8,34 +8,49 @@ export interface InitialSharedRoute {
   travelMode: TravelMode;
 }
 
+let cachedInitialSharedRoute: InitialSharedRoute | null | undefined;
+
+export function resetInitialSharedRouteCache() {
+  cachedInitialSharedRoute = undefined;
+}
+
 export function getInitialSharedRoute(): InitialSharedRoute | null {
+  if (cachedInitialSharedRoute !== undefined) {
+    return cachedInitialSharedRoute;
+  }
+
   const params = new URLSearchParams(window.location.search);
   const from = params.get('from');
   const to = params.get('to');
   const mode = params.get('mode') as TravelMode | null;
 
   if (!from || !to) {
-    return null;
+    cachedInitialSharedRoute = null;
+    return cachedInitialSharedRoute;
   }
 
   const [fromLat, fromLng] = from.split(',').map(Number);
   const [toLat, toLng] = to.split(',').map(Number);
   if ([fromLat, fromLng, toLat, toLng].some((value) => Number.isNaN(value))) {
-    return null;
+    cachedInitialSharedRoute = null;
+    return cachedInitialSharedRoute;
   }
 
   const isValidLat = (lat: number) => lat >= 29.0 && lat <= 34.0;
   const isValidLng = (lng: number) => lng >= 34.0 && lng <= 36.5;
   if (!isValidLat(fromLat) || !isValidLng(fromLng) || !isValidLat(toLat) || !isValidLng(toLng)) {
     console.warn('Shared route URL contains coordinates outside Israel bounds, ignoring:', { fromLat, fromLng, toLat, toLng });
-    return null;
+    cachedInitialSharedRoute = null;
+    return cachedInitialSharedRoute;
   }
 
-  return {
+  cachedInitialSharedRoute = {
     origin: { lat: fromLat, lng: fromLng },
     destination: { lat: toLat, lng: toLng },
     travelMode: mode && ['WALKING', 'BICYCLING', 'DRIVING'].includes(mode) ? mode : 'WALKING',
   };
+
+  return cachedInitialSharedRoute;
 }
 
 interface UseRouteSessionStateArgs {

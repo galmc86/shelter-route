@@ -16,6 +16,9 @@ export default defineConfig({
   ],
   webServer: {
     command: 'npm run dev -- --port 5174',
+    env: {
+      VITE_ORS_API_KEY: 'playwright-test-key',
+    },
     port: 5174,
     reuseExistingServer: true,
   },

@@ -247,4 +247,25 @@ describe('SearchPanel', () => {
     expect(screen.queryByRole('radiogroup', { name: 'routes.selectRoute' })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'emergency.navigateNow - Shelter One' })).toBeInTheDocument();
   });
+
+  it('renders route alternatives and lets the user switch between them', () => {
+    mockRouteState.routeInfo = { distance: '800 m', duration: '10 min' };
+    mockRouteState.routesWithShelters = [
+      { route: { distance: '800 m', duration: '10 min', isFastest: true }, shelterCount: 2 },
+      { route: { distance: '1 km', duration: '13 min' }, shelterCount: 4 },
+      { route: { distance: '1.2 km', duration: '15 min' }, shelterCount: 1 },
+    ];
+
+    render(<SearchPanel panelExpanded={true} onTogglePanel={vi.fn()} />);
+
+    const routeOptions = screen.getAllByRole('radio');
+    expect(routeOptions).toHaveLength(3);
+    expect(screen.getByText('routes.alternativeRoutes')).toBeInTheDocument();
+    expect(screen.getByText('routes.fastest')).toBeInTheDocument();
+    expect(screen.getByText('routes.mostShelters')).toBeInTheDocument();
+
+    fireEvent.click(routeOptions[1]);
+
+    expect(mockRouteState.onRouteSelect).toHaveBeenCalledWith(1);
+  });
 });
