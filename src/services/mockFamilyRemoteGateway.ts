@@ -1,5 +1,5 @@
 import type { FamilyRemoteGateway } from './familyRemoteGateway';
-import type { FamilyGroup } from './familySafetyService';
+import type { FamilyRemoteGroupRecord } from './familyRemoteModel';
 
 const STORAGE_KEY_PREFIX = 'shelter-route:family-remote-group:';
 const REMOTE_GROUP_UPDATED_EVENT = 'family-remote-group-updated';
@@ -8,8 +8,8 @@ function getStorageKey(groupCode: string): string {
   return `${STORAGE_KEY_PREFIX}${groupCode.toUpperCase()}`;
 }
 
-function cloneGroup(group: FamilyGroup): FamilyGroup {
-  return JSON.parse(JSON.stringify(group)) as FamilyGroup;
+function cloneGroup(group: FamilyRemoteGroupRecord): FamilyRemoteGroupRecord {
+  return JSON.parse(JSON.stringify(group)) as FamilyRemoteGroupRecord;
 }
 
 function notifyRemoteGroupChanged(groupCode: string): void {
@@ -23,25 +23,25 @@ function notifyRemoteGroupChanged(groupCode: string): void {
 }
 
 class MockFamilyRemoteGateway implements FamilyRemoteGateway {
-  getGroup(groupCode: string): FamilyGroup | null {
+  getGroup(groupCode: string): FamilyRemoteGroupRecord | null {
     try {
       const raw = localStorage.getItem(getStorageKey(groupCode));
       if (!raw) {
         return null;
       }
 
-      return JSON.parse(raw) as FamilyGroup;
+      return JSON.parse(raw) as FamilyRemoteGroupRecord;
     } catch {
       return null;
     }
   }
 
-  upsertGroup(group: FamilyGroup): FamilyGroup {
+  upsertGroup(group: FamilyRemoteGroupRecord): FamilyRemoteGroupRecord {
     const nextGroup = cloneGroup(group);
 
     try {
-      localStorage.setItem(getStorageKey(nextGroup.groupCode), JSON.stringify(nextGroup));
-      notifyRemoteGroupChanged(nextGroup.groupCode);
+      localStorage.setItem(getStorageKey(nextGroup.inviteCode), JSON.stringify(nextGroup));
+      notifyRemoteGroupChanged(nextGroup.inviteCode);
     } catch {
       // ignore storage failures in mock gateway
     }
@@ -94,4 +94,3 @@ const mockFamilyRemoteGateway = new MockFamilyRemoteGateway();
 export function getMockFamilyRemoteGateway(): FamilyRemoteGateway {
   return mockFamilyRemoteGateway;
 }
-

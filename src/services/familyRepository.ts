@@ -11,6 +11,10 @@ import {
   type FamilyGroup,
 } from './familySafetyService';
 import { getFamilyRemoteGateway, type FamilyRemoteGateway } from './familyRemoteGateway';
+import {
+  mapFamilyGroupToRemoteRecord,
+  mapRemoteRecordToFamilyGroup,
+} from './familyRemoteModel';
 import { getFamilySyncMode, type FamilySyncMode } from './familySyncModeService';
 
 export interface FamilyRepository {
@@ -105,14 +109,18 @@ export class HybridFamilyRepository implements FamilyRepository {
 
   createGroup(name: string): FamilyGroup {
     const group = this.localRepository.createGroup(name);
-    this.remoteGateway.upsertGroup(group);
+    this.remoteGateway.upsertGroup(
+      mapFamilyGroupToRemoteRecord(group, this.remoteGateway.getGroup(group.groupCode))
+    );
     this.ensureRemoteSubscription();
     return this.hydrateFromRemote(group.groupCode) ?? group;
   }
 
   joinGroup(code: string, name: string): FamilyGroup {
     const group = this.localRepository.joinGroup(code, name);
-    this.remoteGateway.upsertGroup(group);
+    this.remoteGateway.upsertGroup(
+      mapFamilyGroupToRemoteRecord(group, this.remoteGateway.getGroup(group.groupCode))
+    );
     this.ensureRemoteSubscription();
     return this.hydrateFromRemote(group.groupCode) ?? group;
   }
@@ -123,7 +131,9 @@ export class HybridFamilyRepository implements FamilyRepository {
       return null;
     }
 
-    this.remoteGateway.upsertGroup(updated);
+    this.remoteGateway.upsertGroup(
+      mapFamilyGroupToRemoteRecord(updated, this.remoteGateway.getGroup(updated.groupCode))
+    );
     return this.hydrateFromRemote(updated.groupCode);
   }
 
@@ -133,7 +143,9 @@ export class HybridFamilyRepository implements FamilyRepository {
       return null;
     }
 
-    this.remoteGateway.upsertGroup(updated);
+    this.remoteGateway.upsertGroup(
+      mapFamilyGroupToRemoteRecord(updated, this.remoteGateway.getGroup(updated.groupCode))
+    );
     return this.hydrateFromRemote(updated.groupCode);
   }
 
@@ -174,7 +186,10 @@ export class HybridFamilyRepository implements FamilyRepository {
 
   private hydrateFromRemote(groupCode: string): FamilyGroup | null {
     const localGroup = this.localRepository.getSnapshot();
-    const remoteGroup = this.remoteGateway.getGroup(groupCode);
+    const remoteRecord = this.remoteGateway.getGroup(groupCode);
+    const remoteGroup = remoteRecord
+      ? mapRemoteRecordToFamilyGroup(remoteRecord, localGroup)
+      : null;
     const mergedGroup = mergeFamilyGroups(localGroup, remoteGroup);
 
     if (mergedGroup && !areGroupsEqual(localGroup, mergedGroup)) {

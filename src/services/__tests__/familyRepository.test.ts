@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createFamilyRepository, getFamilyRepository } from '../familyRepository';
 import { getFamilyRemoteGateway } from '../familyRemoteGateway';
+import { mapFamilyGroupToRemoteRecord } from '../familyRemoteModel';
 import { FAMILY_SYNC_MODE_STORAGE_KEY } from '../familySyncModeService';
 
 describe('familyRepository', () => {
@@ -43,14 +44,17 @@ describe('familyRepository', () => {
     const remoteGateway = getFamilyRemoteGateway();
 
     remoteGateway.upsertGroup({
-      ...group,
+      ...mapFamilyGroupToRemoteRecord(group),
       members: [
-        ...group.members,
+        ...mapFamilyGroupToRemoteRecord(group).members,
         {
           id: 'member-2',
           name: 'Noam',
-          isSafe: true,
-          lastSeen: '2026-03-25T21:00:00.000Z',
+          role: 'member',
+          status: 'safe',
+          joinedAt: '2026-03-25T21:00:00.000Z',
+          lastStatusAt: '2026-03-25T21:00:00.000Z',
+          lastSeenAt: '2026-03-25T21:00:00.000Z',
         },
       ],
     });

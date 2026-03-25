@@ -1,18 +1,23 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { getMockFamilyRemoteGateway } from '../mockFamilyRemoteGateway';
-import type { FamilyGroup } from '../familySafetyService';
+import type { FamilyRemoteGroupRecord } from '../familyRemoteModel';
 
-const groupFixture: FamilyGroup = {
-  groupCode: 'ABC123',
-  memberName: 'Dana',
-  currentMemberId: 'member-1',
+const groupFixture: FamilyRemoteGroupRecord = {
+  id: 'family:ABC123',
+  inviteCode: 'ABC123',
+  createdAt: '2026-03-25T20:00:00.000Z',
+  updatedAt: '2026-03-25T20:00:00.000Z',
+  createdByMemberId: 'member-1',
   members: [
     {
       id: 'member-1',
       name: 'Dana',
       deviceId: 'device-1',
-      isSafe: false,
-      lastSeen: '2026-03-25T20:00:00.000Z',
+      role: 'owner',
+      status: 'needs_check_in',
+      joinedAt: '2026-03-25T20:00:00.000Z',
+      lastStatusAt: '2026-03-25T20:00:00.000Z',
+      lastSeenAt: '2026-03-25T20:00:00.000Z',
     },
   ],
 };
@@ -45,4 +50,3 @@ describe('mockFamilyRemoteGateway', () => {
     expect(listener).toHaveBeenCalledTimes(1);
   });
 });
-

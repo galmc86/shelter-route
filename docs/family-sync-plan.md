@@ -52,6 +52,8 @@ Then add a `HybridFamilyRepository` coordinator:
 
 UI code should talk only to the repository boundary, never directly to `localStorage` or transport APIs.
 
+The repository should also own the mapping between the local `FamilyGroup` view model and the remote record shape, so backend payload changes do not leak into UI code.
+
 ## Data Model
 
 ### Family Group
