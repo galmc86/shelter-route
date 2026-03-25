@@ -18,6 +18,14 @@ export function useEmergencyAlertEffects({
 }: UseEmergencyAlertEffectsArgs): UseEmergencyAlertEffectsResult {
   const prevAlertActive = useRef(false);
   const vibrationInterval = useRef<ReturnType<typeof setInterval> | null>(null);
+  const activationTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearPendingActivation = useCallback(() => {
+    if (activationTimeout.current) {
+      clearTimeout(activationTimeout.current);
+      activationTimeout.current = null;
+    }
+  }, []);
 
   const stopEmergencyFeedback = useCallback(() => {
     stopAlertSound();
@@ -31,11 +39,13 @@ export function useEmergencyAlertEffects({
   }, []);
 
   const dismissAlert = useCallback(() => {
+    clearPendingActivation();
     onDismissBase();
     stopEmergencyFeedback();
-  }, [onDismissBase, stopEmergencyFeedback]);
+  }, [clearPendingActivation, onDismissBase, stopEmergencyFeedback]);
 
   const activateEmergencyFromAlert = useCallback(() => {
+    activationTimeout.current = null;
     onActivateEmergency();
     playAlertSound();
 
@@ -49,17 +59,26 @@ export function useEmergencyAlertEffects({
 
   useEffect(() => {
     if (isAlertActive && !prevAlertActive.current) {
-      setTimeout(() => {
+      clearPendingActivation();
+      activationTimeout.current = setTimeout(() => {
         activateEmergencyFromAlert();
       }, 0);
     }
 
     if (!isAlertActive && prevAlertActive.current) {
+      clearPendingActivation();
       stopEmergencyFeedback();
     }
 
     prevAlertActive.current = isAlertActive;
-  }, [activateEmergencyFromAlert, isAlertActive, stopEmergencyFeedback]);
+  }, [activateEmergencyFromAlert, clearPendingActivation, isAlertActive, stopEmergencyFeedback]);
+
+  useEffect(() => {
+    return () => {
+      clearPendingActivation();
+      stopEmergencyFeedback();
+    };
+  }, [clearPendingActivation, stopEmergencyFeedback]);
 
   return {
     dismissAlert,
