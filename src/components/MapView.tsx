@@ -15,6 +15,8 @@ import { useRouteLayer } from './map/useRouteLayer';
 import { useShelterMarkersLayer } from './map/useShelterMarkersLayer';
 import { useUserLocationEmergencyLayer } from './map/useUserLocationEmergencyLayer';
 import { useHeatMapLayer } from './map/useHeatMapLayer';
+import { useNavigationRouteLayer } from './map/useNavigationRouteLayer';
+
 interface MapViewProps {
   routes?: RouteOption[];
   onSelectRoute?: (index: number) => void;
@@ -45,7 +47,6 @@ export function MapView({
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
-  const navigationLayerRef = useRef<L.Polyline | null>(null);
 
   // Fetch alert history for heat map (supplementary — tolerates duplicate fetch)
   const { alerts: geocodedAlerts } = useAlertHistory(routeInfo);
@@ -139,42 +140,11 @@ export function MapView({
     geocodedAlerts,
   });
 
-  // Render navigation polyline (walking to shelter)
-  useEffect(() => {
-    const map = mapInstanceRef.current;
-    if (!map) return;
-
-    // Clean up previous navigation polyline
-    if (navigationLayerRef.current) {
-      navigationLayerRef.current.remove();
-      navigationLayerRef.current = null;
-    }
-
-    if (!navigationRoute || !navigatingToShelter) return;
-
-    if (navigationRoute.path.length < 2) return;
-
-    const latLngs: L.LatLngExpression[] = navigationRoute.path.map((p) => [p.lat, p.lng]);
-    const polyline = L.polyline(latLngs, {
-      color: '#10B981',
-      weight: 6,
-      opacity: 0.9,
-      dashArray: '12 8',
-      pane: 'navigationPane',
-    }).addTo(map);
-    navigationLayerRef.current = polyline;
-
-    // Fit bounds to navigation route
-    const bounds = L.latLngBounds(latLngs);
-    map.fitBounds(bounds, { padding: [50, 50], maxZoom: 16 });
-
-    return () => {
-      if (navigationLayerRef.current) {
-        navigationLayerRef.current.remove();
-        navigationLayerRef.current = null;
-      }
-    };
-  }, [navigationRoute, navigatingToShelter]);
+  useNavigationRouteLayer({
+    mapRef: mapInstanceRef,
+    navigationRoute,
+    navigatingToShelter,
+  });
 
   if (!isLoaded) {
     return (
