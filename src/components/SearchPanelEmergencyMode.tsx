@@ -13,6 +13,7 @@ interface SearchPanelEmergencyModeProps {
   nearestShelter: EmergencyNearestShelter | null;
   isOnline: boolean;
   dataStale: boolean;
+  usingCachedShelterData: boolean;
   isLoadingLocation: boolean;
   locationError: string | null;
   onUseMapCenter: () => void;
@@ -25,6 +26,7 @@ export function SearchPanelEmergencyMode({
   nearestShelter,
   isOnline,
   dataStale,
+  usingCachedShelterData,
   isLoadingLocation,
   locationError,
   onUseMapCenter,
@@ -39,10 +41,12 @@ export function SearchPanelEmergencyMode({
     : locationError
       ? locationError
       : `${nearbyShelterCount} ${t('emergency.nearbyShelters')}`;
-  const noticeKey = !isOnline && dataStale
-    ? 'emergency.offlineStaleDataNotice'
-    : !isOnline
-      ? 'emergency.offlineCachedDataNotice'
+  const noticeKey = !isOnline
+    ? usingCachedShelterData
+      ? (dataStale ? 'emergency.offlineStaleDataNotice' : 'emergency.offlineCachedDataNotice')
+      : (dataStale ? 'emergency.offlineStaleDataNotice' : 'emergency.offlineConnectionNotice')
+    : usingCachedShelterData
+      ? 'emergency.cachedDataRefreshingNotice'
       : dataStale
         ? 'emergency.staleDataNotice'
         : null;

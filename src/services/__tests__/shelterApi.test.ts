@@ -147,6 +147,37 @@ describe('fetchAllShelters', () => {
     expect(shelters[0].name).toBe('Cached Shelter');
   });
 
+  it('reports cached stale shelter status when bootstrapping from local storage', async () => {
+    const { fetchAllShelters, getShelterDataStatus } = await import('../shelterApi');
+
+    localStorageMock.setItem(
+      'shelter-route:shelters',
+      JSON.stringify({
+        version: 2,
+        data: [
+          { id: '1', name: 'Cached Shelter', lat: 32.0, lon: 34.8, city: '' },
+        ],
+      })
+    );
+    localStorageMock.setItem(
+      'shelter-route:shelters-fetched-at',
+      String(Date.now() - 45 * 24 * 60 * 60 * 1000)
+    );
+
+    vi.spyOn(globalThis, 'fetch').mockImplementation(
+      () => new Promise<Response>(() => {})
+    );
+
+    await fetchAllShelters();
+
+    expect(getShelterDataStatus()).toMatchObject({
+      loaded: true,
+      fromCache: true,
+      isStale: true,
+      dataAgeDays: 45,
+    });
+  });
+
   it('throws error when fetch fails and no cache exists', async () => {
     const { fetchAllShelters } = await import('../shelterApi');
 

@@ -2,7 +2,7 @@ import React, { useState, useCallback, Suspense, useMemo, type ChangeEvent } fro
 import { useLanguage } from '../i18n';
 import './AppHeader.css';
 import { useTheme } from '../theme';
-import { getShelterDataAge, isShelterDataStale } from '../services/shelterApi';
+import { useShelterDataStatus } from '../hooks/useShelterDataStatus';
 import type { Language } from '../i18n/translations';
 
 const BugReportForm = React.lazy(() => import('./BugReportForm').then(m => ({ default: m.BugReportForm })));
@@ -17,6 +17,7 @@ const languageLabels: Record<Language, string> = {
 export function AppHeader() {
   const { language, setLanguage, t } = useLanguage();
   const { theme, toggleTheme } = useTheme();
+  const { dataAgeDays, isStale } = useShelterDataStatus();
   const [bugReportOpen, setBugReportOpen] = useState(false);
 
   const handleLanguageChange = useCallback(
@@ -30,13 +31,10 @@ export function AppHeader() {
   const handleCloseBugReport = useCallback(() => setBugReportOpen(false), []);
 
   const dataAgeLabel = useMemo(() => {
-    const days = getShelterDataAge();
-    if (days === null) return null;
-    if (days === 0) return t('data.updatedToday');
-    return t('data.updatedDaysAgo').replace('{days}', String(days));
-  }, [t]);
-
-  const stale = useMemo(() => isShelterDataStale(), []);
+    if (dataAgeDays === null) return null;
+    if (dataAgeDays === 0) return t('data.updatedToday');
+    return t('data.updatedDaysAgo').replace('{days}', String(dataAgeDays));
+  }, [dataAgeDays, t]);
 
   const themeAriaLabel =
     theme === 'light'
@@ -59,10 +57,10 @@ export function AppHeader() {
           <span className="header-subtitle">{t('header.subtitle')}</span>
           {dataAgeLabel && (
             <span
-              className={`header-data-age${stale ? ' header-data-age--stale' : ''}`}
-              title={stale ? t('data.stale') : undefined}
+              className={`header-data-age${isStale ? ' header-data-age--stale' : ''}`}
+              title={isStale ? t('data.stale') : undefined}
             >
-              {stale ? t('data.stale') : dataAgeLabel}
+              {isStale ? t('data.stale') : dataAgeLabel}
             </span>
           )}
         </div>

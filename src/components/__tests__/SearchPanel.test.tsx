@@ -7,7 +7,13 @@ const mockOnGetLocation = vi.fn();
 const mockOnEmergencyClick = vi.fn();
 const mockOnExitEmergency = vi.fn();
 let mockIsOnline = true;
-let mockShelterDataStale = false;
+let mockShelterDataStatus = {
+  loaded: true,
+  fromCache: false,
+  progress: 1,
+  dataAgeDays: 0,
+  isStale: false,
+};
 
 const mockRouteState = {
   routeInfo: null as unknown,
@@ -154,8 +160,8 @@ vi.mock('../../hooks/useOnlineStatus', () => ({
   useOnlineStatus: () => mockIsOnline,
 }));
 
-vi.mock('../../services/shelterApi', () => ({
-  isShelterDataStale: () => mockShelterDataStale,
+vi.mock('../../hooks/useShelterDataStatus', () => ({
+  useShelterDataStatus: () => mockShelterDataStatus,
 }));
 
 vi.mock('../LocationInput', () => ({
@@ -200,7 +206,13 @@ describe('SearchPanel', () => {
     mockEmergencyState.activeLookupLocation = null;
     mockEmergencyState.activeLookupLabel = null;
     mockIsOnline = true;
-    mockShelterDataStale = false;
+    mockShelterDataStatus = {
+      loaded: true,
+      fromCache: false,
+      progress: 1,
+      dataAgeDays: 0,
+      isStale: false,
+    };
   });
 
   it('defaults to the route mode surface', () => {
@@ -258,11 +270,33 @@ describe('SearchPanel', () => {
       { id: 's1', name: 'Shelter One', lat: 32.1, lon: 34.8, walkingTimeMinutes: 2 },
     ];
     mockIsOnline = false;
-    mockShelterDataStale = true;
+    mockShelterDataStatus = {
+      ...mockShelterDataStatus,
+      fromCache: true,
+      isStale: true,
+    };
 
     render(<SearchPanel panelExpanded={true} onTogglePanel={vi.fn()} />);
 
     expect(screen.getByText('emergency.offlineStaleDataNotice')).toBeInTheDocument();
+  });
+
+  it('shows cached-data confidence chips in nearby results mode', () => {
+    mockEmergencyState.nearMeMode = true;
+    mockEmergencyState.activeLookupLabel = 'Home';
+    mockRouteState.nearbyShelters = [
+      { id: 's1', name: 'Shelter One', lat: 32.1, lon: 34.8, walkingTimeMinutes: 2 },
+    ];
+    mockShelterDataStatus = {
+      ...mockShelterDataStatus,
+      fromCache: true,
+      isStale: true,
+    };
+
+    render(<SearchPanel panelExpanded={true} onTogglePanel={vi.fn()} />);
+
+    expect(screen.getByText('search.context.cachedData')).toBeInTheDocument();
+    expect(screen.getByText('search.context.dataStale')).toBeInTheDocument();
   });
 
   it('renders route alternatives and lets the user switch between them', () => {

@@ -29,15 +29,54 @@ interface ShelterLoadingProgress {
   progress: number; // 0-1
 }
 
+export interface ShelterDataStatus extends ShelterLoadingProgress {
+  dataAgeDays: number | null;
+  isStale: boolean;
+}
+
 const loadingState: ShelterLoadingProgress = {
   loaded: false,
   fromCache: false,
   progress: 0,
 };
 
+const shelterDataStatusListeners = new Set<() => void>();
+
+let shelterDataStatusSnapshot: ShelterDataStatus = {
+  loaded: false,
+  fromCache: false,
+  progress: 0,
+  dataAgeDays: null,
+  isStale: false,
+};
+
+function refreshShelterDataStatusSnapshot(): void {
+  shelterDataStatusSnapshot = {
+    ...loadingState,
+    dataAgeDays: getShelterDataAge(),
+    isStale: isShelterDataStale(),
+  };
+}
+
+function notifyShelterDataStatusListeners(): void {
+  refreshShelterDataStatusSnapshot();
+  shelterDataStatusListeners.forEach((listener) => listener());
+}
+
 /** Returns the current shelter loading progress. */
 export function getShelterLoadingProgress(): ShelterLoadingProgress {
   return { ...loadingState };
+}
+
+export function getShelterDataStatus(): ShelterDataStatus {
+  return shelterDataStatusSnapshot;
+}
+
+export function subscribeShelterDataStatus(listener: () => void): () => void {
+  shelterDataStatusListeners.add(listener);
+  return () => {
+    shelterDataStatusListeners.delete(listener);
+  };
 }
 
 type SheltersUpdatedCallback = (shelters: Shelter[]) => void;
@@ -90,13 +129,15 @@ function loadFromLocalStorage(): Shelter[] | null {
   }
 }
 
-function saveToLocalStorage(shelters: Shelter[]) {
+function saveToLocalStorage(shelters: Shelter[], options?: { preserveFetchedAt?: boolean }) {
   try {
     localStorage.setItem(
       STORAGE_KEY,
       JSON.stringify({ version: STORAGE_VERSION, data: shelters })
     );
-    localStorage.setItem(FETCHED_AT_KEY, String(Date.now()));
+    if (!options?.preserveFetchedAt) {
+      localStorage.setItem(FETCHED_AT_KEY, String(Date.now()));
+    }
   } catch {
     // Storage full or unavailable — ignore
   }
@@ -290,8 +331,9 @@ async function reverseGeocodeGenericShelters(
       saveGeocodeCache(cache);
     }
     if (sheltersUpdated) {
-      saveToLocalStorage(shelters);
+      saveToLocalStorage(shelters, { preserveFetchedAt: true });
       onUpdate?.();
+      notifyShelterDataStatusListeners();
     }
   } finally {
     reverseGeocodeInProgress = false;
@@ -452,12 +494,13 @@ function backgroundRefresh(onReverseGeocodeUpdate?: () => void): void {
         saveToLocalStorage(freshShelters);
         saveStoredHash(newHash);
 
-        loadingState.loaded = true;
-        loadingState.fromCache = false;
-
         // Notify the app that fresh data is available
         onSheltersUpdatedCallback?.(freshShelters);
       }
+
+      loadingState.loaded = true;
+      loadingState.fromCache = false;
+      notifyShelterDataStatusListeners();
 
       // Start background reverse-geocoding on the latest data
       reverseGeocodeGenericShelters(
@@ -501,6 +544,7 @@ export async function fetchAllShelters(
     loadingState.loaded = true;
     loadingState.fromCache = true;
     loadingState.progress = 1;
+    notifyShelterDataStatusListeners();
 
     // Start background reverse-geocoding on cached data
     reverseGeocodeGenericShelters(cachedShelters, onReverseGeocodeUpdate);
@@ -527,6 +571,7 @@ export async function fetchAllShelters(
     loadingState.loaded = true;
     loadingState.fromCache = false;
     loadingState.progress = 1;
+    notifyShelterDataStatusListeners();
 
     // Start background reverse-geocoding for generic names
     reverseGeocodeGenericShelters(cachedShelters, onReverseGeocodeUpdate);

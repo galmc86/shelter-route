@@ -16,7 +16,7 @@ import { useSearchPanelSheet } from '../hooks/useSearchPanelSheet';
 import { useSearchPanelRoutePlanner } from '../hooks/useSearchPanelRoutePlanner';
 import { useSearchPanelShelters } from '../hooks/useSearchPanelShelters';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
-import { isShelterDataStale } from '../services/shelterApi';
+import { useShelterDataStatus } from '../hooks/useShelterDataStatus';
 
 interface SearchPanelProps {
   panelExpanded?: boolean;
@@ -75,6 +75,7 @@ export function SearchPanel({
   } = useShelterContext();
   const { t } = useLanguage();
   const isOnline = useOnlineStatus();
+  const shelterDataStatus = useShelterDataStatus();
   const [showShelterScore, setShowShelterScore] = useState(false);
   const [activeSearchMode, setActiveSearchMode] = useState<SearchSurfaceMode>('route');
   const { entries: historyEntries, addEntry: addHistoryEntry, removeEntry: removeHistoryEntry, clearAll: clearHistory, togglePin: toggleHistoryPin, renameEntry: renameHistoryEntry, updateShelterCount: updateHistoryShelterCount, saveRoute: saveHistoryRoute, unsaveRoute: unsaveHistoryRoute } = useSearchHistory();
@@ -150,7 +151,8 @@ export function SearchPanel({
     panelExpanded: panelExpanded ?? false,
     onTogglePanel,
   });
-  const dataStale = useMemo(() => isShelterDataStale(), []);
+  const dataStale = shelterDataStatus.isStale;
+  const usingCachedShelterData = shelterDataStatus.fromCache;
   const activePanelMode: SearchPanelMode = emergencyMode
     ? 'emergency'
     : nearMeMode
@@ -175,14 +177,18 @@ export function SearchPanel({
       chips.push(t('search.context.offline'));
     }
 
-    if (currentLocation) {
-      chips.push(t('search.context.locationReady'));
-    } else if (locationError) {
-      chips.push(t('search.context.locationUnavailable'));
+    if (usingCachedShelterData) {
+      chips.push(t('search.context.cachedData'));
     }
 
     if (dataStale) {
       chips.push(t('search.context.dataStale'));
+    }
+
+    if (currentLocation) {
+      chips.push(t('search.context.locationReady'));
+    } else if (locationError) {
+      chips.push(t('search.context.locationUnavailable'));
     }
 
     return chips.slice(0, 3);
@@ -196,6 +202,7 @@ export function SearchPanel({
     nearMeMode,
     savedLocations.length,
     t,
+    usingCachedShelterData,
   ]);
 
   useEffect(() => {
@@ -257,6 +264,7 @@ export function SearchPanel({
           nearestShelter={nearestEmergencyShelter}
           isOnline={isOnline}
           dataStale={dataStale}
+          usingCachedShelterData={usingCachedShelterData}
           isLoadingLocation={isLoadingLocation}
           locationError={locationError}
           onUseMapCenter={onUseMapCenter}
@@ -318,6 +326,21 @@ export function SearchPanel({
             <div className="nearby-results-banner-mode">
               {activeLookupLabel ? t('search.savedPlaceMode') : t('search.myLocation')}
             </div>
+            {(usingCachedShelterData || dataStale || !isOnline) && (
+              <div className="nearby-results-banner-meta">
+                {!isOnline && (
+                  <span className="nearby-results-banner-chip">{t('search.context.offline')}</span>
+                )}
+                {usingCachedShelterData && (
+                  <span className="nearby-results-banner-chip">{t('search.context.cachedData')}</span>
+                )}
+                {dataStale && (
+                  <span className="nearby-results-banner-chip nearby-results-banner-chip-warning">
+                    {t('search.context.dataStale')}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
           <button
             className="nearby-results-banner-exit"
