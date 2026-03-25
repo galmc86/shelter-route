@@ -88,17 +88,18 @@ Notes:
 
 ### Epic 5: Offline Resilience Pack
 Objective: remain useful during degraded connectivity.
-Status: `[~]`
+Status: `[x]`
 
 - [x] Define the offline emergency experience
 - [x] Cache last-known safety-critical data intentionally
 - [x] Surface stale/confidence indicators clearly
-- [ ] Add automated tests for degraded/offline flows
+- [x] Add automated tests for degraded/offline flows
 
 Notes:
 - Emergency mode now shows an in-panel offline/stale-data notice so degraded network conditions are explicit inside the highest-priority flow, not only in the global shell.
 - Shelter data status is now reactive, preserves the real fetch timestamp during reverse-geocode enrichment, and surfaces cached/stale confidence in the search UI instead of hiding it in the service layer.
 - Successful geolocation now persists a last-known device location, and emergency mode can reuse it as a dedicated fallback instead of forcing the user to start from the map center.
+- Playwright now covers the degraded-network emergency case where shelters were already loaded, the network drops, and the emergency surface keeps working with an explicit offline notice.
 
 ### Epic 6: Proactive Alert-to-Shelter Flow
 Objective: reduce reaction time after alerts.
@@ -123,7 +124,7 @@ Status: `[ ]`
 Objective: cover degraded and cross-browser behavior.
 Status: `[ ]`
 
-- [ ] Add E2E coverage for offline mode
+- [x] Add E2E coverage for offline mode
 - [x] Add E2E coverage for location fallback
 - [ ] Add E2E coverage for navigation start/cancel
 - [ ] Add E2E coverage for route alternatives

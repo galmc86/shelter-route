@@ -68,4 +68,19 @@ test.describe('Emergency Mode', () => {
     await expect(page.locator('.emergency-navigate-now-btn')).toBeVisible({ timeout: 10000 });
     await expect(page.locator('.shelter-item').first()).toBeVisible({ timeout: 10000 });
   });
+
+  test('continues emergency mode when the network drops after shelters were already loaded', async ({ page, context }) => {
+    await enableGeolocation(context);
+    await prepareApp(page);
+    await page.goto('/', { waitUntil: 'networkidle' });
+    await context.setOffline(true);
+
+    await openEmergencyMode(page);
+
+    await expect(page.locator('.emergency-mode-notice')).toContainText(
+      'אין חיבור לרשת. ממשיכים עם נתוני המקלטים שכבר נטענו באפליקציה.'
+    );
+    await expect(page.locator('.emergency-navigate-now-btn')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('.shelter-item').first()).toBeVisible({ timeout: 10000 });
+  });
 });
