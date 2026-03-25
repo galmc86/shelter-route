@@ -69,6 +69,44 @@ test.describe('Emergency Mode', () => {
     await expect(page.locator('.shelter-item').first()).toBeVisible({ timeout: 10000 });
   });
 
+  test('offers the last known location when location permission is denied', async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('shelter-route:onboarding-completed', 'true');
+      localStorage.setItem('shelter-route:last-known-location', JSON.stringify({
+        lat: 32.0853,
+        lng: 34.7818,
+        savedAt: Date.now() - 60_000,
+      }));
+
+      Object.defineProperty(navigator, 'geolocation', {
+        configurable: true,
+        value: {
+          getCurrentPosition: (_success: unknown, error: (err: { code: number; message: string }) => void) => {
+            setTimeout(() => error({ code: 1, message: 'Permission denied' }), 0);
+          },
+          watchPosition: (_success: unknown, error: (err: { code: number; message: string }) => void) => {
+            setTimeout(() => error({ code: 1, message: 'Permission denied' }), 0);
+            return 1;
+          },
+          clearWatch: () => {},
+        },
+      });
+    });
+
+    await page.goto('/', { waitUntil: 'networkidle' });
+
+    await openEmergencyMode(page);
+
+    await expect(page.locator('.emergency-last-known-btn')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('.emergency-mode-subtitle')).toContainText('גישה למיקום נדחתה');
+
+    await page.locator('.emergency-last-known-btn').click();
+
+    await expect(page.locator('.emergency-mode-subtitle')).toContainText('המיקום הידוע האחרון');
+    await expect(page.locator('.emergency-navigate-now-btn')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('.shelter-item').first()).toBeVisible({ timeout: 10000 });
+  });
+
   test('continues emergency mode when the network drops after shelters were already loaded', async ({ page, context }) => {
     await enableGeolocation(context);
     await prepareApp(page);
