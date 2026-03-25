@@ -15,6 +15,7 @@ const groupFixture: FamilyRemoteGroupRecord = {
   createdByMemberId: 'member-1',
   members: [],
 };
+const CACHE_KEY = 'shelter-route:family-remote-http-cache:ABC123';
 
 describe('httpFamilyRemoteClient', () => {
   beforeEach(() => {
@@ -22,6 +23,14 @@ describe('httpFamilyRemoteClient', () => {
     vi.useRealTimers();
     vi.restoreAllMocks();
     vi.unstubAllEnvs();
+    Object.defineProperty(document, 'hidden', {
+      configurable: true,
+      get: () => false,
+    });
+    Object.defineProperty(window.navigator, 'onLine', {
+      configurable: true,
+      get: () => true,
+    });
   });
 
   it('returns cached groups immediately after optimistic upsert', () => {
@@ -115,6 +124,74 @@ describe('httpFamilyRemoteClient', () => {
     expect(listener).toHaveBeenCalledWith({
       kind: 'cleared',
       groupCode: 'ABC123',
+    });
+
+    unsubscribe();
+  });
+
+  it('waits for visibility before polling and refreshes when the tab becomes visible again', async () => {
+    vi.useFakeTimers();
+    vi.stubEnv('VITE_FAMILY_REMOTE_URL', 'https://family.example.com/api');
+    const { getHttpFamilyRemoteClient: getClient } = await import('../httpFamilyRemoteClient');
+    const client = getClient();
+    const session = getFamilyRemoteSession();
+    const listener = vi.fn();
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({
+      ...groupFixture,
+      updatedAt: '2026-03-26T00:30:00.000Z',
+    }), { status: 200 }));
+    let hidden = true;
+    Object.defineProperty(document, 'hidden', {
+      configurable: true,
+      get: () => hidden,
+    });
+
+    const unsubscribe = client.subscribe('ABC123', session, listener);
+    await vi.advanceTimersByTimeAsync(FAMILY_REMOTE_HTTP_POLL_INTERVAL_MS);
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+
+    vi.useRealTimers();
+    hidden = false;
+    document.dispatchEvent(new Event('visibilitychange'));
+
+    await waitFor(() => {
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+      expect(localStorage.getItem(CACHE_KEY)).not.toBeNull();
+    });
+
+    unsubscribe();
+  });
+
+  it('waits for connectivity before polling and refreshes when the browser comes back online', async () => {
+    vi.useFakeTimers();
+    vi.stubEnv('VITE_FAMILY_REMOTE_URL', 'https://family.example.com/api');
+    const { getHttpFamilyRemoteClient: getClient } = await import('../httpFamilyRemoteClient');
+    const client = getClient();
+    const session = getFamilyRemoteSession();
+    const listener = vi.fn();
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({
+      ...groupFixture,
+      updatedAt: '2026-03-26T00:45:00.000Z',
+    }), { status: 200 }));
+    let online = false;
+    Object.defineProperty(window.navigator, 'onLine', {
+      configurable: true,
+      get: () => online,
+    });
+
+    const unsubscribe = client.subscribe('ABC123', session, listener);
+    await vi.advanceTimersByTimeAsync(FAMILY_REMOTE_HTTP_POLL_INTERVAL_MS);
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+
+    vi.useRealTimers();
+    online = true;
+    window.dispatchEvent(new Event('online'));
+
+    await waitFor(() => {
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+      expect(localStorage.getItem(CACHE_KEY)).not.toBeNull();
     });
 
     unsubscribe();

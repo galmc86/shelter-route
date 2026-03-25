@@ -70,6 +70,18 @@ function areRemoteGroupsEqual(
   return JSON.stringify(left) === JSON.stringify(right);
 }
 
+function shouldPollRemoteGroup(): boolean {
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+    return false;
+  }
+
+  if (typeof document !== 'undefined' && document.hidden) {
+    return false;
+  }
+
+  return true;
+}
+
 async function refreshGroup(groupCode: string, session: FamilyRemoteSession): Promise<void> {
   const resolvedEndpoint = getFamilyRemoteGroupEndpoint(groupCode);
   if (!resolvedEndpoint) {
@@ -161,8 +173,16 @@ class HttpFamilyRemoteClient implements FamilyRemoteClient {
     const normalizedCode = groupCode.toUpperCase();
     const key = getStorageKey(normalizedCode);
     const intervalId = window.setInterval(() => {
-      void refreshGroup(normalizedCode, _session);
+      if (shouldPollRemoteGroup()) {
+        void refreshGroup(normalizedCode, _session);
+      }
     }, FAMILY_REMOTE_HTTP_POLL_INTERVAL_MS);
+
+    const refreshIfInteractive = () => {
+      if (shouldPollRemoteGroup()) {
+        void refreshGroup(normalizedCode, _session);
+      }
+    };
 
     const handleCustomUpdate = (event: Event) => {
       const customEvent = event as CustomEvent<Partial<FamilyRemoteChangeEvent>>;
@@ -185,11 +205,15 @@ class HttpFamilyRemoteClient implements FamilyRemoteClient {
 
     window.addEventListener(REMOTE_CACHE_UPDATED_EVENT, handleCustomUpdate as EventListener);
     window.addEventListener('storage', handleStorage);
+    window.addEventListener('online', refreshIfInteractive);
+    document.addEventListener('visibilitychange', refreshIfInteractive);
 
     return () => {
       window.clearInterval(intervalId);
       window.removeEventListener(REMOTE_CACHE_UPDATED_EVENT, handleCustomUpdate as EventListener);
       window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('online', refreshIfInteractive);
+      document.removeEventListener('visibilitychange', refreshIfInteractive);
     };
   }
 }

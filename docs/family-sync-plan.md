@@ -45,6 +45,7 @@ Introduce a repository boundary with a gateway seam:
    - can start as a cached HTTP shell before the full live API contract is available
    - should use typed endpoint builders and request/response codecs so transport contracts are explicit and testable
    - should own polling or realtime subscription strategy so the repository only sees typed remote change events
+   - should respect visibility/connectivity so remote refresh happens promptly on focus/reconnect without assuming background polling is always available
 
 3. `RemoteFamilyRepository`
    - composes local state with the remote gateway
