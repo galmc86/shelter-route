@@ -4,6 +4,7 @@
 .search-panel {
   width: 380px;
   min-width: 380px;
+  min-height: 0;
   background: var(--color-panel-bg);
   padding: 20px;
   overflow-y: auto;
@@ -85,7 +86,10 @@
 
 @media (min-width: 900px) {
   .search-panel {
-    overflow: hidden;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
   }
 
   .search-panel-primary {
@@ -97,9 +101,8 @@
   .search-panel-secondary {
     flex: 1 1 auto;
     min-height: 0;
-    overflow-y: auto;
+    overflow: visible;
     padding-inline-end: 4px;
-    scrollbar-width: thin;
   }
 
   .search-panel-secondary .divider:first-child {

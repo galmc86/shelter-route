@@ -556,6 +556,7 @@ body {
 
   .app-section-nav-desktop {
     display: grid;
+    flex: 0 0 auto;
   }
 
   .main-content {
@@ -565,6 +566,7 @@ body {
   .panel-column {
     width: clamp(360px, 40vw, 460px);
     min-width: clamp(360px, 40vw, 460px);
+    min-height: 0;
     gap: 12px;
     padding: 12px;
     background:
@@ -577,6 +579,7 @@ body {
   .panel-column > .app-section-panel {
     width: 100%;
     min-width: 0;
+    min-height: 0;
     flex: 1 1 auto;
     border-radius: 24px;
     border: 1px solid rgba(21, 101, 192, 0.08);
@@ -589,6 +592,7 @@ body {
 
   .app-section-nav {
     position: static;
+    flex: 0 0 auto;
     width: 100%;
     margin: 0;
     padding: 8px;
