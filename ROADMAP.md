@@ -196,6 +196,7 @@ Notes:
 - Pre-search route mode now uses a neutral idle-state panel instead of a false “no shelters found” warning, so the larger-screen rail reads as intentional before the first query.
 - Responsive breakpoint behavior now has automated coverage in both Vitest and Playwright, including the 900px rail threshold plus desktop, tablet, and phone shell expectations.
 - On larger screens, the active route summary or recommended shelter detail now stays primary while the alternatives/results list scrolls underneath it, pushing the rail closer to a real list-detail workspace.
+- The adaptive rail now has direct component coverage for its idle state and duplicated detail/list presentation, so the larger-screen layout behavior is protected below the app-shell level too.
 
 ## Suggested Execution Order
 

@@ -95,6 +95,7 @@ const mockRoutePlannerState = {
   prefillOriginFromSavedLocation: vi.fn(),
   startSavedLocationRoute: vi.fn(),
 };
+let lastShelterResultsProps: Record<string, unknown> | null = null;
 
 vi.mock('../../i18n', () => ({
   useLanguage: () => ({
@@ -211,7 +212,10 @@ vi.mock('../RouteSummary', () => ({
 }));
 
 vi.mock('../ShelterResults', () => ({
-  ShelterResults: () => <div>shelter-results</div>,
+  ShelterResults: (props: Record<string, unknown>) => {
+    lastShelterResultsProps = props;
+    return <div>shelter-results</div>;
+  },
 }));
 
 describe('SearchPanel', () => {
@@ -245,6 +249,7 @@ describe('SearchPanel', () => {
       dataAgeDays: 0,
       isStale: false,
     };
+    lastShelterResultsProps = null;
   });
 
   it('defaults to the route mode surface', () => {
@@ -257,6 +262,12 @@ describe('SearchPanel', () => {
     expect(screen.getByRole('button', { name: 'search.button.ariaDisabled' })).toBeInTheDocument();
     expect(screen.getByText('search-history')).toBeInTheDocument();
     expect(screen.queryByText('saved-locations')).not.toBeInTheDocument();
+  });
+
+  it('passes an idle-state flag to shelter results before the first route search', () => {
+    render(<SearchPanel panelExpanded={true} onTogglePanel={vi.fn()} />);
+
+    expect(lastShelterResultsProps?.showIdleState).toBe(true);
   });
 
   it('switches to nearby mode and exposes nearby actions', () => {

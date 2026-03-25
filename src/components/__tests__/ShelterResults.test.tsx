@@ -8,6 +8,8 @@ const translations: Record<string, string> = {
   'shelters.alongRoute': 'Shelters along route',
   'shelters.noSheltersFound': 'No shelters found',
   'shelters.loading': 'Loading shelters',
+  'search.idleTitle': 'Start a search to see shelters',
+  'search.idleBody': 'Plan a route, use your current location, or choose a saved place to get shelter guidance.',
   'shelters.walkingTime': '~{{minutes}} min walk',
   'shelters.meters': 'meters',
   'shelters.meter': 'm',
@@ -44,6 +46,29 @@ vi.mock('../../i18n', () => ({
 }));
 
 describe('ShelterResults', () => {
+  it('shows a neutral idle state before any route search', () => {
+    render(
+      <ShelterResults
+        emergencyMode={false}
+        proximityMode={false}
+        showIdleState={true}
+        nearbyShelters={[]}
+        displayedShelters={[]}
+        sheltersLoading={false}
+        showAccessibleOnly={false}
+        onShowAccessibleOnlyChange={vi.fn()}
+        sortMode="distance"
+        onSortModeChange={vi.fn()}
+        selectedShelterId={null}
+        onShelterClick={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText('Start a search to see shelters')).toBeInTheDocument();
+    expect(screen.getByText('Plan a route, use your current location, or choose a saved place to get shelter guidance.')).toBeInTheDocument();
+    expect(screen.queryByText('No shelters found')).not.toBeInTheDocument();
+  });
+
   it('shows a recommendation reason for the top result in proximity flows', () => {
     const displayedShelters: RankedShelter[] = [
       {
@@ -92,9 +117,9 @@ describe('ShelterResults', () => {
     );
 
     expect(screen.getByRole('button', { name: 'Recommended' })).toBeInTheDocument();
-    expect(screen.getByText('Recommended: community reports say it is open')).toBeInTheDocument();
-    expect(screen.getByText('~2 min walk')).toBeInTheDocument();
-    expect(screen.getByText('Low occupancy · 22%')).toBeInTheDocument();
+    expect(screen.getAllByText('Recommended: community reports say it is open')).toHaveLength(2);
+    expect(screen.getAllByText('~2 min walk')).toHaveLength(2);
+    expect(screen.getAllByText('Low occupancy · 22%')).toHaveLength(2);
   });
 
   it('does not show the recommended sort in regular route mode', () => {
@@ -130,5 +155,47 @@ describe('ShelterResults', () => {
     );
 
     expect(screen.queryByRole('button', { name: 'Recommended' })).not.toBeInTheDocument();
+  });
+
+  it('renders a detail card for the selected shelter', () => {
+    const displayedShelters: RankedShelter[] = [
+      {
+        id: 'selected-shelter',
+        name: 'Selected Shelter',
+        city: 'Haifa',
+        address: '123 Main Street',
+        lat: 32.8,
+        lon: 34.9,
+        distanceFromRoute: 90,
+        walkingTimeMinutes: 1,
+        recommendationScore: 220,
+        recommendationReasonKey: 'recommendation.reportedOpen',
+        communityStatus: 'open',
+        occupancyPercent: 16,
+        isAccessible: true,
+      },
+    ];
+
+    const { container } = render(
+      <ShelterResults
+        emergencyMode={false}
+        proximityMode={true}
+        nearbyShelters={displayedShelters}
+        displayedShelters={displayedShelters}
+        sheltersLoading={false}
+        showAccessibleOnly={false}
+        onShowAccessibleOnlyChange={vi.fn()}
+        sortMode="recommended"
+        onSortModeChange={vi.fn()}
+        selectedShelterId="selected-shelter"
+        onShelterClick={vi.fn()}
+      />
+    );
+
+    const detailCard = container.querySelector('.shelter-detail-card');
+    expect(detailCard).not.toBeNull();
+    expect(detailCard?.textContent).toContain('Selected Shelter');
+    expect(detailCard?.textContent).toContain('123 Main Street');
+    expect(detailCard?.textContent).toContain('~1 min walk');
   });
 });
