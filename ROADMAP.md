@@ -135,13 +135,16 @@ Notes:
 
 ### Epic 8: Automation Expansion
 Objective: cover degraded and cross-browser behavior.
-Status: `[ ]`
+Status: `[~]`
 
 - [x] Add E2E coverage for offline mode
 - [x] Add E2E coverage for location fallback
-- [ ] Add E2E coverage for navigation start/cancel
+- [x] Add E2E coverage for navigation start/cancel
 - [ ] Add E2E coverage for route alternatives
 - [ ] Expand browser/device coverage once the PR suite is stable
+
+Notes:
+- Playwright now covers the internal shelter-navigation handoff from emergency results into `NavigationPanel`, including canceling back to the emergency surface after the route overlay is active.
 
 ## Later
 

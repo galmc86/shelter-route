@@ -1,5 +1,7 @@
 import { test, expect, type Page, type BrowserContext } from '@playwright/test';
 
+const SIMPLE_POLYLINE = '_p~iF~ps|U_ulLnnqC';
+
 async function prepareApp(page: Page) {
   await page.addInitScript(() => {
     localStorage.setItem('shelter-route:onboarding-completed', 'true');
@@ -120,5 +122,52 @@ test.describe('Emergency Mode', () => {
     );
     await expect(page.locator('.emergency-navigate-now-btn')).toBeVisible({ timeout: 10000 });
     await expect(page.locator('.shelter-item').first()).toBeVisible({ timeout: 10000 });
+  });
+
+  test('starts shelter navigation from emergency results and can cancel back to emergency mode', async ({ page, context }) => {
+    await enableGeolocation(context);
+    await prepareApp(page);
+
+    let orsRequests = 0;
+    await page.route('https://api.openrouteservice.org/**', async (route) => {
+      orsRequests += 1;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          routes: [
+            {
+              geometry: SIMPLE_POLYLINE,
+              summary: { duration: 480, distance: 620 },
+            },
+          ],
+        }),
+      });
+    });
+
+    await page.goto('/', { waitUntil: 'networkidle' });
+    await openEmergencyMode(page);
+
+    const mapMarkerButton = page
+      .getByRole('application', { name: 'מפת מקלטים' })
+      .getByRole('button', { name: /מ׳/ })
+      .first();
+
+    await expect(mapMarkerButton).toBeVisible({ timeout: 10000 });
+    await mapMarkerButton.click();
+    await expect(page.locator('.shelter-popup-nav-btn')).toBeVisible({ timeout: 10000 });
+
+    await page.locator('.shelter-popup-nav-btn').click();
+
+    await expect(page.locator('.navigation-panel')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('.navigation-panel-cancel')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('.panel-column')).toHaveCount(0);
+    expect(orsRequests).toBeGreaterThan(0);
+
+    await page.locator('.navigation-panel-cancel').click();
+
+    await expect(page.locator('.navigation-panel')).toHaveCount(0);
+    await expect(page.locator('.panel-column')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('.emergency-mode-surface')).toBeVisible({ timeout: 10000 });
   });
 });
