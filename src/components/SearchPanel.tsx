@@ -255,6 +255,8 @@ export function SearchPanel({
           t={t}
           nearbyShelterCount={nearbyShelters.length}
           nearestShelter={nearestEmergencyShelter}
+          isOnline={isOnline}
+          dataStale={dataStale}
           isLoadingLocation={isLoadingLocation}
           locationError={locationError}
           onUseMapCenter={onUseMapCenter}

@@ -11,6 +11,8 @@ interface SearchPanelEmergencyModeProps {
   t: (key: TranslationKey) => string;
   nearbyShelterCount: number;
   nearestShelter: EmergencyNearestShelter | null;
+  isOnline: boolean;
+  dataStale: boolean;
   isLoadingLocation: boolean;
   locationError: string | null;
   onUseMapCenter: () => void;
@@ -21,6 +23,8 @@ export function SearchPanelEmergencyMode({
   t,
   nearbyShelterCount,
   nearestShelter,
+  isOnline,
+  dataStale,
   isLoadingLocation,
   locationError,
   onUseMapCenter,
@@ -35,6 +39,13 @@ export function SearchPanelEmergencyMode({
     : locationError
       ? locationError
       : `${nearbyShelterCount} ${t('emergency.nearbyShelters')}`;
+  const noticeKey = !isOnline && dataStale
+    ? 'emergency.offlineStaleDataNotice'
+    : !isOnline
+      ? 'emergency.offlineCachedDataNotice'
+      : dataStale
+        ? 'emergency.staleDataNotice'
+        : null;
 
   return (
     <section className="emergency-mode-surface" role="alert" aria-live="assertive">
@@ -62,6 +73,18 @@ export function SearchPanelEmergencyMode({
           <div className="emergency-mode-subtitle">{subtitle}</div>
         </div>
       </div>
+
+      {noticeKey && (
+        <div className="emergency-mode-notice" role="status" aria-live="polite">
+          <span className="emergency-mode-notice-icon" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path d="M12 2L2 20h20L12 2Z" fill="currentColor" opacity="0.2" />
+              <path d="M12 8v5M12 16h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          </span>
+          <span className="emergency-mode-notice-text">{t(noticeKey)}</span>
+        </div>
+      )}
 
       {locationError && !isLoadingLocation && (
         <div className="emergency-mode-fallback">

@@ -69,30 +69,34 @@ Notes:
 
 ### Epic 4: Safety-Critical Test Hardening
 Objective: lock down the core emergency and lookup flows.
-Status: `[~]`
+Status: `[x]`
 
 - [x] Add automated coverage for the saved-places flow
 - [x] Expand automated coverage for emergency mode and location fallback
 - [x] Expand automated coverage for route planning and route alternatives
 - [x] Reduce reliance on full-tree mocking in app integration tests
-- [ ] Define a stable PR test gate for safety-critical flows
+- [x] Define a stable PR test gate for safety-critical flows
 
 Notes:
 - Saved places are already covered by unit, integration, and E2E checks.
 - Emergency E2E coverage now targets the current `emergency-mode-surface`, validates the navigate CTA, and verifies the `Use map center` fallback when geolocation is unavailable.
 - Route planning and route alternatives now have deterministic integration coverage, including a StrictMode regression test that preserves shared-route bootstrap from URL params during development.
 - `App.test.tsx` now consumes the real route, emergency, and shelter providers via a context probe instead of intercepting provider props, so controller composition is exercised end-to-end inside the app shell tests.
+- The stable PR gate is now `npm run test:pr:safety`, which runs Vitest, production build verification, and the critical Chromium E2E flows for emergency mode and saved places.
 
 ## Next
 
 ### Epic 5: Offline Resilience Pack
 Objective: remain useful during degraded connectivity.
-Status: `[ ]`
+Status: `[~]`
 
-- [ ] Define the offline emergency experience
+- [x] Define the offline emergency experience
 - [ ] Cache last-known safety-critical data intentionally
 - [ ] Surface stale/confidence indicators clearly
 - [ ] Add automated tests for degraded/offline flows
+
+Notes:
+- Emergency mode now shows an in-panel offline/stale-data notice so degraded network conditions are explicit inside the highest-priority flow, not only in the global shell.
 
 ### Epic 6: Proactive Alert-to-Shelter Flow
 Objective: reduce reaction time after alerts.

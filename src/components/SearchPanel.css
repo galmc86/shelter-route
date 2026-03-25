@@ -1593,6 +1593,33 @@
   opacity: 0.92;
 }
 
+.emergency-mode-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 11px 12px;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.emergency-mode-notice-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  color: rgba(255, 244, 179, 0.96);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.emergency-mode-notice-text {
+  font-size: 0.79rem;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.95);
+}
+
 .emergency-mode-fallback {
   display: flex;
   flex-direction: column;

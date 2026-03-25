@@ -6,6 +6,8 @@ const mockOnNearMeClick = vi.fn();
 const mockOnGetLocation = vi.fn();
 const mockOnEmergencyClick = vi.fn();
 const mockOnExitEmergency = vi.fn();
+let mockIsOnline = true;
+let mockShelterDataStale = false;
 
 const mockRouteState = {
   routeInfo: null as unknown,
@@ -149,11 +151,11 @@ vi.mock('../../hooks/useSearchPanelShelters', () => ({
 }));
 
 vi.mock('../../hooks/useOnlineStatus', () => ({
-  useOnlineStatus: () => true,
+  useOnlineStatus: () => mockIsOnline,
 }));
 
 vi.mock('../../services/shelterApi', () => ({
-  isShelterDataStale: () => false,
+  isShelterDataStale: () => mockShelterDataStale,
 }));
 
 vi.mock('../LocationInput', () => ({
@@ -197,6 +199,8 @@ describe('SearchPanel', () => {
     mockEmergencyState.isLoadingLocation = false;
     mockEmergencyState.activeLookupLocation = null;
     mockEmergencyState.activeLookupLabel = null;
+    mockIsOnline = true;
+    mockShelterDataStale = false;
   });
 
   it('defaults to the route mode surface', () => {
@@ -246,6 +250,19 @@ describe('SearchPanel', () => {
     expect(screen.queryByText('route-summary')).not.toBeInTheDocument();
     expect(screen.queryByRole('radiogroup', { name: 'routes.selectRoute' })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'emergency.navigateNow - Shelter One' })).toBeInTheDocument();
+  });
+
+  it('surfaces offline and stale-data guidance inside emergency mode', () => {
+    mockEmergencyState.emergencyMode = true;
+    mockRouteState.nearbyShelters = [
+      { id: 's1', name: 'Shelter One', lat: 32.1, lon: 34.8, walkingTimeMinutes: 2 },
+    ];
+    mockIsOnline = false;
+    mockShelterDataStale = true;
+
+    render(<SearchPanel panelExpanded={true} onTogglePanel={vi.fn()} />);
+
+    expect(screen.getByText('emergency.offlineStaleDataNotice')).toBeInTheDocument();
   });
 
   it('renders route alternatives and lets the user switch between them', () => {

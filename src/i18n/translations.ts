@@ -72,6 +72,9 @@ export const translations = {
     'emergency.locationPermissionHint': 'ניתן לאפשר שירותי מיקום בהגדרות המכשיר',
     'emergency.navigateNow': 'נווט למקלט הקרוב',
     'emergency.walkingTime': 'זמן הליכה',
+    'emergency.offlineCachedDataNotice': 'אין חיבור לרשת. מוצגים מקלטים מתוך הנתונים השמורים במכשיר.',
+    'emergency.staleDataNotice': 'נתוני המקלטים עשויים להיות ישנים. כדאי לוודא את הפרטים בשטח.',
+    'emergency.offlineStaleDataNotice': 'אין חיבור לרשת ונתוני המקלטים עשויים להיות ישנים. בדוק את הפרטים בשטח אם אפשר.',
 
     // Route Info
     'route.details': 'פרטי מסלול',
@@ -467,6 +470,9 @@ export const translations = {
     'emergency.locationPermissionHint': 'You can enable location services in your device settings',
     'emergency.navigateNow': 'Navigate to nearest shelter',
     'emergency.walkingTime': 'Walking time',
+    'emergency.offlineCachedDataNotice': 'No network connection. Nearby shelters are shown from data saved on this device.',
+    'emergency.staleDataNotice': 'Shelter data may be outdated. Verify details on the ground if you can.',
+    'emergency.offlineStaleDataNotice': 'No network connection and shelter data may be outdated. Verify details on the ground if possible.',
 
     // Route Info
     'route.details': 'Route Details',
@@ -861,6 +867,9 @@ export const translations = {
     'emergency.locationPermissionHint': 'يمكنك تفعيل خدمات الموقع من إعدادات الجهاز',
     'emergency.navigateNow': 'انتقل إلى أقرب ملجأ',
     'emergency.walkingTime': 'وقت المشي',
+    'emergency.offlineCachedDataNotice': 'لا يوجد اتصال بالشبكة. يتم عرض الملاجئ القريبة من البيانات المحفوظة على هذا الجهاز.',
+    'emergency.staleDataNotice': 'قد تكون بيانات الملاجئ قديمة. تحقّق من التفاصيل ميدانياً إذا أمكن.',
+    'emergency.offlineStaleDataNotice': 'لا يوجد اتصال بالشبكة وقد تكون بيانات الملاجئ قديمة. تحقّق من التفاصيل ميدانياً إذا أمكن.',
 
     // Route Info
     'route.details': 'تفاصيل المسار',
@@ -1255,6 +1264,9 @@ export const translations = {
     'emergency.locationPermissionHint': 'Вы можете включить геолокацию в настройках устройства',
     'emergency.navigateNow': 'Перейти к ближайшему укрытию',
     'emergency.walkingTime': 'Время пешком',
+    'emergency.offlineCachedDataNotice': 'Нет подключения к сети. Ближайшие укрытия показаны из данных, сохранённых на этом устройстве.',
+    'emergency.staleDataNotice': 'Данные об укрытиях могут быть устаревшими. По возможности проверьте детали на месте.',
+    'emergency.offlineStaleDataNotice': 'Нет подключения к сети, и данные об укрытиях могут быть устаревшими. По возможности проверьте детали на месте.',
 
     // Route Info
     'route.details': 'Детали маршрута',
