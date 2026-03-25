@@ -76,12 +76,12 @@ function App() {
   } = useAppController();
   const [activeSection, setActiveSection] = useState<AppSection>('search');
   const [fabBottomOffset, setFabBottomOffset] = useState<number | null>(null);
-  const [isDesktopRail, setIsDesktopRail] = useState(() => {
+  const [usesRailLayout, setUsesRailLayout] = useState(() => {
     if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
       return false;
     }
 
-    return window.matchMedia('(min-width: 1100px)').matches;
+    return window.matchMedia('(min-width: 900px)').matches;
   });
 
   const renderSectionNav = (className?: string) => (
@@ -127,18 +127,18 @@ function App() {
       return;
     }
 
-    const mediaQuery = window.matchMedia('(min-width: 1100px)');
-    const updateDesktopRail = () => setIsDesktopRail(mediaQuery.matches);
+    const mediaQuery = window.matchMedia('(min-width: 900px)');
+    const updateRailLayout = () => setUsesRailLayout(mediaQuery.matches);
 
-    updateDesktopRail();
+    updateRailLayout();
 
     if (typeof mediaQuery.addEventListener === 'function') {
-      mediaQuery.addEventListener('change', updateDesktopRail);
-      return () => mediaQuery.removeEventListener('change', updateDesktopRail);
+      mediaQuery.addEventListener('change', updateRailLayout);
+      return () => mediaQuery.removeEventListener('change', updateRailLayout);
     }
 
-    mediaQuery.addListener(updateDesktopRail);
-    return () => mediaQuery.removeListener(updateDesktopRail);
+    mediaQuery.addListener(updateRailLayout);
+    return () => mediaQuery.removeListener(updateRailLayout);
   }, []);
 
   useEffect(() => {
@@ -259,11 +259,11 @@ function App() {
       )}
       <OfflineIndicator />
       <AppHeader />
-      {!emergencyMode && !isDesktopRail && renderSectionNav('app-section-nav-mobile')}
+      {!emergencyMode && !usesRailLayout && renderSectionNav('app-section-nav-mobile')}
       <main className="main-content" id="main-content">
         {!isNavigating && (
           <div className="panel-column">
-            {!emergencyMode && isDesktopRail && renderSectionNav('app-section-nav-desktop')}
+            {!emergencyMode && usesRailLayout && renderSectionNav('app-section-nav-desktop')}
             {renderPanelContent()}
           </div>
         )}

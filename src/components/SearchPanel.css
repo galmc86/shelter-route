@@ -83,7 +83,7 @@
   color: #9ed0ff;
 }
 
-@media (min-width: 1100px) {
+@media (min-width: 900px) {
   .search-panel {
     overflow: hidden;
   }
@@ -1211,7 +1211,7 @@
   margin-top: 0;
 }
 
-@media (min-width: 1100px) {
+@media (min-width: 900px) {
   .shelter-detail-card {
     display: flex;
     flex-direction: column;
