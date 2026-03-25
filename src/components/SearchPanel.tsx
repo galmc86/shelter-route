@@ -168,6 +168,12 @@ export function SearchPanel({
   const nearestEmergencyShelter = emergencyMode && displayedShelters.length > 0
     ? displayedShelters[0]
     : null;
+  const showIdleResultsState = !emergencyMode
+    && !nearMeMode
+    && !routeInfo
+    && !activeLookupLocation
+    && nearbyShelters.length === 0
+    && !sheltersLoading;
 
   const contextualChips = useMemo(() => {
     if (emergencyMode || nearMeMode) {
@@ -579,6 +585,7 @@ export function SearchPanel({
         <ShelterResults
           emergencyMode={emergencyMode}
           proximityMode={nearMeMode}
+          showIdleState={showIdleResultsState}
           nearbyShelters={nearbyShelters}
           displayedShelters={displayedShelters}
           sheltersLoading={sheltersLoading}

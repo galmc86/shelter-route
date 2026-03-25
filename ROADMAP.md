@@ -193,6 +193,7 @@ Notes:
 - The desktop search rail now separates the task composer from the scrollable results area, so route setup and nearby controls stay stable while shelter results and route options can grow independently.
 - Larger screens now surface the selected or recommended shelter in a dedicated detail card above the results list, so the rail starts behaving more like list-detail instead of only a widened mobile stack.
 - Tablet-width layouts now switch into a compact rail at 900px and above, instead of staying on the full mobile sheet until desktop width.
+- Pre-search route mode now uses a neutral idle-state panel instead of a false “no shelters found” warning, so the larger-screen rail reads as intentional before the first query.
 
 ## Suggested Execution Order
 

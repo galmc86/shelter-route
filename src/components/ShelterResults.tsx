@@ -10,6 +10,7 @@ import { getShelterKindLabel } from '../utils/shelterKind';
 interface ShelterResultsProps {
   emergencyMode: boolean;
   proximityMode?: boolean;
+  showIdleState?: boolean;
   nearbyShelters: ShelterWithDistance[];
   displayedShelters: RankedShelter[];
   sheltersLoading: boolean;
@@ -25,6 +26,7 @@ interface ShelterResultsProps {
 export function ShelterResults({
   emergencyMode,
   proximityMode = false,
+  showIdleState = false,
   nearbyShelters,
   displayedShelters,
   sheltersLoading,
@@ -47,6 +49,21 @@ export function ShelterResults({
       : undefined)
     : undefined;
   const detailKindLabel = detailShelter ? getShelterKindLabel(detailShelter.kind, t) : null;
+
+  if (showIdleState) {
+    return (
+      <div className="search-idle-state" role="status">
+        <div className="search-idle-state-icon" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <path d="M10.5 18a7.5 7.5 0 1 0 0-15 7.5 7.5 0 0 0 0 15Z" stroke="currentColor" strokeWidth="2" />
+            <path d="m16 16 5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+        </div>
+        <div className="search-idle-state-title">{t('search.idleTitle')}</div>
+        <div className="search-idle-state-body">{t('search.idleBody')}</div>
+      </div>
+    );
+  }
 
   if ((nearbyShelters.length === 0 && !sheltersLoading) || (displayedShelters.length === 0 && !sheltersLoading && showAccessibleOnly)) {
     return (
