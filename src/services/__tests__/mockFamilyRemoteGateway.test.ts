@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { getFamilyRemoteAdapter } from '../familyRemoteAdapter';
+import { getMockFamilyRemoteGateway } from '../mockFamilyRemoteGateway';
 import type { FamilyGroup } from '../familySafetyService';
 
 const groupFixture: FamilyGroup = {
@@ -17,31 +17,32 @@ const groupFixture: FamilyGroup = {
   ],
 };
 
-describe('familyRemoteAdapter', () => {
+describe('mockFamilyRemoteGateway', () => {
   beforeEach(() => {
     localStorage.clear();
   });
 
   it('persists and reads a remote group snapshot by group code', () => {
-    const adapter = getFamilyRemoteAdapter();
+    const gateway = getMockFamilyRemoteGateway();
 
-    adapter.upsertGroup(groupFixture);
+    gateway.upsertGroup(groupFixture);
 
-    expect(adapter.getGroup('abc123')).toEqual(groupFixture);
+    expect(gateway.getGroup('abc123')).toEqual(groupFixture);
   });
 
   it('notifies listeners when the matching remote group changes', () => {
-    const adapter = getFamilyRemoteAdapter();
+    const gateway = getMockFamilyRemoteGateway();
     const listener = vi.fn();
-    const unsubscribe = adapter.subscribe('ABC123', listener);
+    const unsubscribe = gateway.subscribe('ABC123', listener);
 
-    adapter.upsertGroup(groupFixture);
+    gateway.upsertGroup(groupFixture);
 
     expect(listener).toHaveBeenCalledTimes(1);
 
     unsubscribe();
-    adapter.clearGroup('ABC123');
+    gateway.clearGroup('ABC123');
 
     expect(listener).toHaveBeenCalledTimes(1);
   });
 });
+

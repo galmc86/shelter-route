@@ -10,7 +10,7 @@ import {
   subscribeToFamilyGroupChanges,
   type FamilyGroup,
 } from './familySafetyService';
-import { getFamilyRemoteAdapter, type FamilyRemoteAdapter } from './familyRemoteAdapter';
+import { getFamilyRemoteGateway, type FamilyRemoteGateway } from './familyRemoteGateway';
 import { getFamilySyncMode, type FamilySyncMode } from './familySyncModeService';
 
 export interface FamilyRepository {
@@ -69,13 +69,13 @@ export class LocalFamilyRepository implements MutableFamilyRepository {
 
 export class HybridFamilyRepository implements FamilyRepository {
   private readonly localRepository: MutableFamilyRepository;
-  private readonly remoteAdapter: FamilyRemoteAdapter;
+  private readonly remoteGateway: FamilyRemoteGateway;
   private remoteUnsubscribe: (() => void) | null = null;
   private subscribedGroupCode: string | null = null;
 
-  constructor(localRepository: MutableFamilyRepository, remoteAdapter: FamilyRemoteAdapter) {
+  constructor(localRepository: MutableFamilyRepository, remoteGateway: FamilyRemoteGateway) {
     this.localRepository = localRepository;
-    this.remoteAdapter = remoteAdapter;
+    this.remoteGateway = remoteGateway;
   }
 
   getSnapshot(): FamilyGroup | null {
@@ -105,14 +105,14 @@ export class HybridFamilyRepository implements FamilyRepository {
 
   createGroup(name: string): FamilyGroup {
     const group = this.localRepository.createGroup(name);
-    this.remoteAdapter.upsertGroup(group);
+    this.remoteGateway.upsertGroup(group);
     this.ensureRemoteSubscription();
     return this.hydrateFromRemote(group.groupCode) ?? group;
   }
 
   joinGroup(code: string, name: string): FamilyGroup {
     const group = this.localRepository.joinGroup(code, name);
-    this.remoteAdapter.upsertGroup(group);
+    this.remoteGateway.upsertGroup(group);
     this.ensureRemoteSubscription();
     return this.hydrateFromRemote(group.groupCode) ?? group;
   }
@@ -123,7 +123,7 @@ export class HybridFamilyRepository implements FamilyRepository {
       return null;
     }
 
-    this.remoteAdapter.upsertGroup(updated);
+    this.remoteGateway.upsertGroup(updated);
     return this.hydrateFromRemote(updated.groupCode);
   }
 
@@ -133,7 +133,7 @@ export class HybridFamilyRepository implements FamilyRepository {
       return null;
     }
 
-    this.remoteAdapter.upsertGroup(updated);
+    this.remoteGateway.upsertGroup(updated);
     return this.hydrateFromRemote(updated.groupCode);
   }
 
@@ -141,7 +141,7 @@ export class HybridFamilyRepository implements FamilyRepository {
     const groupCode = this.localRepository.getSnapshot()?.groupCode;
     this.localRepository.leaveGroup();
     if (groupCode) {
-      this.remoteAdapter.clearGroup(groupCode);
+      this.remoteGateway.clearGroup(groupCode);
     }
     this.remoteUnsubscribe?.();
     this.remoteUnsubscribe = null;
@@ -167,14 +167,14 @@ export class HybridFamilyRepository implements FamilyRepository {
       return;
     }
 
-    this.remoteUnsubscribe = this.remoteAdapter.subscribe(groupCode, () => {
+    this.remoteUnsubscribe = this.remoteGateway.subscribe(groupCode, () => {
       this.hydrateFromRemote(groupCode);
     });
   }
 
   private hydrateFromRemote(groupCode: string): FamilyGroup | null {
     const localGroup = this.localRepository.getSnapshot();
-    const remoteGroup = this.remoteAdapter.getGroup(groupCode);
+    const remoteGroup = this.remoteGateway.getGroup(groupCode);
     const mergedGroup = mergeFamilyGroups(localGroup, remoteGroup);
 
     if (mergedGroup && !areGroupsEqual(localGroup, mergedGroup)) {
@@ -249,15 +249,15 @@ function areGroupsEqual(a: FamilyGroup | null, b: FamilyGroup | null): boolean {
 
 export function createFamilyRepository({
   mode = getFamilySyncMode(),
-  remoteAdapter = getFamilyRemoteAdapter(),
+  remoteGateway = getFamilyRemoteGateway(),
 }: {
   mode?: FamilySyncMode;
-  remoteAdapter?: FamilyRemoteAdapter;
+  remoteGateway?: FamilyRemoteGateway;
 } = {}): FamilyRepository {
   const localRepository = new LocalFamilyRepository();
 
   if (mode === 'hybrid') {
-    return new HybridFamilyRepository(localRepository, remoteAdapter);
+    return new HybridFamilyRepository(localRepository, remoteGateway);
   }
 
   return localRepository;

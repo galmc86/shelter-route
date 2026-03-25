@@ -172,6 +172,7 @@ Notes:
 - The local family member now also carries a stable device ID and the stored family payload has been versioned forward again, which prepares the current local model for anonymous remote identity later.
 - The repository layer now supports a feature-flagged hybrid mode with a mocked remote adapter, so the app can exercise the local-first plus remote-hydration path before a real backend is wired in.
 - Hybrid family sync mode can now be enabled from the URL or env at app boot, which makes the mocked remote path reachable for dev/QA without code edits.
+- The hybrid repository now depends on a typed `FamilyRemoteGateway` contract rather than a concrete adapter file, so a real backend can replace the mock implementation without changing repository orchestration.
 
 ### Epic 10: Saved Places to Safety Profiles
 Objective: turn saved locations into reusable routines.

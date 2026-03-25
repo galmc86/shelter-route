@@ -27,15 +27,19 @@ That is enough to define the remote model and introduce a repository seam before
 
 ## Proposed Architecture
 
-Introduce a repository boundary with two implementations:
+Introduce a repository boundary with a gateway seam:
 
 1. `LocalFamilyRepository`
    - wraps the current `localStorage` behavior
    - remains the default fallback
    - supports optimistic updates while offline
 
-2. `RemoteFamilyRepository`
-   - syncs a canonical family group record across devices
+2. `FamilyRemoteGateway`
+   - defines the transport-facing contract for group fetch, upsert, clear, and subscription
+   - can be implemented by a mock local gateway first and a real backend later
+
+3. `RemoteFamilyRepository`
+   - composes local state with the remote gateway
    - handles join, membership updates, safe-status updates, and subscriptions
 
 Then add a `HybridFamilyRepository` coordinator:
@@ -161,7 +165,7 @@ Why:
 
 ### Phase 2
 
-- add remote repository contract and adapter
+- add remote gateway contract and mock implementation
 - add hybrid repository wiring
 - keep remote feature behind a flag
 - allow hybrid mode to be enabled in development with `?familySyncMode=hybrid` or `VITE_FAMILY_SYNC_MODE=hybrid`

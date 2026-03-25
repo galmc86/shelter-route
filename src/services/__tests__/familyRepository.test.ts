@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createFamilyRepository, getFamilyRepository } from '../familyRepository';
-import { getFamilyRemoteAdapter } from '../familyRemoteAdapter';
+import { getFamilyRemoteGateway } from '../familyRemoteGateway';
 import { FAMILY_SYNC_MODE_STORAGE_KEY } from '../familySyncModeService';
 
 describe('familyRepository', () => {
@@ -40,9 +40,9 @@ describe('familyRepository', () => {
     localStorage.setItem(FAMILY_SYNC_MODE_STORAGE_KEY, 'hybrid');
     const repository = getFamilyRepository();
     const group = repository.createGroup('Dana');
-    const remoteAdapter = getFamilyRemoteAdapter();
+    const remoteGateway = getFamilyRemoteGateway();
 
-    remoteAdapter.upsertGroup({
+    remoteGateway.upsertGroup({
       ...group,
       members: [
         ...group.members,

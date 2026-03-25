@@ -1,14 +1,8 @@
+import type { FamilyRemoteGateway } from './familyRemoteGateway';
 import type { FamilyGroup } from './familySafetyService';
 
 const STORAGE_KEY_PREFIX = 'shelter-route:family-remote-group:';
 const REMOTE_GROUP_UPDATED_EVENT = 'family-remote-group-updated';
-
-export interface FamilyRemoteAdapter {
-  getGroup(groupCode: string): FamilyGroup | null;
-  upsertGroup(group: FamilyGroup): FamilyGroup;
-  clearGroup(groupCode: string): void;
-  subscribe(groupCode: string, listener: () => void): () => void;
-}
 
 function getStorageKey(groupCode: string): string {
   return `${STORAGE_KEY_PREFIX}${groupCode.toUpperCase()}`;
@@ -28,7 +22,7 @@ function notifyRemoteGroupChanged(groupCode: string): void {
   }));
 }
 
-class MockFamilyRemoteAdapter implements FamilyRemoteAdapter {
+class MockFamilyRemoteGateway implements FamilyRemoteGateway {
   getGroup(groupCode: string): FamilyGroup | null {
     try {
       const raw = localStorage.getItem(getStorageKey(groupCode));
@@ -49,7 +43,7 @@ class MockFamilyRemoteAdapter implements FamilyRemoteAdapter {
       localStorage.setItem(getStorageKey(nextGroup.groupCode), JSON.stringify(nextGroup));
       notifyRemoteGroupChanged(nextGroup.groupCode);
     } catch {
-      // ignore storage failures in mock adapter
+      // ignore storage failures in mock gateway
     }
 
     return nextGroup;
@@ -60,7 +54,7 @@ class MockFamilyRemoteAdapter implements FamilyRemoteAdapter {
       localStorage.removeItem(getStorageKey(groupCode));
       notifyRemoteGroupChanged(groupCode);
     } catch {
-      // ignore storage failures in mock adapter
+      // ignore storage failures in mock gateway
     }
   }
 
@@ -95,9 +89,9 @@ class MockFamilyRemoteAdapter implements FamilyRemoteAdapter {
   }
 }
 
-const familyRemoteAdapter = new MockFamilyRemoteAdapter();
+const mockFamilyRemoteGateway = new MockFamilyRemoteGateway();
 
-export function getFamilyRemoteAdapter(): FamilyRemoteAdapter {
-  return familyRemoteAdapter;
+export function getMockFamilyRemoteGateway(): FamilyRemoteGateway {
+  return mockFamilyRemoteGateway;
 }
 
