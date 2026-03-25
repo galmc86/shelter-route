@@ -13,6 +13,11 @@ export default defineConfig({
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      name: 'chromium-mobile',
+      testMatch: /.*(emergency-mode|saved-places)\.spec\.ts/,
+      use: { ...devices['Pixel 7'] },
+    },
   ],
   webServer: {
     command: 'npm run dev -- --port 5174',

@@ -135,16 +135,19 @@ Notes:
 
 ### Epic 8: Automation Expansion
 Objective: cover degraded and cross-browser behavior.
-Status: `[~]`
+Status: `[x]`
 
 - [x] Add E2E coverage for offline mode
 - [x] Add E2E coverage for location fallback
 - [x] Add E2E coverage for navigation start/cancel
-- [ ] Add E2E coverage for route alternatives
-- [ ] Expand browser/device coverage once the PR suite is stable
+- [x] Add E2E coverage for route alternatives
+- [x] Expand browser/device coverage once the PR suite is stable
 
 Notes:
 - Playwright now covers the internal shelter-navigation handoff from emergency results into `NavigationPanel`, including canceling back to the emergency surface after the route overlay is active.
+- Playwright now also covers a real route-planning flow with multiple ORS alternatives, including switching the active route from both the panel selector and the map overlay route picker.
+- The critical Playwright safety suite now runs on both desktop Chromium and a mobile Chromium device profile (`Pixel 7`), giving the PR gate real mobile-layout coverage without taking on full cross-browser maintenance yet.
+- The popup-driven marker-to-navigation handoff remains a desktop-critical check for now; mobile critical coverage focuses on emergency entry/fallback and saved-place flows where the sheet-first layout is the primary user path.
 
 ## Later
 

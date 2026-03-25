@@ -20,6 +20,15 @@ async function enableGeolocation(context: BrowserContext) {
   await context.setGeolocation({ latitude: 32.0853, longitude: 34.7818 });
 }
 
+async function prepareMobileMapAccess(page: Page): Promise<boolean> {
+  const panelHandle = page.locator('.panel-handle');
+  if (await panelHandle.isVisible()) {
+    await panelHandle.click();
+    return true;
+  }
+  return false;
+}
+
 test.describe('Emergency Mode', () => {
   test('clicking emergency button shows the current emergency surface with navigation CTA', async ({ page, context }) => {
     await enableGeolocation(context);
@@ -125,6 +134,8 @@ test.describe('Emergency Mode', () => {
   });
 
   test('starts shelter navigation from emergency results and can cancel back to emergency mode', async ({ page, context }) => {
+    test.skip(test.info().project.name === 'chromium-mobile', 'Popup-driven map marker navigation is desktop-only in the critical suite.');
+
     await enableGeolocation(context);
     await prepareApp(page);
 
@@ -153,8 +164,9 @@ test.describe('Emergency Mode', () => {
       .getByRole('button', { name: /מ׳/ })
       .first();
 
+    const shouldForceMapClick = await prepareMobileMapAccess(page);
     await expect(mapMarkerButton).toBeVisible({ timeout: 10000 });
-    await mapMarkerButton.click();
+    await mapMarkerButton.click({ force: shouldForceMapClick });
     await expect(page.locator('.shelter-popup-nav-btn')).toBeVisible({ timeout: 10000 });
 
     await page.locator('.shelter-popup-nav-btn').click();
