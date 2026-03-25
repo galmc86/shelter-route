@@ -14,6 +14,10 @@ vi.mock('../../i18n', () => ({
         'alert.countdown': 'Time to shelter',
         'alert.seconds': 'seconds',
         'alert.findShelter': 'Find Shelter',
+        'alert.openShelter': 'Open shelter guidance now',
+        'alert.refreshShelter': 'Refresh shelter guidance',
+        'alert.actionHintFallback': 'Uses your current location, or the last known location if needed.',
+        'alert.actionHintActive': 'Shelter mode is already open and updating below.',
         'alert.dismiss': 'Dismiss',
         'alert.staySheltered': 'Stay Sheltered',
         'alert.remainInShelter': 'Remain in shelter',
@@ -92,7 +96,8 @@ describe('AlertBanner', () => {
       />
     );
 
-    expect(screen.getByText('Find Shelter')).toBeInTheDocument();
+    expect(screen.getByText('Open shelter guidance now')).toBeInTheDocument();
+    expect(screen.getByText('Uses your current location, or the last known location if needed.')).toBeInTheDocument();
   });
 
   it('does not show Dismiss button during active countdown (isExpired=false)', () => {
@@ -136,7 +141,23 @@ describe('AlertBanner', () => {
       />
     );
 
-    fireEvent.click(screen.getByText('Find Shelter'));
+    fireEvent.click(screen.getByText('Open shelter guidance now'));
     expect(onFindShelter).toHaveBeenCalledTimes(1);
+  });
+
+  it('switches the CTA copy once emergency mode is already active', () => {
+    render(
+      <AlertBanner
+        matchedRegion={mockRegion}
+        countdown={10}
+        onFindShelter={onFindShelter}
+        onDismiss={onDismiss}
+        isAlertActive={true}
+        emergencyMode={true}
+      />
+    );
+
+    expect(screen.getByText('Refresh shelter guidance')).toBeInTheDocument();
+    expect(screen.getByText('Shelter mode is already open and updating below.')).toBeInTheDocument();
   });
 });

@@ -103,17 +103,18 @@ Notes:
 
 ### Epic 6: Proactive Alert-to-Shelter Flow
 Objective: reduce reaction time after alerts.
-Status: `[~]`
+Status: `[x]`
 
 - [x] Improve alert-triggered emergency handoff
 - [x] Strengthen notification behavior and fallback handling
-- [ ] Make the next action immediately obvious after an alert
+- [x] Make the next action immediately obvious after an alert
 - [x] Validate behavior under permission-denied and location-failure scenarios
 
 Notes:
 - Alert-triggered emergency activation now auto-falls back to the last known location when live geolocation fails, so the user gets a shelter recommendation immediately instead of needing a second manual action.
 - Playwright now covers both unsupported geolocation and permission-denied recovery paths, including the last-known-location fallback button when live location access is rejected.
 - `useEmergencyAlertEffects` now cancels pending delayed activation when an alert clears or is dismissed immediately, preventing stale emergency handoffs after transient alert state changes.
+- The alert banner CTA now describes the actual next step, and switches copy when emergency mode is already open so the user understands whether the action will open or refresh shelter guidance.
 
 ### Epic 7: MapView Decomposition
 Objective: make map behavior safer to evolve.

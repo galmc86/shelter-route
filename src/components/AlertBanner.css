@@ -112,6 +112,13 @@
   width: 100%;
 }
 
+.alert-banner-action-stack {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
 .alert-banner-actions--countdown .alert-banner-find-btn {
   width: 100%;
 }
@@ -128,6 +135,14 @@
   white-space: nowrap;
   transition: transform 0.1s, box-shadow 0.1s;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.alert-banner-action-hint {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .alert-banner-find-btn:hover {
@@ -158,7 +173,7 @@
 
 /* Shift app content down when alert banner is showing */
 .app-with-alert .header {
-  margin-top: 80px;
+  margin-top: 96px;
 }
 
 /* Mobile responsive */
@@ -181,6 +196,10 @@
     justify-content: stretch;
   }
 
+  .alert-banner-action-hint {
+    font-size: 11px;
+  }
+
   .alert-banner-find-btn,
   .alert-banner-dismiss-btn {
     flex: 1;
@@ -188,7 +207,7 @@
   }
 
   .app-with-alert .header {
-    margin-top: 110px;
+    margin-top: 126px;
   }
 }
 

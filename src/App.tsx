@@ -211,6 +211,7 @@ function App() {
           onFindShelter={handleEmergencyClick}
           onDismiss={dismissAlert}
           isAlertActive={isAlertActive}
+          emergencyMode={emergencyMode}
         />
       )}
       <OfflineIndicator />

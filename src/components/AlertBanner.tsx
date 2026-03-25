@@ -9,6 +9,7 @@ interface AlertBannerProps {
   onFindShelter: () => void;
   onDismiss: () => void;
   isAlertActive: boolean;
+  emergencyMode?: boolean;
 }
 
 const DEBRIEF_DURATION = 600; // 10 minutes in seconds
@@ -184,6 +185,7 @@ export function AlertBanner({
   onFindShelter,
   onDismiss,
   isAlertActive,
+  emergencyMode = false,
 }: AlertBannerProps) {
   const { language, t } = useLanguage();
   const isExpired = countdown !== null && countdown <= 0;
@@ -211,6 +213,8 @@ export function AlertBanner({
 
   const totalTime = matchedRegion?.timeToShelter ?? 0;
   const showBadge = isAlertActive && !bannerVisible && countdown !== null && countdown > 0;
+  const ctaLabel = emergencyMode ? t('alert.refreshShelter') : t('alert.openShelter');
+  const ctaHint = emergencyMode ? t('alert.actionHintActive') : t('alert.actionHintFallback');
 
   // Show debrief screen when countdown expires
   if (isExpired) {
@@ -260,13 +264,16 @@ export function AlertBanner({
           </div>
 
           <div className="alert-banner-actions alert-banner-actions--countdown">
-            <button
-              className="alert-banner-find-btn"
-              onClick={onFindShelter}
-              aria-label={t('alert.findShelter')}
-            >
-              {t('alert.findShelter')}
-            </button>
+            <div className="alert-banner-action-stack">
+              <button
+                className="alert-banner-find-btn"
+                onClick={onFindShelter}
+                aria-label={ctaLabel}
+              >
+                {ctaLabel}
+              </button>
+              <div className="alert-banner-action-hint">{ctaHint}</div>
+            </div>
           </div>
         </div>
       </div>
