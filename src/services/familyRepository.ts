@@ -20,6 +20,7 @@ import {
   type FamilyRemoteSession,
 } from './familyRemoteSessionService';
 import {
+  clearPendingFamilySyncMutation,
   clearPendingFamilySyncMutations,
   getPendingFamilySyncMutation,
   getPendingFamilySyncMutations,
@@ -204,9 +205,17 @@ export class HybridFamilyRepository implements FamilyRepository {
       return;
     }
 
-    this.remoteUnsubscribe = this.remoteGateway.subscribe(groupCode, this.remoteSession, () => {
+    this.remoteUnsubscribe = this.remoteGateway.subscribe(groupCode, this.remoteSession, (event) => {
+      if (event.kind === 'cleared') {
+        clearPendingFamilySyncMutation(event.groupCode);
+        if (this.localRepository.getSnapshot()?.groupCode === event.groupCode) {
+          this.localRepository.replaceSnapshot(null);
+        }
+        return;
+      }
+
       this.flushPendingMutations();
-      this.hydrateFromRemote(groupCode);
+      this.hydrateFromRemote(event.groupCode);
     });
   }
 

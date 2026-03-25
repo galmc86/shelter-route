@@ -174,6 +174,7 @@ The remote gateway should accept an explicit remote session object instead of re
 - queue flush happens on subsequent repository activity and app reads, not only on a full reload
 - when the browser regains connectivity, the hybrid repository retries queued mutations immediately
 - sync status metadata should track pending count plus last success/failure timestamps so the app can expose trustworthy diagnostics later without reworking repository internals
+- remote subscriptions should emit typed change events (`updated` vs `cleared`) so the repository can distinguish remote deletion from a transient null fetch result
 
 ## Rollout Plan
 

@@ -1,3 +1,4 @@
+import type { FamilyRemoteChangeEvent } from './familyRemoteChangeEvent';
 import { getBackendFamilyRemoteClient } from './backendFamilyRemoteClient';
 import type { FamilyRemoteClient } from './familyRemoteClient';
 import type { FamilyRemoteGateway } from './familyRemoteGateway';
@@ -23,7 +24,11 @@ class BackendFamilyRemoteGateway implements FamilyRemoteGateway {
     this.client.clearGroup(groupCode, session);
   }
 
-  subscribe(groupCode: string, session: FamilyRemoteSession, listener: () => void): () => void {
+  subscribe(
+    groupCode: string,
+    session: FamilyRemoteSession,
+    listener: (event: FamilyRemoteChangeEvent) => void
+  ): () => void {
     return this.client.subscribe(groupCode, session, listener);
   }
 }

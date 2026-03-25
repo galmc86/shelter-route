@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { FamilyRemoteChangeEvent } from '../familyRemoteChangeEvent';
 import { createFamilyRepository, getFamilyRepository } from '../familyRepository';
 import { getFamilyRemoteGateway } from '../familyRemoteGateway';
 import type { FamilyRemoteGroupRecord } from '../familyRemoteModel';
@@ -160,5 +161,59 @@ describe('familyRepository', () => {
     expect(listener).toHaveBeenCalled();
 
     unsubscribe();
+  });
+
+  it('clears the local group when the subscribed remote group is cleared', () => {
+    localStorage.setItem(FAMILY_SYNC_MODE_STORAGE_KEY, 'hybrid');
+    const repository = getFamilyRepository();
+    const group = repository.createGroup('Dana');
+    const listener = vi.fn();
+    const unsubscribe = repository.subscribe(listener);
+    const remoteGateway = getFamilyRemoteGateway();
+    const session: FamilyRemoteSession = { deviceId: 'device-test', userId: null, authState: 'anonymous' };
+
+    listener.mockClear();
+    remoteGateway.clearGroup(group.groupCode, session);
+
+    expect(repository.getSnapshot()).toBeNull();
+    expect(getPendingFamilySyncMutations()).toEqual([]);
+    expect(listener).toHaveBeenCalledTimes(1);
+
+    unsubscribe();
+  });
+
+  it('drops queued mutations when a subscribed remote clear event arrives', () => {
+    const remoteListeners: Array<(event: FamilyRemoteChangeEvent) => void> = [];
+    const session: FamilyRemoteSession = { deviceId: 'device-test', userId: null, authState: 'anonymous' };
+
+    const remoteGateway: FamilyRemoteGateway = {
+      getGroup: vi.fn(() => null),
+      upsertGroup: vi.fn(() => {
+        throw new Error('offline');
+      }),
+      clearGroup: vi.fn(),
+      subscribe: vi.fn((_groupCode: string, _session: FamilyRemoteSession, listener) => {
+        remoteListeners[0] = listener;
+        return () => {
+          remoteListeners.length = 0;
+        };
+      }),
+    };
+
+    const repository = createFamilyRepository({ mode: 'hybrid', remoteGateway, remoteSession: session });
+    const group = repository.createGroup('Dana');
+    repository.subscribe(vi.fn());
+
+    expect(getPendingFamilySyncMutations()).toHaveLength(1);
+
+    const remoteListener = remoteListeners[0];
+    if (!remoteListener) {
+      throw new Error('expected remote listener to be registered');
+    }
+
+    remoteListener({ kind: 'cleared', groupCode: group.groupCode });
+
+    expect(repository.getSnapshot()).toBeNull();
+    expect(getPendingFamilySyncMutations()).toEqual([]);
   });
 });

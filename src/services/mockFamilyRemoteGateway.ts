@@ -1,3 +1,4 @@
+import type { FamilyRemoteChangeEvent } from './familyRemoteChangeEvent';
 import type { FamilyRemoteGateway } from './familyRemoteGateway';
 import type { FamilyRemoteGroupRecord } from './familyRemoteModel';
 import type { FamilyRemoteSession } from './familyRemoteSessionService';
@@ -13,13 +14,13 @@ function cloneGroup(group: FamilyRemoteGroupRecord): FamilyRemoteGroupRecord {
   return JSON.parse(JSON.stringify(group)) as FamilyRemoteGroupRecord;
 }
 
-function notifyRemoteGroupChanged(groupCode: string): void {
+function notifyRemoteGroupChanged(groupCode: string, kind: FamilyRemoteChangeEvent['kind']): void {
   if (typeof window === 'undefined') {
     return;
   }
 
   window.dispatchEvent(new CustomEvent(REMOTE_GROUP_UPDATED_EVENT, {
-    detail: { groupCode: groupCode.toUpperCase() },
+    detail: { groupCode: groupCode.toUpperCase(), kind },
   }));
 }
 
@@ -42,7 +43,7 @@ class MockFamilyRemoteGateway implements FamilyRemoteGateway {
 
     try {
       localStorage.setItem(getStorageKey(nextGroup.inviteCode), JSON.stringify(nextGroup));
-      notifyRemoteGroupChanged(nextGroup.inviteCode);
+      notifyRemoteGroupChanged(nextGroup.inviteCode, 'updated');
     } catch {
       // ignore storage failures in mock gateway
     }
@@ -53,13 +54,17 @@ class MockFamilyRemoteGateway implements FamilyRemoteGateway {
   clearGroup(groupCode: string, _session: FamilyRemoteSession): void {
     try {
       localStorage.removeItem(getStorageKey(groupCode));
-      notifyRemoteGroupChanged(groupCode);
+      notifyRemoteGroupChanged(groupCode, 'cleared');
     } catch {
       // ignore storage failures in mock gateway
     }
   }
 
-  subscribe(groupCode: string, _session: FamilyRemoteSession, listener: () => void): () => void {
+  subscribe(
+    groupCode: string,
+    _session: FamilyRemoteSession,
+    listener: (event: FamilyRemoteChangeEvent) => void
+  ): () => void {
     if (typeof window === 'undefined') {
       return () => {};
     }
@@ -68,15 +73,21 @@ class MockFamilyRemoteGateway implements FamilyRemoteGateway {
     const key = getStorageKey(normalizedCode);
 
     const handleCustomUpdate = (event: Event) => {
-      const customEvent = event as CustomEvent<{ groupCode?: string }>;
+      const customEvent = event as CustomEvent<Partial<FamilyRemoteChangeEvent>>;
       if (customEvent.detail?.groupCode?.toUpperCase() === normalizedCode) {
-        listener();
+        listener({
+          kind: customEvent.detail.kind === 'cleared' ? 'cleared' : 'updated',
+          groupCode: normalizedCode,
+        });
       }
     };
 
     const handleStorage = (event: StorageEvent) => {
       if (event.key === key) {
-        listener();
+        listener({
+          kind: event.newValue === null ? 'cleared' : 'updated',
+          groupCode: normalizedCode,
+        });
       }
     };
 

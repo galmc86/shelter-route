@@ -1,4 +1,5 @@
 import { resilientFetch } from './fetchClient';
+import type { FamilyRemoteChangeEvent } from './familyRemoteChangeEvent';
 import type { FamilyRemoteClient } from './familyRemoteClient';
 import type { FamilyRemoteGroupRecord } from './familyRemoteModel';
 import {
@@ -35,7 +36,7 @@ function readCachedGroup(groupCode: string): FamilyRemoteGroupRecord | null {
 function writeCachedGroup(record: FamilyRemoteGroupRecord): void {
   try {
     localStorage.setItem(getStorageKey(record.inviteCode), JSON.stringify(record));
-    notifyCacheChanged(record.inviteCode);
+    notifyCacheChanged(record.inviteCode, 'updated');
   } catch {
     // ignore cache failures
   }
@@ -44,19 +45,19 @@ function writeCachedGroup(record: FamilyRemoteGroupRecord): void {
 function clearCachedGroup(groupCode: string): void {
   try {
     localStorage.removeItem(getStorageKey(groupCode));
-    notifyCacheChanged(groupCode);
+    notifyCacheChanged(groupCode, 'cleared');
   } catch {
     // ignore cache failures
   }
 }
 
-function notifyCacheChanged(groupCode: string): void {
+function notifyCacheChanged(groupCode: string, kind: FamilyRemoteChangeEvent['kind']): void {
   if (typeof window === 'undefined') {
     return;
   }
 
   window.dispatchEvent(new CustomEvent(REMOTE_CACHE_UPDATED_EVENT, {
-    detail: { groupCode: groupCode.toUpperCase() },
+    detail: { groupCode: groupCode.toUpperCase(), kind },
   }));
 }
 
@@ -131,7 +132,11 @@ class HttpFamilyRemoteClient implements FamilyRemoteClient {
     void deleteGroup(groupCode, session);
   }
 
-  subscribe(groupCode: string, _session: FamilyRemoteSession, listener: () => void): () => void {
+  subscribe(
+    groupCode: string,
+    _session: FamilyRemoteSession,
+    listener: (event: FamilyRemoteChangeEvent) => void
+  ): () => void {
     if (typeof window === 'undefined') {
       return () => {};
     }
@@ -140,15 +145,21 @@ class HttpFamilyRemoteClient implements FamilyRemoteClient {
     const key = getStorageKey(normalizedCode);
 
     const handleCustomUpdate = (event: Event) => {
-      const customEvent = event as CustomEvent<{ groupCode?: string }>;
+      const customEvent = event as CustomEvent<Partial<FamilyRemoteChangeEvent>>;
       if (customEvent.detail?.groupCode?.toUpperCase() === normalizedCode) {
-        listener();
+        listener({
+          kind: customEvent.detail.kind === 'cleared' ? 'cleared' : 'updated',
+          groupCode: normalizedCode,
+        });
       }
     };
 
     const handleStorage = (event: StorageEvent) => {
       if (event.key === key) {
-        listener();
+        listener({
+          kind: event.newValue === null ? 'cleared' : 'updated',
+          groupCode: normalizedCode,
+        });
       }
     };
 

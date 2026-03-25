@@ -70,6 +70,20 @@ export function clearPendingFamilySyncMutations(): void {
   }
 }
 
+export function clearPendingFamilySyncMutation(groupCode: string): FamilySyncMutation[] {
+  const normalizedCode = groupCode.toUpperCase();
+  const remainingMutations = getPendingFamilySyncMutations()
+    .filter((mutation) => mutation.groupCode !== normalizedCode);
+
+  if (remainingMutations.length === 0) {
+    clearPendingFamilySyncMutations();
+    return [];
+  }
+
+  savePendingFamilySyncMutations(remainingMutations);
+  return remainingMutations;
+}
+
 function sanitizeMutation(raw: unknown): FamilySyncMutation | null {
   if (!raw || typeof raw !== 'object') {
     return null;

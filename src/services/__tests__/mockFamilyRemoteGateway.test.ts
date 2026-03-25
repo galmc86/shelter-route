@@ -45,7 +45,10 @@ describe('mockFamilyRemoteGateway', () => {
 
     gateway.upsertGroup(groupFixture, session);
 
-    expect(listener).toHaveBeenCalledTimes(1);
+    expect(listener).toHaveBeenCalledWith({
+      kind: 'updated',
+      groupCode: 'ABC123',
+    });
 
     unsubscribe();
     gateway.clearGroup('ABC123', session);

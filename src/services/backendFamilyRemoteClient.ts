@@ -1,3 +1,4 @@
+import type { FamilyRemoteChangeEvent } from './familyRemoteChangeEvent';
 import type { FamilyRemoteClient } from './familyRemoteClient';
 import { getFamilyRemoteClientMode, type FamilyRemoteClientMode } from './familyRemoteClientModeService';
 import { getHttpFamilyRemoteClient } from './httpFamilyRemoteClient';
@@ -24,7 +25,11 @@ class BackendFamilyRemoteClient implements FamilyRemoteClient {
     throw new FamilyRemoteClientNotConfiguredError();
   }
 
-  subscribe(_groupCode: string, _session: FamilyRemoteSession, _listener: () => void): () => void {
+  subscribe(
+    _groupCode: string,
+    _session: FamilyRemoteSession,
+    _listener: (event: FamilyRemoteChangeEvent) => void
+  ): () => void {
     return () => {};
   }
 }
