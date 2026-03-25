@@ -57,6 +57,7 @@ let mockShelterState: {
 };
 let mockLocationState: {
   location: LatLng | null;
+  lastKnownLocation: LatLng | null;
   isLoading: boolean;
   error: string | null;
   getLocation: typeof mockGetLocation;
@@ -174,6 +175,7 @@ vi.mock('../components/SearchPanel', async () => {
           <button onClick={() => emergencyContext.onSearchFromSavedLocation(savedOrigin, 'Home')}>
             saved-place
           </button>
+          <button onClick={() => emergencyContext.onUseLastKnownLocation()}>last-known</button>
           <button onClick={() => shelterContext.onNavigateToShelter?.(mockShelter)}>
             navigate-shelter
           </button>
@@ -254,6 +256,7 @@ describe('App', () => {
     };
     mockLocationState = {
       location: null,
+      lastKnownLocation: { lat: 32.12, lng: 34.82 },
       isLoading: false,
       error: null,
       getLocation: mockGetLocation,

@@ -91,13 +91,14 @@ Objective: remain useful during degraded connectivity.
 Status: `[~]`
 
 - [x] Define the offline emergency experience
-- [ ] Cache last-known safety-critical data intentionally
+- [x] Cache last-known safety-critical data intentionally
 - [x] Surface stale/confidence indicators clearly
 - [ ] Add automated tests for degraded/offline flows
 
 Notes:
 - Emergency mode now shows an in-panel offline/stale-data notice so degraded network conditions are explicit inside the highest-priority flow, not only in the global shell.
 - Shelter data status is now reactive, preserves the real fetch timestamp during reverse-geocode enrichment, and surfaces cached/stale confidence in the search UI instead of hiding it in the service layer.
+- Successful geolocation now persists a last-known device location, and emergency mode can reuse it as a dedicated fallback instead of forcing the user to start from the map center.
 
 ### Epic 6: Proactive Alert-to-Shelter Flow
 Objective: reduce reaction time after alerts.

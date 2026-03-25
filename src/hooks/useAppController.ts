@@ -115,12 +115,19 @@ export function useAppController(): AppControllerState {
     enterNearMeMode,
     enterSavedLocationMode,
     enterEmergencyMode,
+    enterEmergencyLocationMode,
     exitEmergencyMode,
     exitNearMeMode,
   } = useLookupModeState({
     initialPanelExpanded: initialSharedRoute === null,
   });
-  const { location: currentLocation, isLoading: isLoadingLocation, error: locationError, getLocation } = useCurrentLocation(emergencyMode);
+  const {
+    location: currentLocation,
+    lastKnownLocation,
+    isLoading: isLoadingLocation,
+    error: locationError,
+    getLocation,
+  } = useCurrentLocation(emergencyMode);
   const { nearestShelters, isSearching: isEmergencySearching, findNearest, clear: clearNearest } = useNearestShelters();
   const capacityMap = useCapacity(allShelters);
   const { isAlertActive, matchedRegion, countdown, dismissAlert: dismissAlertBase } = useOrefAlerts(
@@ -200,6 +207,13 @@ export function useAppController(): AppControllerState {
     trackEmergency();
   }, [enterEmergencyMode, getLocation]);
 
+  const handleUseLastKnownLocation = useCallback(() => {
+    if (!lastKnownLocation) return;
+    enterEmergencyLocationMode(lastKnownLocation, t('emergency.lastKnownLocationLabel'));
+    setSelectedShelterId(null);
+    clearNearest();
+  }, [clearNearest, enterEmergencyLocationMode, lastKnownLocation, t]);
+
   const handleExitEmergency = useCallback(() => {
     exitEmergencyMode();
     clearNearest();
@@ -266,12 +280,14 @@ export function useAppController(): AppControllerState {
     handleEmergencyClick,
     handleExitEmergency,
     currentLocation,
+    lastKnownLocation,
     activeLookupLocation,
     activeLookupLabel,
     isLoadingLocation,
     locationError: locationError ?? null,
     getLocation,
     handleSearchFromSavedLocation,
+    handleUseLastKnownLocation,
     handleNearMeClick,
     handleExitNearMe,
     handleUseMapCenter,

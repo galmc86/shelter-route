@@ -47,12 +47,14 @@ const mockEmergencyState = {
   onEmergencyClick: mockOnEmergencyClick,
   onExitEmergency: mockOnExitEmergency,
   currentLocation: { lat: 32.1, lng: 34.8 },
+  lastKnownLocation: { lat: 31.9, lng: 34.7 },
   activeLookupLocation: null as { lat: number; lng: number } | null,
   activeLookupLabel: null as string | null,
   isLoadingLocation: false,
   locationError: null as string | null,
   onGetLocation: mockOnGetLocation,
   onSearchFromSavedLocation: vi.fn(),
+  onUseLastKnownLocation: vi.fn(),
   nearMeMode: false,
   onNearMeClick: mockOnNearMeClick,
   onExitNearMe: vi.fn(),
@@ -279,6 +281,18 @@ describe('SearchPanel', () => {
     render(<SearchPanel panelExpanded={true} onTogglePanel={vi.fn()} />);
 
     expect(screen.getByText('emergency.offlineStaleDataNotice')).toBeInTheDocument();
+  });
+
+  it('offers last-known-location fallback in emergency mode when live geolocation fails', () => {
+    mockEmergencyState.emergencyMode = true;
+    mockEmergencyState.locationError = 'error.locationUnavailable';
+
+    render(<SearchPanel panelExpanded={true} onTogglePanel={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'emergency.useLastKnownLocation' }));
+
+    expect(mockEmergencyState.onUseLastKnownLocation).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('button', { name: 'emergency.useMapCenter' })).toBeInTheDocument();
   });
 
   it('shows cached-data confidence chips in nearby results mode', () => {

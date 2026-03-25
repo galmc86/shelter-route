@@ -21,6 +21,7 @@ export interface UseLookupModeStateResult {
   enterNearMeMode: () => void;
   enterSavedLocationMode: (location: LocationPoint, label?: string) => void;
   enterEmergencyMode: () => void;
+  enterEmergencyLocationMode: (location: LocationPoint, label?: string) => void;
   exitEmergencyMode: () => void;
   exitNearMeMode: () => void;
 }
@@ -64,6 +65,16 @@ export function useLookupModeState({
     setPanelExpanded(true);
   }, []);
 
+  const enterEmergencyLocationMode = useCallback((location: LocationPoint, label?: string) => {
+    setEmergencyMode(true);
+    setNearMeMode(false);
+    setSavedLookupLocation({
+      location: { lat: location.lat, lng: location.lng, address: location.address },
+      label: label?.trim() || null,
+    });
+    setPanelExpanded(true);
+  }, []);
+
   const exitEmergencyMode = useCallback(() => {
     setEmergencyMode(false);
     setSavedLookupLocation(null);
@@ -89,6 +100,7 @@ export function useLookupModeState({
     enterNearMeMode,
     enterSavedLocationMode,
     enterEmergencyMode,
+    enterEmergencyLocationMode,
     exitEmergencyMode,
     exitNearMeMode,
   };

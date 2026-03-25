@@ -54,6 +54,7 @@ export function SearchPanel({
     onEmergencyClick,
     onExitEmergency,
     currentLocation,
+    lastKnownLocation,
     activeLookupLocation,
     activeLookupLabel,
     isLoadingLocation,
@@ -61,6 +62,7 @@ export function SearchPanel({
     onGetLocation,
     onNearMeClick,
     onSearchFromSavedLocation,
+    onUseLastKnownLocation,
     nearMeMode,
     onExitNearMe,
     onUseMapCenter,
@@ -265,8 +267,11 @@ export function SearchPanel({
           isOnline={isOnline}
           dataStale={dataStale}
           usingCachedShelterData={usingCachedShelterData}
+          activeLookupLabel={activeLookupLabel}
           isLoadingLocation={isLoadingLocation}
           locationError={locationError}
+          hasLastKnownLocation={Boolean(lastKnownLocation)}
+          onUseLastKnownLocation={onUseLastKnownLocation}
           onUseMapCenter={onUseMapCenter}
           onExitEmergency={onExitEmergency}
         />

@@ -7,12 +7,14 @@ export interface EmergencyContextValue {
   onEmergencyClick: () => void;
   onExitEmergency: () => void;
   currentLocation: LocationPoint | null;
+  lastKnownLocation: LocationPoint | null;
   activeLookupLocation: LocationPoint | null;
   activeLookupLabel: string | null;
   isLoadingLocation: boolean;
   locationError: string | null;
   onGetLocation: () => void;
   onSearchFromSavedLocation: (location: LocationPoint, label?: string) => void;
+  onUseLastKnownLocation: () => void;
   nearMeMode: boolean;
   onNearMeClick: () => void;
   onExitNearMe: () => void;

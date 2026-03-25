@@ -14,8 +14,11 @@ interface SearchPanelEmergencyModeProps {
   isOnline: boolean;
   dataStale: boolean;
   usingCachedShelterData: boolean;
+  activeLookupLabel: string | null;
   isLoadingLocation: boolean;
   locationError: string | null;
+  hasLastKnownLocation: boolean;
+  onUseLastKnownLocation: () => void;
   onUseMapCenter: () => void;
   onExitEmergency: () => void;
 }
@@ -27,8 +30,11 @@ export function SearchPanelEmergencyMode({
   isOnline,
   dataStale,
   usingCachedShelterData,
+  activeLookupLabel,
   isLoadingLocation,
   locationError,
+  hasLastKnownLocation,
+  onUseLastKnownLocation,
   onUseMapCenter,
   onExitEmergency,
 }: SearchPanelEmergencyModeProps) {
@@ -36,8 +42,15 @@ export function SearchPanelEmergencyMode({
     ? `https://www.google.com/maps/dir/?api=1&destination=${nearestShelter.lat},${nearestShelter.lon}&travelmode=walking`
     : null;
 
+  const isUsingFallbackLocation = Boolean(
+    activeLookupLabel && activeLookupLabel !== t('search.myLocation')
+  );
   const subtitle = isLoadingLocation
     ? t('emergency.locating')
+    : isUsingFallbackLocation
+      ? t('emergency.nearbySheltersFromLabel')
+        .replace('{count}', String(nearbyShelterCount))
+        .replace('{label}', activeLookupLabel ?? '')
     : locationError
       ? locationError
       : `${nearbyShelterCount} ${t('emergency.nearbyShelters')}`;
@@ -92,6 +105,15 @@ export function SearchPanelEmergencyMode({
 
       {locationError && !isLoadingLocation && (
         <div className="emergency-mode-fallback">
+          {hasLastKnownLocation && (
+            <button
+              type="button"
+              className="emergency-last-known-btn"
+              onClick={onUseLastKnownLocation}
+            >
+              {t('emergency.useLastKnownLocation')}
+            </button>
+          )}
           <button
             type="button"
             className="emergency-map-center-btn"

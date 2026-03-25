@@ -3,9 +3,51 @@ import type { LocationPoint } from '../types';
 import { useLanguage } from '../i18n';
 import { reportError } from '../services/errorReportingService';
 
+const LAST_KNOWN_LOCATION_KEY = 'shelter-route:last-known-location';
+
+interface StoredLocation {
+  lat: number;
+  lng: number;
+  savedAt: number;
+}
+
+function loadLastKnownLocation(): StoredLocation | null {
+  try {
+    const raw = localStorage.getItem(LAST_KNOWN_LOCATION_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<StoredLocation>;
+    if (typeof parsed.lat !== 'number' || typeof parsed.lng !== 'number' || typeof parsed.savedAt !== 'number') {
+      return null;
+    }
+    return {
+      lat: parsed.lat,
+      lng: parsed.lng,
+      savedAt: parsed.savedAt,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function saveLastKnownLocation(location: LocationPoint): void {
+  try {
+    localStorage.setItem(LAST_KNOWN_LOCATION_KEY, JSON.stringify({
+      lat: location.lat,
+      lng: location.lng,
+      savedAt: Date.now(),
+    }));
+  } catch {
+    // Storage unavailable — ignore
+  }
+}
+
 export function useCurrentLocation(continuous = false) {
   const { t } = useLanguage();
   const [location, setLocation] = useState<LocationPoint | null>(null);
+  const [lastKnownLocation, setLastKnownLocation] = useState<LocationPoint | null>(() => {
+    const stored = loadLastKnownLocation();
+    return stored ? { lat: stored.lat, lng: stored.lng } : null;
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const watchIdRef = useRef<number | null>(null);
@@ -21,10 +63,13 @@ export function useCurrentLocation(continuous = false) {
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        setLocation({
+        const nextLocation = {
           lat: position.coords.latitude,
           lng: position.coords.longitude,
-        });
+        };
+        setLocation(nextLocation);
+        setLastKnownLocation(nextLocation);
+        saveLastKnownLocation(nextLocation);
         setIsLoading(false);
       },
       (err) => {
@@ -62,10 +107,13 @@ export function useCurrentLocation(continuous = false) {
 
     watchIdRef.current = navigator.geolocation.watchPosition(
       (position) => {
-        setLocation({
+        const nextLocation = {
           lat: position.coords.latitude,
           lng: position.coords.longitude,
-        });
+        };
+        setLocation(nextLocation);
+        setLastKnownLocation(nextLocation);
+        saveLastKnownLocation(nextLocation);
         setIsLoading(false);
       },
       (err) => {
@@ -89,5 +137,5 @@ export function useCurrentLocation(continuous = false) {
     };
   }, [continuous, t]);
 
-  return { location, isLoading, error, getLocation };
+  return { location, lastKnownLocation, isLoading, error, getLocation };
 }

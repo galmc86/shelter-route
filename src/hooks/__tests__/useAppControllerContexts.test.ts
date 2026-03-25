@@ -68,12 +68,14 @@ describe('useAppControllerContexts', () => {
       handleEmergencyClick,
       handleExitEmergency,
       currentLocation: { lat: 32.12, lng: 34.82 },
+      lastKnownLocation: { lat: 32.05, lng: 34.78 },
       activeLookupLocation: { lat: 31.78, lng: 35.22 },
       activeLookupLabel: 'Home',
       isLoadingLocation: false,
       locationError: null,
       getLocation,
       handleSearchFromSavedLocation,
+      handleUseLastKnownLocation: vi.fn(),
       handleNearMeClick,
       handleExitNearMe,
       handleUseMapCenter,
@@ -88,6 +90,7 @@ describe('useAppControllerContexts', () => {
     expect(result.current.routeContextValue.routesWithShelters).toEqual([]);
     expect(result.current.routeContextValue.nearbyShelters).toEqual([mockShelter]);
     expect(result.current.emergencyContextValue.activeLookupLabel).toBe('Home');
+    expect(result.current.emergencyContextValue.lastKnownLocation).toEqual({ lat: 32.05, lng: 34.78 });
     expect(result.current.emergencyContextValue.nearMeMode).toBe(true);
     expect(result.current.shelterContextValue.selectedShelterId).toBe('shelter-1');
     expect(result.current.shelterContextValue.onNavigateToShelter).toBe(handleNavigateToShelter);

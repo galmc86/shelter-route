@@ -30,12 +30,14 @@ interface UseAppControllerContextsArgs {
   handleEmergencyClick: () => void;
   handleExitEmergency: () => void;
   currentLocation: LocationPoint | null;
+  lastKnownLocation: LocationPoint | null;
   activeLookupLocation: LocationPoint | null;
   activeLookupLabel: string | null;
   isLoadingLocation: boolean;
   locationError: string | null;
   getLocation: () => void;
   handleSearchFromSavedLocation: (location: LocationPoint, label?: string) => void;
+  handleUseLastKnownLocation: () => void;
   handleNearMeClick: () => void;
   handleExitNearMe: () => void;
   handleUseMapCenter: () => void;
@@ -74,12 +76,14 @@ export function useAppControllerContexts({
   handleEmergencyClick,
   handleExitEmergency,
   currentLocation,
+  lastKnownLocation,
   activeLookupLocation,
   activeLookupLabel,
   isLoadingLocation,
   locationError,
   getLocation,
   handleSearchFromSavedLocation,
+  handleUseLastKnownLocation,
   handleNearMeClick,
   handleExitNearMe,
   handleUseMapCenter,
@@ -131,12 +135,14 @@ export function useAppControllerContexts({
     onEmergencyClick: handleEmergencyClick,
     onExitEmergency: handleExitEmergency,
     currentLocation,
+    lastKnownLocation,
     activeLookupLocation,
     activeLookupLabel,
     isLoadingLocation,
     locationError: locationError ?? null,
     onGetLocation: getLocation,
     onSearchFromSavedLocation: handleSearchFromSavedLocation,
+    onUseLastKnownLocation: handleUseLastKnownLocation,
     nearMeMode,
     onNearMeClick: handleNearMeClick,
     onExitNearMe: handleExitNearMe,
@@ -152,8 +158,10 @@ export function useAppControllerContexts({
     handleExitNearMe,
     handleNearMeClick,
     handleSearchFromSavedLocation,
+    handleUseLastKnownLocation,
     handleUseMapCenter,
     isLoadingLocation,
+    lastKnownLocation,
     locationError,
     nearMeMode,
   ]);

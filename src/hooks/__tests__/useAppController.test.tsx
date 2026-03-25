@@ -56,6 +56,7 @@ let mockShelterState: {
 };
 let mockLocationState: {
   location: { lat: number; lng: number } | null;
+  lastKnownLocation: { lat: number; lng: number } | null;
   isLoading: boolean;
   error: string | null;
   getLocation: typeof mockGetLocation;
@@ -175,6 +176,7 @@ describe('useAppController', () => {
 
     mockLocationState = {
       location: { lat: 32.12, lng: 34.82 },
+      lastKnownLocation: { lat: 32.1, lng: 34.8 },
       isLoading: false,
       error: null,
       getLocation: mockGetLocation,
@@ -290,5 +292,35 @@ describe('useAppController', () => {
 
     expect(mockDismissAlert).toHaveBeenCalledTimes(1);
     expect(mockStopAlertSound).toHaveBeenCalledTimes(1);
+  });
+
+  it('uses the last known location as an emergency fallback without treating it as live geolocation', async () => {
+    mockLocationState = {
+      location: null,
+      lastKnownLocation: { lat: 31.79, lng: 35.21 },
+      isLoading: false,
+      error: 'error.locationUnavailable',
+      getLocation: mockGetLocation,
+    };
+
+    const { result } = renderHook(() => useAppController());
+
+    act(() => {
+      result.current.emergencyContextValue.onUseLastKnownLocation();
+    });
+
+    await waitFor(() => {
+      expect(mockFindNearest).toHaveBeenCalledWith(
+        mockShelterState.allShelters,
+        31.79,
+        35.21
+      );
+    });
+
+    expect(result.current.emergencyMode).toBe(true);
+    expect(result.current.nearMeMode).toBe(false);
+    expect(result.current.emergencyContextValue.activeLookupLabel).toBe('emergency.lastKnownLocationLabel');
+    expect(result.current.emergencyContextValue.currentLocation).toBeNull();
+    expect(result.current.emergencyContextValue.lastKnownLocation).toEqual({ lat: 31.79, lng: 35.21 });
   });
 });
