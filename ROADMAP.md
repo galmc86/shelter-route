@@ -49,11 +49,11 @@ Notes:
 
 ### Epic 3: App-State Refactor Foundation
 Objective: reduce mode coupling and regression risk.
-Status: `[~]`
+Status: `[x]`
 
-- [ ] Refactor `useAppController` into clearer domain state slices
-- [ ] Define state boundaries for `routeSession`, `proximitySearch`, `emergencyAlert`, and `navigation`
-- [ ] Keep contexts as projections of state instead of primary orchestration
+- [x] Refactor `useAppController` into clearer domain state slices
+- [x] Define state boundaries for `routeSession`, `proximitySearch`, `emergencyAlert`, and `navigation`
+- [x] Keep contexts as projections of state instead of primary orchestration
 - [x] Split `SearchPanel` into mode-specific subviews
 - [x] Add provider-level integration tests around the new state model
 
@@ -64,6 +64,7 @@ Notes:
 - Shared-route URL bootstrap, share metadata, and route-search analytics now live in `useRouteSessionState`, reducing route-session concerns inside `useAppController`.
 - Shelter navigation handoff, deferred location retry, and panel open/close behavior now live in `useShelterNavigationFlow`, giving navigation its own explicit seam.
 - Active lookup derivation, nearest-shelter triggering, and proximity-vs-route shelter selection now live in `useProximitySearchState`, separating proximity search behavior from the main controller.
+- Emergency and nearby lookup actions, alert-triggered activation, last-known fallback, and map-center fallback now live in `useEmergencyLookupFlow`, leaving `useAppController` primarily responsible for composing domain hooks plus app-shell state.
 - Route, emergency, and shelter context payloads now live in `useAppControllerContexts`, so `useAppController` is mostly orchestration plus returned API shape.
 - `useAppController` now has direct integration coverage for saved-place lookup, route-search reset behavior, and alert-triggered emergency activation through the composed controller state.
 

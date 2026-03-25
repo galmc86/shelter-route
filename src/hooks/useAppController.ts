@@ -9,11 +9,11 @@ import { useOrefAlerts } from './useOrefAlerts';
 import { useAlertHistory } from './useAlertHistory';
 import { useNavigation } from './useNavigation';
 import { useLookupModeState } from './useLookupModeState';
-import { useEmergencyAlertEffects } from './useEmergencyAlertEffects';
 import { useRouteSessionState } from './useRouteSessionState';
 import { useShelterNavigationFlow } from './useShelterNavigationFlow';
 import { useProximitySearchState } from './useProximitySearchState';
 import { useAppControllerContexts } from './useAppControllerContexts';
+import { useEmergencyLookupFlow } from './useEmergencyLookupFlow';
 import { useLanguage } from '../i18n';
 import { useTheme } from '../theme';
 import { trackEmergency } from '../services/safetyAnalyticsService';
@@ -166,17 +166,6 @@ export function useAppController(): AppControllerState {
     findNearest,
   });
 
-  const activateEmergencyFromAlert = useCallback(() => {
-    enterEmergencyMode();
-    setSelectedShelterId(null);
-    getLocation();
-  }, [enterEmergencyMode, getLocation]);
-  const { dismissAlert } = useEmergencyAlertEffects({
-    isAlertActive,
-    onDismissBase: dismissAlertBase,
-    onActivateEmergency: activateEmergencyFromAlert,
-  });
-
   const handleSearch = useCallback((origin: LatLng, destination: LatLng, travelMode: TravelMode) => {
     setSelectedShelterId(null);
     collapseForRouteSearch();
@@ -184,82 +173,9 @@ export function useAppController(): AppControllerState {
     runRouteSearch(origin, destination, travelMode);
   }, [clearNearest, collapseForRouteSearch, runRouteSearch]);
 
-  const handleNearMeClick = useCallback(() => {
-    enterNearMeMode();
-    setSelectedShelterId(null);
-    getLocation();
-  }, [enterNearMeMode, getLocation]);
-
-  const handleSearchFromSavedLocation = useCallback((location: LocationPoint, label?: string) => {
-    enterSavedLocationMode(location, label);
-    setSelectedShelterId(null);
-    clearNearest();
-  }, [clearNearest, enterSavedLocationMode]);
-
   const handleShelterClick = useCallback((shelter: ShelterWithDistance) => {
     setSelectedShelterId(shelter.id);
   }, []);
-
-  const handleEmergencyClick = useCallback(() => {
-    enterEmergencyMode();
-    setSelectedShelterId(null);
-    getLocation();
-    trackEmergency();
-  }, [enterEmergencyMode, getLocation]);
-
-  const handleUseLastKnownLocation = useCallback(() => {
-    if (!lastKnownLocation) return;
-    enterEmergencyLocationMode(lastKnownLocation, t('emergency.lastKnownLocationLabel'));
-    setSelectedShelterId(null);
-    clearNearest();
-  }, [clearNearest, enterEmergencyLocationMode, lastKnownLocation, t]);
-
-  const alertFallbackAppliedRef = useRef(false);
-
-  useEffect(() => {
-    if (!isAlertActive) {
-      alertFallbackAppliedRef.current = false;
-      return;
-    }
-
-    if (
-      !emergencyMode ||
-      alertFallbackAppliedRef.current ||
-      !locationError ||
-      !lastKnownLocation ||
-      currentLocation ||
-      activeLookupLocation
-    ) {
-      return;
-    }
-
-    enterEmergencyLocationMode(lastKnownLocation, t('emergency.lastKnownLocationLabel'));
-    setSelectedShelterId(null);
-    clearNearest();
-    alertFallbackAppliedRef.current = true;
-  }, [
-    activeLookupLocation,
-    clearNearest,
-    currentLocation,
-    emergencyMode,
-    enterEmergencyLocationMode,
-    isAlertActive,
-    lastKnownLocation,
-    locationError,
-    t,
-  ]);
-
-  const handleExitEmergency = useCallback(() => {
-    exitEmergencyMode();
-    clearNearest();
-    setSelectedShelterId(null);
-  }, [clearNearest, exitEmergencyMode]);
-
-  const handleExitNearMe = useCallback(() => {
-    exitNearMeMode();
-    clearNearest();
-    setSelectedShelterId(null);
-  }, [clearNearest, exitNearMeMode]);
 
   const handleRouteSelect = useCallback((index: number) => {
     selectRoute(index);
@@ -270,12 +186,38 @@ export function useAppController(): AppControllerState {
     leafletMapRef.current = map;
   }, []);
 
-  const handleUseMapCenter = useCallback(() => {
-    const map = leafletMapRef.current;
-    if (!map || !allShelters.length) return;
-    const center = map.getCenter();
-    findNearest(allShelters, center.lat, center.lng);
-  }, [allShelters, findNearest]);
+  const {
+    dismissAlert,
+    handleNearMeClick,
+    handleSearchFromSavedLocation,
+    handleEmergencyClick,
+    handleUseLastKnownLocation,
+    handleExitEmergency,
+    handleExitNearMe,
+    handleUseMapCenter,
+  } = useEmergencyLookupFlow({
+    isAlertActive,
+    emergencyMode,
+    activeLookupLocation,
+    currentLocation,
+    lastKnownLocation,
+    locationError,
+    allShelters,
+    mapRef: leafletMapRef,
+    getLocation,
+    clearNearest,
+    findNearest,
+    enterNearMeMode,
+    enterSavedLocationMode,
+    enterEmergencyMode,
+    enterEmergencyLocationMode,
+    exitEmergencyMode,
+    exitNearMeMode,
+    onDismissBase: dismissAlertBase,
+    onResetSelection: () => setSelectedShelterId(null),
+    onTrackEmergency: trackEmergency,
+    t,
+  });
 
   const {
     handleNavigateToShelter,
