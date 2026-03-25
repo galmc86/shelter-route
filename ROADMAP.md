@@ -123,13 +123,14 @@ Status: `[~]`
 - [x] Split route rendering into a dedicated map layer hook/controller
 - [x] Split shelter markers/popups into a dedicated map layer hook/controller
 - [x] Split user location and emergency radius into dedicated map layer hooks/controllers
-- [ ] Split heat map behavior into a dedicated map layer hook/controller
+- [x] Split heat map behavior into a dedicated map layer hook/controller
 - [ ] Reduce `MapView` to map ownership and composition
 
 Notes:
 - Route polylines, endpoint markers, and the route picker overlay now live in a dedicated `useRouteLayer` hook, reducing the size and branching inside `MapView` without changing route behavior.
 - Shelter marker creation, popup React roots, popup lifecycle cleanup, and selected-shelter reopening now live in `useShelterMarkersLayer`, further shrinking `MapView` to map ownership plus composed layer hooks.
 - User location marker, emergency walking-radius circle, and the emergency fit-bounds behavior now live in `useUserLocationEmergencyLayer`, which also makes the shelter marker opacity use an explicit radius value instead of an implicit mutable ref.
+- Heat map visibility state, toggle control, zoom-aware alert circles, and legend now live in `useHeatMapLayer`, leaving `MapView` closer to pure layer composition instead of mixed map UI management.
 
 ### Epic 8: Automation Expansion
 Objective: cover degraded and cross-browser behavior.
