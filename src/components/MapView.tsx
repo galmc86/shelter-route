@@ -1,11 +1,10 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { createRoot, type Root } from 'react-dom/client';
 import './MapView.css';
 import L from 'leaflet';
 import 'leaflet.markercluster';
 import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
-import { useLanguage, LanguageProvider } from '../i18n';
+import { useLanguage } from '../i18n';
 import type { Language, TranslationKey } from '../i18n';
 import { translations } from '../i18n/translations';
 import { useRouteContext } from '../contexts/RouteContext';
@@ -15,9 +14,8 @@ import { useAlertHistory } from '../hooks/useAlertHistory';
 import { getHeatMapData, type HeatMapCell } from '../services/alertHistoryService';
 import type { RouteOption, LocationPoint } from '../types';
 import type { ShelterWithDistance } from '../hooks/useShelters';
-import type { CapacityData } from '../services/capacityService';
-import { ShelterPopup } from './ShelterPopup';
 import { useRouteLayer } from './map/useRouteLayer';
+import { useShelterMarkersLayer } from './map/useShelterMarkersLayer';
 interface MapViewProps {
   routes?: RouteOption[];
   onSelectRoute?: (index: number) => void;
@@ -31,39 +29,10 @@ interface MapViewProps {
 
 const ISRAEL_CENTER: L.LatLngExpression = [31.5, 34.8];
 
-const SHELTER_ICON_SVG = `<svg width="28" height="34" viewBox="0 0 28 34" xmlns="http://www.w3.org/2000/svg">
-  <path d="M14 0C6.3 0 0 6.3 0 14c0 10.5 14 20 14 20s14-9.5 14-20C28 6.3 21.7 0 14 0z" fill="#0D47A1"/>
-  <path d="M14 6L8 10v7h4v-4h4v4h4v-7L14 6z" fill="white"/>
-</svg>`;
-
-const SELECTED_SHELTER_SVG = `<svg width="36" height="44" viewBox="0 0 36 44" xmlns="http://www.w3.org/2000/svg">
-  <circle cx="18" cy="18" r="17" fill="none" stroke="#FF6F00" stroke-width="2" opacity="0.8"/>
-  <g transform="translate(4, 5)">
-    <path d="M14 0C6.3 0 0 6.3 0 14c0 10.5 14 20 14 20s14-9.5 14-20C28 6.3 21.7 0 14 0z" fill="#0D47A1"/>
-    <path d="M14 6L8 10v7h4v-4h4v4h4v-7L14 6z" fill="white"/>
-  </g>
-</svg>`;
-
 const USER_LOCATION_SVG = `<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
   <circle cx="12" cy="12" r="10" fill="#4285F4" opacity="0.2" stroke="#4285F4" stroke-width="2"/>
   <circle cx="12" cy="12" r="5" fill="#4285F4"/>
 </svg>`;
-
-const shelterIcon = L.divIcon({
-  html: SHELTER_ICON_SVG,
-  className: 'shelter-marker-icon',
-  iconSize: [28, 34],
-  iconAnchor: [14, 34],
-  popupAnchor: [0, -34],
-});
-
-const selectedShelterIcon = L.divIcon({
-  html: SELECTED_SHELTER_SVG,
-  className: 'shelter-marker-icon selected',
-  iconSize: [36, 44],
-  iconAnchor: [18, 44],
-  popupAnchor: [0, -44],
-});
 
 const userLocationIcon = L.divIcon({
   html: USER_LOCATION_SVG,
@@ -89,41 +58,6 @@ function heatMapRadius(zoom: number): number {
   if (zoom >= 12) return 22;
   if (zoom >= 10) return 16;
   return 10;
-}
-
-// Removed: buildShelterPopupHtml — replaced by ShelterPopup React component
-
-/**
- * Wrapper that syncs the language inside the isolated LanguageProvider
- * used for popup React roots.
- */
-function ShelterPopupWithLanguage({
-  shelter,
-  hasRoute,
-  capacityData,
-  lang,
-  onNavigate,
-}: {
-  shelter: ShelterWithDistance;
-  hasRoute: boolean;
-  capacityData?: CapacityData;
-  lang: Language;
-  onNavigate?: (shelter: ShelterWithDistance) => void;
-}) {
-  const { setLanguage } = useLanguage();
-  // Sync language on mount (LanguageProvider defaults to 'he')
-  useEffect(() => {
-    setLanguage(lang);
-  }, [lang, setLanguage]);
-
-  return (
-    <ShelterPopup
-      shelter={shelter}
-      hasRoute={hasRoute}
-      capacityData={capacityData}
-      onNavigate={onNavigate}
-    />
-  );
 }
 
 function buildUserLocationPopupElement(lang: Language): HTMLElement {
@@ -158,8 +92,6 @@ export function MapView({
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
   const userMarkerRef = useRef<L.Marker | null>(null);
-
-  const popupRootsRef = useRef<Map<string, Root>>(new Map());
   const isochroneCircleRef = useRef<L.Circle | null>(null);
   const walkingRadiusRef = useRef<number>(0);
   const heatMapLayerRef = useRef<L.LayerGroup | null>(null);
@@ -174,14 +106,6 @@ export function MapView({
   const toggleHeatMap = useCallback(() => {
     setHeatMapVisible((prev) => !prev);
   }, []);
-
-  // Use a ref for onNavigateToShelter so the shelter markers useEffect
-  // doesn't re-run (recreating all markers and closing popups) when
-  // the callback reference changes due to parent state updates.
-  const onNavigateRef = useRef(onNavigateToShelter);
-  useEffect(() => {
-    onNavigateRef.current = onNavigateToShelter;
-  }, [onNavigateToShelter]);
 
   // Initialize map
   useEffect(() => {
@@ -240,6 +164,20 @@ export function MapView({
     selectedRouteIndex,
     onSelectRoute,
     language,
+  });
+
+  useShelterMarkersLayer({
+    markersLayerRef,
+    shelters,
+    selectedShelterId,
+    onShelterClick,
+    onNavigateToShelter,
+    routeInfo,
+    language,
+    capacityMap,
+    emergencyMode,
+    userLocation,
+    walkingRadiusMeters: walkingRadiusRef.current,
   });
 
   // Update user location marker
@@ -468,134 +406,6 @@ export function MapView({
       }
     };
   }, [heatMapVisible, geocodedAlerts, language]);
-
-  // Update shelter markers
-  useEffect(() => {
-    const map = mapInstanceRef.current;
-    const markersLayer = markersLayerRef.current;
-    const popupRoots = popupRootsRef.current;
-    if (!map || !markersLayer) return;
-
-    // Clean up existing popup roots
-    popupRoots.forEach((root) => {
-      root.unmount();
-    });
-    popupRoots.clear();
-
-    markersLayer.clearLayers();
-
-    const showDistanceLabels = shelters.length < 20;
-
-    shelters.forEach((shelter) => {
-      const distanceMeters = Math.round(shelter.distanceFromRoute);
-      const metersAbbr = tRaw(language, 'shelters.distanceMeters');
-      const isSelected = selectedShelterId === shelter.id;
-
-      let markerIcon: L.DivIcon;
-      if (showDistanceLabels) {
-        const svgHtml = isSelected ? SELECTED_SHELTER_SVG : SHELTER_ICON_SVG;
-        const iconW = isSelected ? 36 : 28;
-        const iconH = isSelected ? 44 : 34;
-        markerIcon = L.divIcon({
-          html: `<div style="display:flex;flex-direction:column;align-items:center;">
-            ${svgHtml}
-            <span class="shelter-distance-label">${distanceMeters} ${metersAbbr}</span>
-          </div>`,
-          className: `shelter-marker-icon${isSelected ? ' selected' : ''}`,
-          iconSize: [Math.max(iconW, 48), iconH + 18],
-          iconAnchor: [Math.max(iconW, 48) / 2, iconH],
-          popupAnchor: [0, -iconH],
-        });
-      } else {
-        markerIcon = isSelected ? selectedShelterIcon : shelterIcon;
-      }
-
-      // Determine if shelter is outside the isochrone walking radius
-      let markerOpacity = 1;
-      if (emergencyMode && userLocation && walkingRadiusRef.current > 0) {
-        const shelterLatLng = L.latLng(shelter.lat, shelter.lon);
-        const userLatLng = L.latLng(userLocation.lat, userLocation.lng);
-        const distToShelter = userLatLng.distanceTo(shelterLatLng);
-        if (distToShelter > walkingRadiusRef.current) {
-          markerOpacity = 0.4;
-        }
-      }
-
-      const marker = L.marker([shelter.lat, shelter.lon], {
-        icon: markerIcon,
-        title: shelter.name,
-        opacity: markerOpacity,
-      });
-
-      // Create a container element for the React popup
-      const popupContainer = document.createElement('div');
-
-      const popup = L.popup({
-        maxWidth: 280,
-        minWidth: 200,
-        autoPanPaddingTopLeft: L.point(10, 80),
-        autoPanPaddingBottomRight: L.point(10, 160),
-      }).setContent(popupContainer);
-
-      marker.bindPopup(popup);
-
-      // Render React component when popup opens
-      marker.on('popupopen', () => {
-        // Unmount previous root if it exists
-        const existingRoot = popupRoots.get(shelter.id);
-        if (existingRoot) {
-          existingRoot.unmount();
-        }
-
-        const root = createRoot(popupContainer);
-        popupRoots.set(shelter.id, root);
-
-        const currentCapData = capacityMap?.get(shelter.id);
-        root.render(
-          <LanguageProvider>
-            <ShelterPopupWithLanguage
-              shelter={shelter}
-              hasRoute={!!routeInfo}
-              capacityData={currentCapData}
-              lang={language}
-              onNavigate={(s) => onNavigateRef.current?.(s)}
-            />
-          </LanguageProvider>
-        );
-      });
-
-      // Clean up React root when popup closes
-      marker.on('popupclose', () => {
-        const root = popupRoots.get(shelter.id);
-        if (root) {
-          root.unmount();
-          popupRoots.delete(shelter.id);
-        }
-      });
-
-      marker.on('click', () => {
-        onShelterClick?.(shelter);
-      });
-
-      markersLayer.addLayer(marker);
-
-      // Programmatically open popup for the selected shelter,
-      // since the useEffect re-creates markers and interrupts
-      // Leaflet's default click-to-open popup behavior.
-      if (isSelected) {
-        setTimeout(() => marker.openPopup(), 0);
-      }
-    });
-
-    // Capture ref value for cleanup
-    const currentPopupRoots = popupRootsRef.current;
-    return () => {
-      currentPopupRoots.forEach((root) => {
-        root.unmount();
-      });
-      currentPopupRoots.clear();
-    };
-  }, [shelters, selectedShelterId, onShelterClick, onNavigateToShelter, routeInfo, language, capacityMap, emergencyMode, userLocation]);
 
   // Render navigation polyline (walking to shelter)
   useEffect(() => {
