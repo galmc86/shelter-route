@@ -37,6 +37,16 @@ export function ShelterResults({
   capacityMap,
 }: ShelterResultsProps) {
   const { t } = useLanguage();
+  const detailShelter = selectedShelterId
+    ? displayedShelters.find((shelter) => shelter.id === selectedShelterId) ?? null
+    : (emergencyMode || proximityMode) ? displayedShelters[0] ?? null : null;
+  const detailCapacityData = detailShelter ? capacityMap?.get(detailShelter.id) : undefined;
+  const detailOccupancyPct = detailShelter
+    ? detailShelter.occupancyPercent ?? (detailCapacityData && detailCapacityData.capacity > 0
+      ? Math.round((detailCapacityData.currentOccupancy / detailCapacityData.capacity) * 100)
+      : undefined)
+    : undefined;
+  const detailKindLabel = detailShelter ? getShelterKindLabel(detailShelter.kind, t) : null;
 
   if ((nearbyShelters.length === 0 && !sheltersLoading) || (displayedShelters.length === 0 && !sheltersLoading && showAccessibleOnly)) {
     return (
@@ -83,6 +93,57 @@ export function ShelterResults({
         </svg>
         {emergencyMode || proximityMode ? t('shelters.nearYou') : `${t('shelters.alongRoute')} (${nearbyShelters.length})`}
       </div>
+
+      {detailShelter && (
+        <div className="shelter-detail-card" role="status" aria-live="polite">
+          <div className="shelter-detail-header">
+            <div className="shelter-detail-title-group">
+              <div className="shelter-detail-title">{detailShelter.name}</div>
+              <div className="shelter-detail-badges">
+                {(emergencyMode || proximityMode) && detailShelter.recommendationReasonKey && (
+                  <span className="shelter-detail-pill shelter-detail-pill--recommended">
+                    {t('sort.recommended')}
+                  </span>
+                )}
+                {detailShelter.isAccessible && (
+                  <span className="shelter-detail-pill shelter-detail-pill--accessible">
+                    {t('accessibility.accessible')}
+                  </span>
+                )}
+                {detailKindLabel && (
+                  <span className="shelter-detail-pill shelter-detail-pill--secondary">
+                    {detailKindLabel}
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="shelter-detail-metric">
+              <span className="shelter-detail-metric-value">{detailShelter.distanceFromRoute}</span>
+              <span className="shelter-detail-metric-label">{t('shelters.meter')}</span>
+            </div>
+          </div>
+          {detailShelter.address && (
+            <div className="shelter-detail-subtitle">
+              {detailShelter.address}
+            </div>
+          )}
+          <div className="shelter-detail-meta">
+            <span className="shelter-detail-chip">
+              {t('shelters.walkingTime').replace('{{minutes}}', String(detailShelter.walkingTimeMinutes))}
+            </span>
+            <span className="shelter-detail-chip">
+              {detailOccupancyPct !== undefined
+                ? `${t(getCapacityStatusKey(detailOccupancyPct))} · ${detailOccupancyPct}%`
+                : t('capacity.unknown')}
+            </span>
+            {detailShelter.recommendationReasonKey && (
+              <span className="shelter-detail-chip shelter-detail-chip--reason">
+                {t('recommendation.label').replace('{{reason}}', t(detailShelter.recommendationReasonKey))}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="shelter-controls">
         <div className="sort-toggle" role="group" aria-label={t('sort.label')}>

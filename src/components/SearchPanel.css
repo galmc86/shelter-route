@@ -924,6 +924,105 @@
   gap: 6px;
 }
 
+.shelter-detail-card {
+  display: none;
+}
+
+.shelter-detail-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.shelter-detail-title-group {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.shelter-detail-title {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--color-text);
+  line-height: 1.2;
+}
+
+.shelter-detail-subtitle {
+  font-size: 0.84rem;
+  color: var(--color-shelter-address);
+  line-height: 1.35;
+}
+
+.shelter-detail-badges,
+.shelter-detail-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.shelter-detail-pill,
+.shelter-detail-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.shelter-detail-pill--recommended {
+  background: rgba(21, 101, 192, 0.12);
+  color: var(--color-primary);
+}
+
+.shelter-detail-pill--accessible {
+  background: rgba(27, 94, 32, 0.1);
+  color: #1b5e20;
+}
+
+.shelter-detail-pill--secondary {
+  background: rgba(15, 23, 42, 0.05);
+  color: var(--color-subtle-text);
+}
+
+.shelter-detail-metric {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  min-width: 64px;
+  padding: 8px 10px;
+  border-radius: 14px;
+  background: rgba(21, 101, 192, 0.08);
+  color: var(--color-primary);
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.shelter-detail-metric-value {
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+.shelter-detail-metric-label {
+  font-size: 0.68rem;
+  opacity: 0.8;
+}
+
+.shelter-detail-chip {
+  background: rgba(248, 250, 252, 0.92);
+  border: 1px solid rgba(21, 101, 192, 0.08);
+  color: var(--color-subtle-text);
+}
+
+.shelter-detail-chip--reason {
+  background: rgba(21, 101, 192, 0.08);
+  color: var(--color-primary);
+}
+
 .shelter-item {
   display: flex;
   align-items: flex-start;
@@ -1110,6 +1209,49 @@
 
 .shelter-item-secondary .capacity-bar-container {
   margin-top: 0;
+}
+
+@media (min-width: 1100px) {
+  .shelter-detail-card {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    border-radius: 18px;
+    background: linear-gradient(180deg, rgba(245, 249, 255, 0.98), rgba(255, 255, 255, 0.96));
+    border: 1px solid rgba(21, 101, 192, 0.1);
+    box-shadow: 0 14px 28px rgba(13, 71, 161, 0.06);
+  }
+
+  .shelter-list {
+    gap: 10px;
+  }
+
+  .shelter-item {
+    padding: 12px;
+    border-radius: 16px;
+  }
+
+  .shelter-item-address {
+    font-size: 11px;
+  }
+
+  .shelter-item-secondary {
+    gap: 4px;
+  }
+
+  [data-theme="dark"] .shelter-detail-card {
+    background: linear-gradient(180deg, rgba(20, 30, 44, 0.96), rgba(15, 23, 42, 0.92));
+    border-color: rgba(148, 163, 184, 0.14);
+    box-shadow: 0 18px 34px rgba(2, 6, 23, 0.24);
+  }
+
+  [data-theme="dark"] .shelter-detail-pill--secondary,
+  [data-theme="dark"] .shelter-detail-chip {
+    background: rgba(30, 41, 59, 0.86);
+    border-color: rgba(148, 163, 184, 0.12);
+    color: #d7e2f2;
+  }
 }
 
 .accessible-badge {

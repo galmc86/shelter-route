@@ -182,7 +182,7 @@ Notes:
 Objective: improve tablet/desktop usability.
 Status: `[~]`
 
-- [ ] Move from a resized single panel to a true list-detail/task layout
+- [~] Move from a resized single panel to a true list-detail/task layout
 - [x] Keep map and active task visible simultaneously on larger screens
 - [x] Rebalance information density for desktop/tablet layouts
 - [ ] Validate responsive behavior across supported breakpoints
@@ -191,6 +191,7 @@ Notes:
 - Desktop now uses a dedicated task rail instead of reusing the mobile floating glass switcher, so the map stays unobstructed while the active task remains visible.
 - Mobile keeps the glass section switcher anchored at the top of the map; the desktop rail layout is viewport-gated so the larger-screen work does not regress the phone shell.
 - The desktop search rail now separates the task composer from the scrollable results area, so route setup and nearby controls stay stable while shelter results and route options can grow independently.
+- Larger screens now surface the selected or recommended shelter in a dedicated detail card above the results list, so the rail starts behaving more like list-detail instead of only a widened mobile stack.
 
 ## Suggested Execution Order
 
