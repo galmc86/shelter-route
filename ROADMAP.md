@@ -118,13 +118,16 @@ Notes:
 
 ### Epic 7: MapView Decomposition
 Objective: make map behavior safer to evolve.
-Status: `[ ]`
+Status: `[~]`
 
-- [ ] Split route rendering into a dedicated map layer hook/controller
+- [x] Split route rendering into a dedicated map layer hook/controller
 - [ ] Split shelter markers/popups into a dedicated map layer hook/controller
 - [ ] Split user location and emergency radius into dedicated map layer hooks/controllers
 - [ ] Split heat map behavior into a dedicated map layer hook/controller
 - [ ] Reduce `MapView` to map ownership and composition
+
+Notes:
+- Route polylines, endpoint markers, and the route picker overlay now live in a dedicated `useRouteLayer` hook, reducing the size and branching inside `MapView` without changing route behavior.
 
 ### Epic 8: Automation Expansion
 Objective: cover degraded and cross-browser behavior.

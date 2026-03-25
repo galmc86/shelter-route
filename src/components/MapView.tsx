@@ -17,6 +17,7 @@ import type { RouteOption, LocationPoint } from '../types';
 import type { ShelterWithDistance } from '../hooks/useShelters';
 import type { CapacityData } from '../services/capacityService';
 import { ShelterPopup } from './ShelterPopup';
+import { useRouteLayer } from './map/useRouteLayer';
 interface MapViewProps {
   routes?: RouteOption[];
   onSelectRoute?: (index: number) => void;
@@ -29,9 +30,6 @@ interface MapViewProps {
 }
 
 const ISRAEL_CENTER: L.LatLngExpression = [31.5, 34.8];
-
-// Distinct colors for each route alternative
-const ROUTE_COLORS = ['#4285F4', '#00897B', '#F57C00'];
 
 const SHELTER_ICON_SVG = `<svg width="28" height="34" viewBox="0 0 28 34" xmlns="http://www.w3.org/2000/svg">
   <path d="M14 0C6.3 0 0 6.3 0 14c0 10.5 14 20 14 20s14-9.5 14-20C28 6.3 21.7 0 14 0z" fill="#0D47A1"/>
@@ -49,16 +47,6 @@ const SELECTED_SHELTER_SVG = `<svg width="36" height="44" viewBox="0 0 36 44" xm
 const USER_LOCATION_SVG = `<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
   <circle cx="12" cy="12" r="10" fill="#4285F4" opacity="0.2" stroke="#4285F4" stroke-width="2"/>
   <circle cx="12" cy="12" r="5" fill="#4285F4"/>
-</svg>`;
-
-const START_MARKER_SVG = `<svg width="28" height="34" viewBox="0 0 28 34" xmlns="http://www.w3.org/2000/svg">
-  <path d="M14 0C6.3 0 0 6.3 0 14c0 10.5 14 20 14 20s14-9.5 14-20C28 6.3 21.7 0 14 0z" fill="#2E7D32"/>
-  <circle cx="14" cy="13" r="5" fill="white"/>
-</svg>`;
-
-const END_MARKER_SVG = `<svg width="28" height="34" viewBox="0 0 28 34" xmlns="http://www.w3.org/2000/svg">
-  <path d="M14 0C6.3 0 0 6.3 0 14c0 10.5 14 20 14 20s14-9.5 14-20C28 6.3 21.7 0 14 0z" fill="#C62828"/>
-  <circle cx="14" cy="13" r="5" fill="white"/>
 </svg>`;
 
 const shelterIcon = L.divIcon({
@@ -82,22 +70,6 @@ const userLocationIcon = L.divIcon({
   className: 'user-location-icon',
   iconSize: [24, 24],
   iconAnchor: [12, 12],
-});
-
-const startMarkerIcon = L.divIcon({
-  html: START_MARKER_SVG,
-  className: 'route-endpoint-icon',
-  iconSize: [28, 34],
-  iconAnchor: [14, 34],
-  popupAnchor: [0, -34],
-});
-
-const endMarkerIcon = L.divIcon({
-  html: END_MARKER_SVG,
-  className: 'route-endpoint-icon',
-  iconSize: [28, 34],
-  iconAnchor: [14, 34],
-  popupAnchor: [0, -34],
 });
 
 function tRaw(lang: Language, key: TranslationKey): string {
@@ -184,9 +156,6 @@ export function MapView({
   const { language, t } = useLanguage();
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
-  const routeLayersRef = useRef<L.Polyline[]>([]);
-  const routeMarkersRef = useRef<L.Marker[]>([]);
-  const routePickerRef = useRef<L.Control | null>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
   const userMarkerRef = useRef<L.Marker | null>(null);
 
@@ -264,142 +233,14 @@ export function MapView({
     };
   }, [isLoaded]); // eslint-disable-line react-hooks/exhaustive-deps -- onMapReady is stable (useCallback with no deps), only needs to run on map init
 
-  // Update routes (selected + alternatives)
-  useEffect(() => {
-    const map = mapInstanceRef.current;
-    if (!map) return;
-
-    // Clear existing route layers
-    routeLayersRef.current.forEach((l) => l.remove());
-    routeLayersRef.current = [];
-    routeMarkersRef.current.forEach((m) => m.remove());
-    routeMarkersRef.current = [];
-    if (routePickerRef.current) {
-      map.removeControl(routePickerRef.current);
-      routePickerRef.current = null;
-    }
-
-    const routesToRender = routes && routes.length > 0 ? routes : routeInfo ? [routeInfo] : [];
-    if (routesToRender.length === 0) return;
-
-    const activeIndex = routes && routes.length > 0 ? selectedRouteIndex : 0;
-    const hasAlternatives = routes && routes.length > 1;
-
-    // Render non-selected routes first (so they appear behind)
-    routesToRender.forEach((route, index) => {
-      if (index === activeIndex) return;
-      if (route.path.length < 2) return;
-
-      const color = hasAlternatives ? (ROUTE_COLORS[index] || '#9E9E9E') : '#9E9E9E';
-      const latLngs: L.LatLngExpression[] = route.path.map((p) => [p.lat, p.lng]);
-      const polyline = L.polyline(latLngs, {
-        color,
-        weight: 5,
-        opacity: 0.5,
-        dashArray: '8 6',
-      }).addTo(map);
-
-      polyline.on('click', () => {
-        onSelectRoute?.(index);
-      });
-
-      routeLayersRef.current.push(polyline);
-    });
-
-    // Render selected route on top
-    const selected = routesToRender[activeIndex];
-    if (selected && selected.path.length >= 2) {
-      const selectedColor = hasAlternatives ? (ROUTE_COLORS[activeIndex] || '#4285F4') : '#4285F4';
-      const latLngs: L.LatLngExpression[] = selected.path.map((p) => [p.lat, p.lng]);
-      const polyline = L.polyline(latLngs, {
-        color: selectedColor,
-        weight: 6,
-        opacity: 0.9,
-      }).addTo(map);
-
-      routeLayersRef.current.push(polyline);
-
-      const start = selected.path[0];
-      const end = selected.path[selected.path.length - 1];
-
-      const startMarker = L.marker([start.lat, start.lng], {
-        icon: startMarkerIcon,
-        zIndexOffset: 900,
-      }).addTo(map);
-
-      const endMarker = L.marker([end.lat, end.lng], {
-        icon: endMarkerIcon,
-        zIndexOffset: 900,
-      }).addTo(map);
-
-      routeMarkersRef.current = [startMarker, endMarker];
-
-      // Add floating route picker overlay when alternatives exist
-      if (hasAlternatives) {
-        const dir = language === 'en' ? 'ltr' : 'rtl';
-        const RoutePicker = L.Control.extend({
-          onAdd() {
-            const container = L.DomUtil.create('div', 'route-picker-overlay');
-            container.setAttribute('dir', dir);
-            L.DomEvent.disableClickPropagation(container);
-            L.DomEvent.disableScrollPropagation(container);
-
-            routes!.forEach((route, index) => {
-              const isActive = index === activeIndex;
-              const color = ROUTE_COLORS[index] || '#9E9E9E';
-
-              const btn = document.createElement('button');
-              btn.className = 'route-picker-item' + (isActive ? ' route-picker-item-active' : '');
-
-              const colorSpan = document.createElement('span');
-              colorSpan.className = 'route-picker-color';
-              colorSpan.style.background = color;
-
-              const infoSpan = document.createElement('span');
-              infoSpan.className = 'route-picker-info';
-
-              const durationSpan = document.createElement('span');
-              durationSpan.className = 'route-picker-duration';
-              durationSpan.textContent = route.duration;
-
-              const distanceSpan = document.createElement('span');
-              distanceSpan.className = 'route-picker-distance';
-              distanceSpan.textContent = route.distance;
-
-              infoSpan.appendChild(durationSpan);
-              infoSpan.appendChild(distanceSpan);
-              btn.appendChild(colorSpan);
-              btn.appendChild(infoSpan);
-
-              if (route.isFastest) {
-                const badge = document.createElement('span');
-                badge.className = 'route-picker-fastest-badge';
-                badge.textContent = tRaw(language, 'routes.fastest');
-                btn.appendChild(badge);
-              }
-
-              btn.addEventListener('click', () => {
-                onSelectRoute?.(index);
-              });
-
-              container.appendChild(btn);
-            });
-
-            return container;
-          },
-        });
-
-        routePickerRef.current = new RoutePicker({ position: 'topright' });
-        routePickerRef.current.addTo(map);
-      }
-
-      const bounds = L.latLngBounds(
-        [selected.bounds.southWest.lat, selected.bounds.southWest.lng],
-        [selected.bounds.northEast.lat, selected.bounds.northEast.lng]
-      );
-      map.fitBounds(bounds, { padding: [40, 40] });
-    }
-  }, [routeInfo, routes, selectedRouteIndex, onSelectRoute, language]);
+  useRouteLayer({
+    mapRef: mapInstanceRef,
+    routeInfo,
+    routes,
+    selectedRouteIndex,
+    onSelectRoute,
+    language,
+  });
 
   // Update user location marker
   useEffect(() => {
