@@ -1,16 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  createGroup,
-  getGroup,
-  getShareLink,
-  joinGroup,
-  leaveGroup,
-  markCurrentMemberNeedsCheckIn,
-  setImSafe,
-  subscribeToFamilyGroupChanges,
   type FamilyGroup,
   type FamilyMember,
 } from '../services/familySafetyService';
+import { getFamilyRepository } from '../services/familyRepository';
 
 export interface UseFamilyGroupStateResult {
   group: FamilyGroup | null;
@@ -28,52 +21,53 @@ export interface UseFamilyGroupStateResult {
 }
 
 export function useFamilyGroupState(): UseFamilyGroupStateResult {
-  const [group, setGroup] = useState<FamilyGroup | null>(() => getGroup());
+  const repository = useMemo(() => getFamilyRepository(), []);
+  const [group, setGroup] = useState<FamilyGroup | null>(() => repository.getSnapshot());
 
   useEffect(() => {
-    setGroup(getGroup());
-    return subscribeToFamilyGroupChanges(() => {
-      setGroup(getGroup());
+    setGroup(repository.getSnapshot());
+    return repository.subscribe(() => {
+      setGroup(repository.getSnapshot());
     });
-  }, []);
+  }, [repository]);
 
   const createFamilyGroup = useCallback((name: string) => {
     const trimmedName = name.trim();
     if (!trimmedName) return null;
-    const nextGroup = createGroup(trimmedName);
+    const nextGroup = repository.createGroup(trimmedName);
     setGroup(nextGroup);
     return nextGroup;
-  }, []);
+  }, [repository]);
 
   const joinFamilyGroup = useCallback((code: string, name: string) => {
     const trimmedCode = code.trim();
     const trimmedName = name.trim();
     if (!trimmedCode || !trimmedName) return null;
-    const nextGroup = joinGroup(trimmedCode, trimmedName);
+    const nextGroup = repository.joinGroup(trimmedCode, trimmedName);
     setGroup(nextGroup);
     return nextGroup;
-  }, []);
+  }, [repository]);
 
   const markFamilySafe = useCallback(() => {
-    const updated = setImSafe();
+    const updated = repository.markCurrentMemberSafe();
     if (updated) {
       setGroup(updated);
     }
     return updated;
-  }, []);
+  }, [repository]);
 
   const markNeedsCheckIn = useCallback(() => {
-    const updated = markCurrentMemberNeedsCheckIn();
+    const updated = repository.markCurrentMemberNeedsCheckIn();
     if (updated) {
       setGroup(updated);
     }
     return updated;
-  }, []);
+  }, [repository]);
 
   const leaveFamilyGroup = useCallback(() => {
-    leaveGroup();
+    repository.leaveGroup();
     setGroup(null);
-  }, []);
+  }, [repository]);
 
   const currentMember = useMemo(() => (
     group?.members.find((member) => member.name === group.memberName) ?? null
@@ -89,7 +83,7 @@ export function useFamilyGroupState(): UseFamilyGroupStateResult {
     isCurrentMemberSafe: currentMember?.isSafe ?? false,
     safeMembersCount,
     waitingMembersCount,
-    shareLink: group ? getShareLink() : null,
+    shareLink: group ? repository.getShareLink() : null,
     createFamilyGroup,
     joinFamilyGroup,
     markFamilySafe,
