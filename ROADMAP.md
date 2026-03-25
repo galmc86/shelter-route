@@ -178,6 +178,7 @@ Notes:
 - The hybrid repository now also listens for the browser coming back online and flushes queued family mutations immediately, so retry does not depend on the user revisiting the family surface.
 - The remote gateway contract now takes an explicit remote session object, so future authenticated sync can replace the current anonymous device session without changing repository orchestration again.
 - Family sync now records persisted status metadata for pending count and last success/failure, which gives the app a stable diagnostics seam before any sync-status UI is added.
+- Remote gateway selection now goes through a dedicated factory with a backend stub mode, so the first real transport integration has a drop-in place to land without reworking the repository layer.
 
 ### Epic 10: Saved Places to Safety Profiles
 Objective: turn saved locations into reusable routines.

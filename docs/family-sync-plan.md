@@ -37,6 +37,7 @@ Introduce a repository boundary with a gateway seam:
 2. `FamilyRemoteGateway`
    - defines the transport-facing contract for group fetch, upsert, clear, and subscription
    - can be implemented by a mock local gateway first and a real backend later
+   - should be selected through a gateway factory so environments can swap implementations without changing repository code
 
 3. `RemoteFamilyRepository`
    - composes local state with the remote gateway
@@ -182,6 +183,7 @@ The remote gateway should accept an explicit remote session object instead of re
 - add hybrid repository wiring
 - keep remote feature behind a flag
 - allow hybrid mode to be enabled in development with `?familySyncMode=hybrid` or `VITE_FAMILY_SYNC_MODE=hybrid`
+- allow remote gateway selection in development with `?familyRemoteGateway=backend` or `VITE_FAMILY_REMOTE_GATEWAY=backend`
 
 ### Phase 3
 

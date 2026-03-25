@@ -1,3 +1,8 @@
+import { getBackendFamilyRemoteGateway } from './backendFamilyRemoteGateway';
+import {
+  getFamilyRemoteGatewayMode,
+  type FamilyRemoteGatewayMode,
+} from './familyRemoteGatewayModeService';
 import { getMockFamilyRemoteGateway } from './mockFamilyRemoteGateway';
 import type { FamilyRemoteGroupRecord } from './familyRemoteModel';
 import type { FamilyRemoteSession } from './familyRemoteSessionService';
@@ -9,8 +14,16 @@ export interface FamilyRemoteGateway {
   subscribe(groupCode: string, session: FamilyRemoteSession, listener: () => void): () => void;
 }
 
-const familyRemoteGateway = getMockFamilyRemoteGateway();
+export function createFamilyRemoteGateway({
+  mode = getFamilyRemoteGatewayMode(),
+}: {
+  mode?: FamilyRemoteGatewayMode;
+} = {}): FamilyRemoteGateway {
+  return mode === 'backend'
+    ? getBackendFamilyRemoteGateway()
+    : getMockFamilyRemoteGateway();
+}
 
 export function getFamilyRemoteGateway(): FamilyRemoteGateway {
-  return familyRemoteGateway;
+  return createFamilyRemoteGateway();
 }
