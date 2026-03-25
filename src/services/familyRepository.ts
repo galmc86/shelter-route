@@ -28,6 +28,10 @@ import {
   type FamilySyncMutation,
 } from './familySyncQueueService';
 import { getFamilySyncMode, type FamilySyncMode } from './familySyncModeService';
+import {
+  recordFamilySyncFailure,
+  recordFamilySyncSuccess,
+} from './familySyncStatusService';
 
 export interface FamilyRepository {
   getSnapshot(): FamilyGroup | null;
@@ -293,6 +297,8 @@ export class HybridFamilyRepository implements FamilyRepository {
   }
 
   private applyMutation(mutation: FamilySyncMutation): boolean {
+    const attemptedAt = new Date().toISOString();
+
     try {
       if (mutation.kind === 'clear') {
         this.remoteGateway.clearGroup(mutation.groupCode, this.remoteSession);
@@ -300,8 +306,13 @@ export class HybridFamilyRepository implements FamilyRepository {
         this.remoteGateway.upsertGroup(mutation.record, this.remoteSession);
       }
 
+      recordFamilySyncSuccess(attemptedAt);
       return true;
-    } catch {
+    } catch (error) {
+      recordFamilySyncFailure(
+        attemptedAt,
+        error instanceof Error ? error.message : 'family sync failed'
+      );
       return false;
     }
   }

@@ -1,4 +1,5 @@
 import type { FamilyRemoteGroupRecord } from './familyRemoteModel';
+import { setFamilySyncPendingCount } from './familySyncStatusService';
 
 const STORAGE_KEY = 'shelter-route:family-sync-queue';
 
@@ -54,6 +55,7 @@ export function queueFamilySyncMutation(mutation: FamilySyncMutation): FamilySyn
 export function savePendingFamilySyncMutations(mutations: FamilySyncMutation[]): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(mutations.map(normalizeMutation)));
+    setFamilySyncPendingCount(mutations.length);
   } catch {
     // ignore storage failures
   }
@@ -62,6 +64,7 @@ export function savePendingFamilySyncMutations(mutations: FamilySyncMutation[]):
 export function clearPendingFamilySyncMutations(): void {
   try {
     localStorage.removeItem(STORAGE_KEY);
+    setFamilySyncPendingCount(0);
   } catch {
     // ignore storage failures
   }

@@ -5,6 +5,7 @@ import type { FamilyRemoteGroupRecord } from '../familyRemoteModel';
 import { mapFamilyGroupToRemoteRecord } from '../familyRemoteModel';
 import type { FamilyRemoteGateway } from '../familyRemoteGateway';
 import type { FamilyRemoteSession } from '../familyRemoteSessionService';
+import { getFamilySyncStatus } from '../familySyncStatusService';
 import {
   clearPendingFamilySyncMutations,
   getPendingFamilySyncMutations,
@@ -109,6 +110,7 @@ describe('familyRepository', () => {
     expect(group.groupCode).toHaveLength(6);
     expect(getPendingFamilySyncMutations()).toHaveLength(1);
     expect(storedRecord).toBeNull();
+    expect(getFamilySyncStatus().lastError).toBe('remote unavailable');
 
     shouldFail = false;
 
@@ -118,6 +120,7 @@ describe('familyRepository', () => {
     expect(hydrated?.groupCode).toBe(group.groupCode);
     expect(syncedRecord?.inviteCode).toBe(group.groupCode);
     expect(getPendingFamilySyncMutations()).toEqual([]);
+    expect(getFamilySyncStatus().lastError).toBeNull();
   });
 
   it('flushes queued remote mutations when the browser comes back online', () => {
