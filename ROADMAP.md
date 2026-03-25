@@ -195,6 +195,7 @@ Notes:
 - Tablet-width layouts now switch into a compact rail at 900px and above, instead of staying on the full mobile sheet until desktop width.
 - Pre-search route mode now uses a neutral idle-state panel instead of a false “no shelters found” warning, so the larger-screen rail reads as intentional before the first query.
 - Responsive breakpoint behavior now has automated coverage in both Vitest and Playwright, including the 900px rail threshold plus desktop, tablet, and phone shell expectations.
+- On larger screens, the active route summary or recommended shelter detail now stays primary while the alternatives/results list scrolls underneath it, pushing the rail closer to a real list-detail workspace.
 
 ## Suggested Execution Order
 

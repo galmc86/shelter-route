@@ -511,6 +511,26 @@ export function SearchPanel({
       </div>
 
       <div className="search-panel-secondary">
+        {!emergencyMode && routeInfo && (
+          <>
+            <div className="divider" />
+            <RouteSummary
+              routeInfo={routeInfo}
+              sheltersLoading={sheltersLoading}
+              nearbySheltersCount={nearbyShelters.length}
+              routeRisk={routeRisk ?? null}
+              timeFilter={timeFilter}
+              onTimeFilterChange={onTimeFilterChange}
+              canShare={Boolean(shareOrigin && shareDestination)}
+              onShare={handleShare}
+              currentRouteEntry={currentRouteEntry}
+              isRouteSaved={isRouteSaved}
+              onSaveRoute={handleSaveRoute}
+              onUnsaveRoute={handleUnsaveRoute}
+            />
+          </>
+        )}
+
         {!emergencyMode && routesWithShelters.length > 1 && (
           <>
             <div className="divider" />
@@ -553,26 +573,6 @@ export function SearchPanel({
                 );
               })}
             </div>
-          </>
-        )}
-
-        {!emergencyMode && routeInfo && (
-          <>
-            <div className="divider" />
-            <RouteSummary
-              routeInfo={routeInfo}
-              sheltersLoading={sheltersLoading}
-              nearbySheltersCount={nearbyShelters.length}
-              routeRisk={routeRisk ?? null}
-              timeFilter={timeFilter}
-              onTimeFilterChange={onTimeFilterChange}
-              canShare={Boolean(shareOrigin && shareDestination)}
-              onShare={handleShare}
-              currentRouteEntry={currentRouteEntry}
-              isRouteSaved={isRouteSaved}
-              onSaveRoute={handleSaveRoute}
-              onUnsaveRoute={handleUnsaveRoute}
-            />
           </>
         )}
 
