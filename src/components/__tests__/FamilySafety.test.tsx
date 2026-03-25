@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FamilySafety } from '../FamilySafety';
 import type { FamilyGroup } from '../../services/familySafetyService';
 
-const mockGetGroup = vi.fn();
+const mockUseFamilyGroupState = vi.fn();
 
 vi.mock('../../i18n', () => ({
   useLanguage: () => ({
@@ -11,20 +11,27 @@ vi.mock('../../i18n', () => ({
   }),
 }));
 
-vi.mock('../../services/familySafetyService', () => ({
-  getGroup: () => mockGetGroup(),
-  createGroup: vi.fn(),
-  joinGroup: vi.fn(),
-  setImSafe: vi.fn(),
-  leaveGroup: vi.fn(),
-  getShareLink: vi.fn(() => 'https://example.com'),
-  subscribeToFamilyGroupChanges: vi.fn(() => () => {}),
+vi.mock('../../hooks/useFamilyGroupState', () => ({
+  useFamilyGroupState: () => mockUseFamilyGroupState(),
 }));
 
 describe('FamilySafety', () => {
   beforeEach(() => {
-    mockGetGroup.mockReset();
-    mockGetGroup.mockReturnValue(null);
+    mockUseFamilyGroupState.mockReset();
+    mockUseFamilyGroupState.mockReturnValue({
+      group: null,
+      currentMember: null,
+      hasGroup: false,
+      isCurrentMemberSafe: false,
+      safeMembersCount: 0,
+      waitingMembersCount: 0,
+      shareLink: 'https://example.com',
+      createFamilyGroup: vi.fn(),
+      joinFamilyGroup: vi.fn(),
+      markFamilySafe: vi.fn(),
+      markNeedsCheckIn: vi.fn(),
+      leaveFamilyGroup: vi.fn(),
+    });
   });
 
   it('shows section content immediately in section presentation', () => {
@@ -59,7 +66,20 @@ describe('FamilySafety', () => {
         { id: '2', name: 'Noam', isSafe: false },
       ],
     };
-    mockGetGroup.mockReturnValue(existingGroup);
+    mockUseFamilyGroupState.mockReturnValue({
+      group: existingGroup,
+      currentMember: existingGroup.members[0],
+      hasGroup: true,
+      isCurrentMemberSafe: true,
+      safeMembersCount: 1,
+      waitingMembersCount: 1,
+      shareLink: 'https://example.com/?familyGroup=ABC123',
+      createFamilyGroup: vi.fn(),
+      joinFamilyGroup: vi.fn(),
+      markFamilySafe: vi.fn(),
+      markNeedsCheckIn: vi.fn(),
+      leaveFamilyGroup: vi.fn(),
+    });
 
     render(<FamilySafety presentation="section" />);
 

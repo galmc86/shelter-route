@@ -1,15 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useLanguage } from '../i18n';
-import {
-  getGroup,
-  createGroup,
-  joinGroup,
-  setImSafe,
-  leaveGroup,
-  getShareLink,
-  subscribeToFamilyGroupChanges,
-  type FamilyGroup,
-} from '../services/familySafetyService';
+import { useFamilyGroupState } from '../hooks/useFamilyGroupState';
 
 interface FamilySafetyProps {
   initialGroupCode?: string | null;
@@ -21,33 +12,34 @@ export function FamilySafety({
   presentation = 'accordion',
 }: FamilySafetyProps) {
   const { t } = useLanguage();
-  const [group, setGroup] = useState<FamilyGroup | null>(null);
   const [nameInput, setNameInput] = useState('');
   const [codeInput, setCodeInput] = useState('');
   const [setupMode, setSetupMode] = useState<'create' | 'join'>(initialGroupCode ? 'join' : 'create');
   const [copied, setCopied] = useState(false);
   const [codeCopied, setCodeCopied] = useState(false);
   const [isExpanded, setIsExpanded] = useState(presentation === 'section');
+  const {
+    group,
+    isCurrentMemberSafe,
+    safeMembersCount,
+    waitingMembersCount,
+    shareLink,
+    createFamilyGroup,
+    joinFamilyGroup,
+    markFamilySafe,
+    leaveFamilyGroup,
+  } = useFamilyGroupState();
 
-  // Load existing group on mount
+  // Prefill the join state when the app was opened from a family invite link.
   useEffect(() => {
-    const existing = getGroup();
-    if (existing) {
-      queueMicrotask(() => setGroup(existing));
-    } else if (initialGroupCode) {
+    if (!group && initialGroupCode) {
       queueMicrotask(() => {
         setSetupMode('join');
         setCodeInput(initialGroupCode);
         setIsExpanded(true);
       });
     }
-  }, [initialGroupCode]);
-
-  useEffect(() => {
-    return subscribeToFamilyGroupChanges(() => {
-      setGroup(getGroup());
-    });
-  }, []);
+  }, [group, initialGroupCode]);
 
   useEffect(() => {
     if (presentation === 'section') {
@@ -57,32 +49,32 @@ export function FamilySafety({
 
   const handleCreate = useCallback(() => {
     if (!nameInput.trim()) return;
-    const g = createGroup(nameInput.trim());
-    setGroup(g);
-    setNameInput('');
-  }, [nameInput]);
+    const nextGroup = createFamilyGroup(nameInput.trim());
+    if (nextGroup) {
+      setNameInput('');
+    }
+  }, [createFamilyGroup, nameInput]);
 
   const handleJoin = useCallback(() => {
     if (!nameInput.trim() || !codeInput.trim()) return;
-    const g = joinGroup(codeInput.trim(), nameInput.trim());
-    setGroup(g);
-    setNameInput('');
-    setCodeInput('');
-    setSetupMode('create');
-  }, [nameInput, codeInput]);
+    const nextGroup = joinFamilyGroup(codeInput.trim(), nameInput.trim());
+    if (nextGroup) {
+      setNameInput('');
+      setCodeInput('');
+      setSetupMode('create');
+    }
+  }, [codeInput, joinFamilyGroup, nameInput]);
 
   const handleImSafe = useCallback(() => {
-    const updated = setImSafe();
-    if (updated) setGroup({ ...updated });
-  }, []);
+    markFamilySafe();
+  }, [markFamilySafe]);
 
   const handleLeave = useCallback(() => {
-    leaveGroup();
-    setGroup(null);
-  }, []);
+    leaveFamilyGroup();
+  }, [leaveFamilyGroup]);
 
   const handleShare = useCallback(async () => {
-    const link = getShareLink();
+    const link = shareLink ?? window.location.href;
     if (navigator.share) {
       try {
         await navigator.share({
@@ -102,7 +94,7 @@ export function FamilySafety({
     } catch {
       // clipboard unavailable
     }
-  }, [t]);
+  }, [shareLink, t]);
 
   const handleCopyCode = useCallback(async () => {
     if (!group) return;
@@ -115,10 +107,7 @@ export function FamilySafety({
     }
   }, [group]);
 
-  const currentMember = group?.members.find((m) => m.name === group.memberName);
-  const isSafe = currentMember?.isSafe ?? false;
-  const safeMembersCount = group?.members.filter((member) => member.isSafe).length ?? 0;
-  const waitingMembersCount = group ? Math.max(0, group.members.length - safeMembersCount) : 0;
+  const isSafe = isCurrentMemberSafe;
 
   const content = (
     <div className="family-safety-content">

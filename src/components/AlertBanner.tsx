@@ -2,13 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLanguage } from '../i18n';
 import './AlertBanner.css';
 import type { AlertRegion } from '../services/orefAlertService';
-import {
-  getGroup,
-  markCurrentMemberNeedsCheckIn,
-  setImSafe,
-  subscribeToFamilyGroupChanges,
-  type FamilyGroup,
-} from '../services/familySafetyService';
+import { useFamilyGroupState } from '../hooks/useFamilyGroupState';
 
 interface AlertBannerProps {
   matchedRegion: AlertRegion | null;
@@ -217,8 +211,13 @@ export function AlertBanner({
 
   const bannerRef = useRef<HTMLDivElement>(null);
   const [bannerVisible, setBannerVisible] = useState(true);
-  const [familyGroup, setFamilyGroup] = useState<FamilyGroup | null>(() => getGroup());
   const previousAlertActive = useRef(false);
+  const {
+    hasGroup: hasFamilyGroup,
+    isCurrentMemberSafe: familyCheckInSafe,
+    markNeedsCheckIn,
+    markFamilySafe,
+  } = useFamilyGroupState();
 
   useEffect(() => {
     const el = bannerRef.current;
@@ -236,37 +235,17 @@ export function AlertBanner({
   }, []);
 
   useEffect(() => {
-    setFamilyGroup(getGroup());
-    return subscribeToFamilyGroupChanges(() => {
-      setFamilyGroup(getGroup());
-    });
-  }, []);
-
-  useEffect(() => {
-    if (isAlertActive && !previousAlertActive.current && familyGroup) {
-      const updated = markCurrentMemberNeedsCheckIn();
-      if (updated) {
-        setFamilyGroup(updated);
-      }
+    if (isAlertActive && !previousAlertActive.current && hasFamilyGroup) {
+      markNeedsCheckIn();
     }
 
     previousAlertActive.current = isAlertActive;
-  }, [familyGroup, isAlertActive]);
-
-  const handleMarkFamilySafe = useCallback(() => {
-    const updated = setImSafe();
-    if (updated) {
-      setFamilyGroup(updated);
-    }
-  }, []);
+  }, [hasFamilyGroup, isAlertActive, markNeedsCheckIn]);
 
   const totalTime = matchedRegion?.timeToShelter ?? 0;
   const showBadge = isAlertActive && !bannerVisible && countdown !== null && countdown > 0;
   const ctaLabel = emergencyMode ? t('alert.refreshShelter') : t('alert.openShelter');
   const ctaHint = emergencyMode ? t('alert.actionHintActive') : t('alert.actionHintFallback');
-  const currentFamilyMember = familyGroup?.members.find((member) => member.name === familyGroup.memberName) ?? null;
-  const familyCheckInSafe = currentFamilyMember?.isSafe ?? false;
-  const hasFamilyGroup = Boolean(familyGroup);
 
   // Show debrief screen when countdown expires
   if (isExpired) {
@@ -275,7 +254,7 @@ export function AlertBanner({
         onDismiss={onDismiss}
         hasFamilyGroup={hasFamilyGroup}
         isFamilySafe={familyCheckInSafe}
-        onMarkSafe={handleMarkFamilySafe}
+        onMarkSafe={markFamilySafe}
       />
     );
   }
@@ -340,7 +319,7 @@ export function AlertBanner({
                   <button
                     className={`alert-banner-safe-btn ${familyCheckInSafe ? 'is-safe' : ''}`}
                     type="button"
-                    onClick={handleMarkFamilySafe}
+                    onClick={markFamilySafe}
                   >
                     {familyCheckInSafe ? t('family.markedSafe') : t('alert.imSafe')}
                   </button>

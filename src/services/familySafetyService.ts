@@ -1,5 +1,6 @@
 const STORAGE_KEY = 'shelter-route:family-group';
 const FAMILY_GROUP_UPDATED_EVENT = 'family-group-updated';
+const STORAGE_VERSION = 1;
 
 export interface FamilyMember {
   id: string;
@@ -12,6 +13,11 @@ export interface FamilyGroup {
   groupCode: string;
   memberName: string;
   members: FamilyMember[];
+}
+
+interface FamilyGroupStorageData {
+  version: number;
+  group: FamilyGroup;
 }
 
 function generateId(): string {
@@ -31,7 +37,17 @@ export function getGroup(): FamilyGroup | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
-    return JSON.parse(raw) as FamilyGroup;
+    const parsed = JSON.parse(raw) as FamilyGroupStorageData | FamilyGroup;
+    const candidate = 'group' in parsed ? parsed.group : parsed;
+    const sanitized = sanitizeGroup(candidate);
+    if (!sanitized) return null;
+
+    if ('group' in parsed && parsed.version === STORAGE_VERSION) {
+      return sanitized;
+    }
+
+    saveGroup(sanitized);
+    return sanitized;
   } catch {
     return null;
   }
@@ -39,11 +55,58 @@ export function getGroup(): FamilyGroup | null {
 
 function saveGroup(group: FamilyGroup): void {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(group));
+    const data: FamilyGroupStorageData = {
+      version: STORAGE_VERSION,
+      group,
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     notifyFamilyGroupChanged();
   } catch {
     // storage full or unavailable
   }
+}
+
+function sanitizeGroup(raw: unknown): FamilyGroup | null {
+  if (!raw || typeof raw !== 'object') {
+    return null;
+  }
+
+  const candidate = raw as Partial<FamilyGroup>;
+  if (
+    typeof candidate.groupCode !== 'string' ||
+    typeof candidate.memberName !== 'string' ||
+    !Array.isArray(candidate.members)
+  ) {
+    return null;
+  }
+
+  const members = candidate.members
+    .map((member) => sanitizeMember(member))
+    .filter((member): member is FamilyMember => member !== null);
+
+  return {
+    groupCode: candidate.groupCode.toUpperCase(),
+    memberName: candidate.memberName,
+    members,
+  };
+}
+
+function sanitizeMember(raw: unknown): FamilyMember | null {
+  if (!raw || typeof raw !== 'object') {
+    return null;
+  }
+
+  const candidate = raw as Partial<FamilyMember>;
+  if (typeof candidate.id !== 'string' || typeof candidate.name !== 'string') {
+    return null;
+  }
+
+  return {
+    id: candidate.id,
+    name: candidate.name,
+    lastSeen: typeof candidate.lastSeen === 'string' ? candidate.lastSeen : undefined,
+    isSafe: typeof candidate.isSafe === 'boolean' ? candidate.isSafe : undefined,
+  };
 }
 
 function notifyFamilyGroupChanged(): void {

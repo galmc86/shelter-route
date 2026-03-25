@@ -36,4 +36,19 @@ describe('familySafetyService', () => {
 
     expect(listener).toHaveBeenCalledTimes(1);
   });
+
+  it('migrates legacy unversioned family-group storage', () => {
+    localStorage.setItem('shelter-route:family-group', JSON.stringify({
+      groupCode: 'abc123',
+      memberName: 'Dana',
+      members: [{ id: '1', name: 'Dana', isSafe: true }],
+    }));
+
+    const group = getGroup();
+    const persisted = JSON.parse(localStorage.getItem('shelter-route:family-group') ?? 'null');
+
+    expect(group?.groupCode).toBe('ABC123');
+    expect(persisted.version).toBe(1);
+    expect(persisted.group.groupCode).toBe('ABC123');
+  });
 });

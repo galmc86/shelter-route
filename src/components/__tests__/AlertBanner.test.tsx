@@ -2,37 +2,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { AlertBanner } from '../AlertBanner';
 import type { AlertRegion } from '../../services/orefAlertService';
-import type { FamilyGroup } from '../../services/familySafetyService';
-
-let mockFamilyGroup: FamilyGroup | null = null;
-const mockSetImSafe = vi.fn(() => {
-  if (!mockFamilyGroup) return null;
-
-  mockFamilyGroup = {
-    ...mockFamilyGroup,
-    members: mockFamilyGroup.members.map((member) => (
-      member.name === mockFamilyGroup?.memberName
-        ? { ...member, isSafe: true }
-        : member
-    )),
-  };
-
-  return mockFamilyGroup;
-});
-const mockMarkNeedsCheckIn = vi.fn(() => {
-  if (!mockFamilyGroup) return null;
-
-  mockFamilyGroup = {
-    ...mockFamilyGroup,
-    members: mockFamilyGroup.members.map((member) => (
-      member.name === mockFamilyGroup?.memberName
-        ? { ...member, isSafe: false }
-        : member
-    )),
-  };
-
-  return mockFamilyGroup;
-});
+const mockMarkFamilySafe = vi.fn();
+const mockMarkNeedsCheckIn = vi.fn();
+const mockUseFamilyGroupState = vi.fn();
 
 // Mock useLanguage to return English translations
 vi.mock('../../i18n', () => ({
@@ -68,11 +40,8 @@ vi.mock('../../i18n', () => ({
   }),
 }));
 
-vi.mock('../../services/familySafetyService', () => ({
-  getGroup: () => mockFamilyGroup,
-  setImSafe: () => mockSetImSafe(),
-  markCurrentMemberNeedsCheckIn: () => mockMarkNeedsCheckIn(),
-  subscribeToFamilyGroupChanges: () => () => {},
+vi.mock('../../hooks/useFamilyGroupState', () => ({
+  useFamilyGroupState: () => mockUseFamilyGroupState(),
 }));
 
 // Mock IntersectionObserver
@@ -108,9 +77,23 @@ describe('AlertBanner', () => {
   beforeEach(() => {
     onFindShelter = vi.fn() as unknown as () => void;
     onDismiss = vi.fn() as unknown as () => void;
-    mockFamilyGroup = null;
-    mockSetImSafe.mockClear();
+    mockMarkFamilySafe.mockClear();
     mockMarkNeedsCheckIn.mockClear();
+    mockUseFamilyGroupState.mockReset();
+    mockUseFamilyGroupState.mockReturnValue({
+      group: null,
+      currentMember: null,
+      hasGroup: false,
+      isCurrentMemberSafe: false,
+      safeMembersCount: 0,
+      waitingMembersCount: 0,
+      shareLink: null,
+      createFamilyGroup: vi.fn(),
+      joinFamilyGroup: vi.fn(),
+      markFamilySafe: mockMarkFamilySafe,
+      markNeedsCheckIn: mockMarkNeedsCheckIn,
+      leaveFamilyGroup: vi.fn(),
+    });
   });
 
   it('renders countdown when countdown > 0', () => {
@@ -206,14 +189,20 @@ describe('AlertBanner', () => {
   });
 
   it('shows a family check-in action and marks the user safe when clicked', () => {
-    mockFamilyGroup = {
-      groupCode: 'ABC123',
-      memberName: 'Dana',
-      members: [
-        { id: '1', name: 'Dana', isSafe: false },
-        { id: '2', name: 'Noam', isSafe: false },
-      ],
-    };
+    mockUseFamilyGroupState.mockReturnValue({
+      group: { groupCode: 'ABC123', memberName: 'Dana', members: [] },
+      currentMember: { id: '1', name: 'Dana', isSafe: false },
+      hasGroup: true,
+      isCurrentMemberSafe: false,
+      safeMembersCount: 0,
+      waitingMembersCount: 2,
+      shareLink: 'https://example.com/?familyGroup=ABC123',
+      createFamilyGroup: vi.fn(),
+      joinFamilyGroup: vi.fn(),
+      markFamilySafe: mockMarkFamilySafe,
+      markNeedsCheckIn: mockMarkNeedsCheckIn,
+      leaveFamilyGroup: vi.fn(),
+    });
 
     render(
       <AlertBanner
@@ -229,18 +218,24 @@ describe('AlertBanner', () => {
 
     fireEvent.click(screen.getByRole('button', { name: "I'm Safe" }));
 
-    expect(mockSetImSafe).toHaveBeenCalledTimes(1);
-    expect(screen.getByText('Your safe status was shared with the local family group.')).toBeInTheDocument();
+    expect(mockMarkFamilySafe).toHaveBeenCalledTimes(1);
   });
 
   it('resets the local family status when a new alert starts', () => {
-    mockFamilyGroup = {
-      groupCode: 'ABC123',
-      memberName: 'Dana',
-      members: [
-        { id: '1', name: 'Dana', isSafe: true },
-      ],
-    };
+    mockUseFamilyGroupState.mockReturnValue({
+      group: { groupCode: 'ABC123', memberName: 'Dana', members: [] },
+      currentMember: { id: '1', name: 'Dana', isSafe: true },
+      hasGroup: true,
+      isCurrentMemberSafe: true,
+      safeMembersCount: 1,
+      waitingMembersCount: 0,
+      shareLink: 'https://example.com/?familyGroup=ABC123',
+      createFamilyGroup: vi.fn(),
+      joinFamilyGroup: vi.fn(),
+      markFamilySafe: mockMarkFamilySafe,
+      markNeedsCheckIn: mockMarkNeedsCheckIn,
+      leaveFamilyGroup: vi.fn(),
+    });
 
     render(
       <AlertBanner
