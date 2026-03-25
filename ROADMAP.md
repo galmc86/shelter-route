@@ -103,12 +103,15 @@ Notes:
 
 ### Epic 6: Proactive Alert-to-Shelter Flow
 Objective: reduce reaction time after alerts.
-Status: `[ ]`
+Status: `[~]`
 
-- [ ] Improve alert-triggered emergency handoff
+- [x] Improve alert-triggered emergency handoff
 - [ ] Strengthen notification behavior and fallback handling
 - [ ] Make the next action immediately obvious after an alert
 - [ ] Validate behavior under permission-denied and location-failure scenarios
+
+Notes:
+- Alert-triggered emergency activation now auto-falls back to the last known location when live geolocation fails, so the user gets a shelter recommendation immediately instead of needing a second manual action.
 
 ### Epic 7: MapView Decomposition
 Objective: make map behavior safer to evolve.

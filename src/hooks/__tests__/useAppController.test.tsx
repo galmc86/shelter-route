@@ -323,4 +323,41 @@ describe('useAppController', () => {
     expect(result.current.emergencyContextValue.currentLocation).toBeNull();
     expect(result.current.emergencyContextValue.lastKnownLocation).toEqual({ lat: 31.79, lng: 35.21 });
   });
+
+  it('automatically uses the last known location when an alert opens emergency mode and live geolocation fails', async () => {
+    mockLocationState = {
+      location: null,
+      lastKnownLocation: { lat: 31.79, lng: 35.21 },
+      isLoading: false,
+      error: 'error.locationUnavailable',
+      getLocation: mockGetLocation,
+    };
+
+    const view = renderHook(() => useAppController());
+
+    mockOrefState = {
+      ...mockOrefState,
+      isAlertActive: true,
+      matchedRegion: { name: 'Tel Aviv' },
+      countdown: 15,
+    };
+
+    view.rerender();
+
+    await waitFor(() => {
+      expect(mockGetLocation).toHaveBeenCalledTimes(1);
+    });
+
+    await waitFor(() => {
+      expect(mockFindNearest).toHaveBeenCalledWith(
+        mockShelterState.allShelters,
+        31.79,
+        35.21
+      );
+    });
+
+    expect(view.result.current.emergencyMode).toBe(true);
+    expect(view.result.current.emergencyContextValue.activeLookupLabel).toBe('emergency.lastKnownLocationLabel');
+    expect(view.result.current.emergencyContextValue.currentLocation).toBeNull();
+  });
 });

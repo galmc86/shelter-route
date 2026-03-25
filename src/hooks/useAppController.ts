@@ -214,6 +214,41 @@ export function useAppController(): AppControllerState {
     clearNearest();
   }, [clearNearest, enterEmergencyLocationMode, lastKnownLocation, t]);
 
+  const alertFallbackAppliedRef = useRef(false);
+
+  useEffect(() => {
+    if (!isAlertActive) {
+      alertFallbackAppliedRef.current = false;
+      return;
+    }
+
+    if (
+      !emergencyMode ||
+      alertFallbackAppliedRef.current ||
+      !locationError ||
+      !lastKnownLocation ||
+      currentLocation ||
+      activeLookupLocation
+    ) {
+      return;
+    }
+
+    enterEmergencyLocationMode(lastKnownLocation, t('emergency.lastKnownLocationLabel'));
+    setSelectedShelterId(null);
+    clearNearest();
+    alertFallbackAppliedRef.current = true;
+  }, [
+    activeLookupLocation,
+    clearNearest,
+    currentLocation,
+    emergencyMode,
+    enterEmergencyLocationMode,
+    isAlertActive,
+    lastKnownLocation,
+    locationError,
+    t,
+  ]);
+
   const handleExitEmergency = useCallback(() => {
     exitEmergencyMode();
     clearNearest();
