@@ -1,5 +1,6 @@
 import type { FamilyRemoteGateway } from './familyRemoteGateway';
 import type { FamilyRemoteGroupRecord } from './familyRemoteModel';
+import type { FamilyRemoteSession } from './familyRemoteSessionService';
 
 const STORAGE_KEY_PREFIX = 'shelter-route:family-remote-group:';
 const REMOTE_GROUP_UPDATED_EVENT = 'family-remote-group-updated';
@@ -23,7 +24,7 @@ function notifyRemoteGroupChanged(groupCode: string): void {
 }
 
 class MockFamilyRemoteGateway implements FamilyRemoteGateway {
-  getGroup(groupCode: string): FamilyRemoteGroupRecord | null {
+  getGroup(groupCode: string, _session: FamilyRemoteSession): FamilyRemoteGroupRecord | null {
     try {
       const raw = localStorage.getItem(getStorageKey(groupCode));
       if (!raw) {
@@ -36,7 +37,7 @@ class MockFamilyRemoteGateway implements FamilyRemoteGateway {
     }
   }
 
-  upsertGroup(group: FamilyRemoteGroupRecord): FamilyRemoteGroupRecord {
+  upsertGroup(group: FamilyRemoteGroupRecord, _session: FamilyRemoteSession): FamilyRemoteGroupRecord {
     const nextGroup = cloneGroup(group);
 
     try {
@@ -49,7 +50,7 @@ class MockFamilyRemoteGateway implements FamilyRemoteGateway {
     return nextGroup;
   }
 
-  clearGroup(groupCode: string): void {
+  clearGroup(groupCode: string, _session: FamilyRemoteSession): void {
     try {
       localStorage.removeItem(getStorageKey(groupCode));
       notifyRemoteGroupChanged(groupCode);
@@ -58,7 +59,7 @@ class MockFamilyRemoteGateway implements FamilyRemoteGateway {
     }
   }
 
-  subscribe(groupCode: string, listener: () => void): () => void {
+  subscribe(groupCode: string, _session: FamilyRemoteSession, listener: () => void): () => void {
     if (typeof window === 'undefined') {
       return () => {};
     }

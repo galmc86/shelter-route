@@ -136,6 +136,8 @@ Why:
 - forcing sign-in before "I'm safe" coordination would increase friction
 - anonymous bootstrap + later upgrade gives the fastest path to usable sync
 
+The remote gateway should accept an explicit remote session object instead of reading auth state implicitly, so anonymous device identity and later authenticated identity can use the same gateway contract.
+
 ## Sync Strategy
 
 ### Local-first behavior

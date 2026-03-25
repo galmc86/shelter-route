@@ -1,11 +1,12 @@
 import { getMockFamilyRemoteGateway } from './mockFamilyRemoteGateway';
 import type { FamilyRemoteGroupRecord } from './familyRemoteModel';
+import type { FamilyRemoteSession } from './familyRemoteSessionService';
 
 export interface FamilyRemoteGateway {
-  getGroup(groupCode: string): FamilyRemoteGroupRecord | null;
-  upsertGroup(group: FamilyRemoteGroupRecord): FamilyRemoteGroupRecord;
-  clearGroup(groupCode: string): void;
-  subscribe(groupCode: string, listener: () => void): () => void;
+  getGroup(groupCode: string, session: FamilyRemoteSession): FamilyRemoteGroupRecord | null;
+  upsertGroup(group: FamilyRemoteGroupRecord, session: FamilyRemoteSession): FamilyRemoteGroupRecord;
+  clearGroup(groupCode: string, session: FamilyRemoteSession): void;
+  subscribe(groupCode: string, session: FamilyRemoteSession, listener: () => void): () => void;
 }
 
 const familyRemoteGateway = getMockFamilyRemoteGateway();

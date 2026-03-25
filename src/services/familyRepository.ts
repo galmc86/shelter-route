@@ -16,6 +16,10 @@ import {
   mapRemoteRecordToFamilyGroup,
 } from './familyRemoteModel';
 import {
+  getFamilyRemoteSession,
+  type FamilyRemoteSession,
+} from './familyRemoteSessionService';
+import {
   clearPendingFamilySyncMutations,
   getPendingFamilySyncMutation,
   getPendingFamilySyncMutations,
@@ -82,13 +86,19 @@ export class LocalFamilyRepository implements MutableFamilyRepository {
 export class HybridFamilyRepository implements FamilyRepository {
   private readonly localRepository: MutableFamilyRepository;
   private readonly remoteGateway: FamilyRemoteGateway;
+  private readonly remoteSession: FamilyRemoteSession;
   private remoteUnsubscribe: (() => void) | null = null;
   private onlineUnsubscribe: (() => void) | null = null;
   private subscribedGroupCode: string | null = null;
 
-  constructor(localRepository: MutableFamilyRepository, remoteGateway: FamilyRemoteGateway) {
+  constructor(
+    localRepository: MutableFamilyRepository,
+    remoteGateway: FamilyRemoteGateway,
+    remoteSession: FamilyRemoteSession
+  ) {
     this.localRepository = localRepository;
     this.remoteGateway = remoteGateway;
+    this.remoteSession = remoteSession;
   }
 
   getSnapshot(): FamilyGroup | null {
@@ -190,7 +200,7 @@ export class HybridFamilyRepository implements FamilyRepository {
       return;
     }
 
-    this.remoteUnsubscribe = this.remoteGateway.subscribe(groupCode, () => {
+    this.remoteUnsubscribe = this.remoteGateway.subscribe(groupCode, this.remoteSession, () => {
       this.flushPendingMutations();
       this.hydrateFromRemote(groupCode);
     });
@@ -218,7 +228,7 @@ export class HybridFamilyRepository implements FamilyRepository {
 
   private hydrateFromRemote(groupCode: string): FamilyGroup | null {
     const localGroup = this.localRepository.getSnapshot();
-    const remoteRecord = this.remoteGateway.getGroup(groupCode);
+    const remoteRecord = this.remoteGateway.getGroup(groupCode, this.remoteSession);
     const remoteGroup = remoteRecord
       ? mapRemoteRecordToFamilyGroup(remoteRecord, localGroup)
       : null;
@@ -251,7 +261,7 @@ export class HybridFamilyRepository implements FamilyRepository {
 
   private safeGetRemoteRecord(groupCode: string) {
     try {
-      return this.remoteGateway.getGroup(groupCode);
+      return this.remoteGateway.getGroup(groupCode, this.remoteSession);
     } catch {
       return null;
     }
@@ -285,9 +295,9 @@ export class HybridFamilyRepository implements FamilyRepository {
   private applyMutation(mutation: FamilySyncMutation): boolean {
     try {
       if (mutation.kind === 'clear') {
-        this.remoteGateway.clearGroup(mutation.groupCode);
+        this.remoteGateway.clearGroup(mutation.groupCode, this.remoteSession);
       } else {
-        this.remoteGateway.upsertGroup(mutation.record);
+        this.remoteGateway.upsertGroup(mutation.record, this.remoteSession);
       }
 
       return true;
@@ -362,14 +372,16 @@ function areGroupsEqual(a: FamilyGroup | null, b: FamilyGroup | null): boolean {
 export function createFamilyRepository({
   mode = getFamilySyncMode(),
   remoteGateway = getFamilyRemoteGateway(),
+  remoteSession = getFamilyRemoteSession(),
 }: {
   mode?: FamilySyncMode;
   remoteGateway?: FamilyRemoteGateway;
+  remoteSession?: FamilyRemoteSession;
 } = {}): FamilyRepository {
   const localRepository = new LocalFamilyRepository();
 
   if (mode === 'hybrid') {
-    return new HybridFamilyRepository(localRepository, remoteGateway);
+    return new HybridFamilyRepository(localRepository, remoteGateway, remoteSession);
   }
 
   return localRepository;

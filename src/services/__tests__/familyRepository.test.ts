@@ -4,6 +4,7 @@ import { getFamilyRemoteGateway } from '../familyRemoteGateway';
 import type { FamilyRemoteGroupRecord } from '../familyRemoteModel';
 import { mapFamilyGroupToRemoteRecord } from '../familyRemoteModel';
 import type { FamilyRemoteGateway } from '../familyRemoteGateway';
+import type { FamilyRemoteSession } from '../familyRemoteSessionService';
 import {
   clearPendingFamilySyncMutations,
   getPendingFamilySyncMutations,
@@ -49,6 +50,7 @@ describe('familyRepository', () => {
     const repository = getFamilyRepository();
     const group = repository.createGroup('Dana');
     const remoteGateway = getFamilyRemoteGateway();
+    const session: FamilyRemoteSession = { deviceId: 'device-test', userId: null, authState: 'anonymous' };
 
     remoteGateway.upsertGroup({
       ...mapFamilyGroupToRemoteRecord(group),
@@ -64,7 +66,7 @@ describe('familyRepository', () => {
           lastSeenAt: '2026-03-25T21:00:00.000Z',
         },
       ],
-    });
+    }, session);
 
     const hydrated = repository.getSnapshot();
 
@@ -83,12 +85,13 @@ describe('familyRepository', () => {
   it('queues failed remote writes and retries them on the next snapshot read', () => {
     let shouldFail = true;
     let storedRecord: FamilyRemoteGroupRecord | null = null;
+    const session: FamilyRemoteSession = { deviceId: 'device-test', userId: null, authState: 'anonymous' };
 
     const remoteGateway: FamilyRemoteGateway = {
-      getGroup: vi.fn((groupCode: string) => (
+      getGroup: vi.fn((groupCode: string, _session: FamilyRemoteSession) => (
         storedRecord?.inviteCode === groupCode.toUpperCase() ? storedRecord : null
       )),
-      upsertGroup: vi.fn((record) => {
+      upsertGroup: vi.fn((record, _session: FamilyRemoteSession) => {
         if (shouldFail) {
           throw new Error('remote unavailable');
         }
@@ -97,10 +100,10 @@ describe('familyRepository', () => {
         return record;
       }),
       clearGroup: vi.fn(),
-      subscribe: vi.fn(() => () => {}),
+      subscribe: vi.fn((_groupCode: string, _session: FamilyRemoteSession) => () => {}),
     };
 
-    const repository = createFamilyRepository({ mode: 'hybrid', remoteGateway });
+    const repository = createFamilyRepository({ mode: 'hybrid', remoteGateway, remoteSession: session });
     const group = repository.createGroup('Dana');
 
     expect(group.groupCode).toHaveLength(6);
@@ -120,12 +123,13 @@ describe('familyRepository', () => {
   it('flushes queued remote mutations when the browser comes back online', () => {
     let shouldFail = true;
     let storedRecord: FamilyRemoteGroupRecord | null = null;
+    const session: FamilyRemoteSession = { deviceId: 'device-test', userId: null, authState: 'anonymous' };
 
     const remoteGateway: FamilyRemoteGateway = {
-      getGroup: vi.fn((groupCode: string) => (
+      getGroup: vi.fn((groupCode: string, _session: FamilyRemoteSession) => (
         storedRecord?.inviteCode === groupCode.toUpperCase() ? storedRecord : null
       )),
-      upsertGroup: vi.fn((record) => {
+      upsertGroup: vi.fn((record, _session: FamilyRemoteSession) => {
         if (shouldFail) {
           throw new Error('offline');
         }
@@ -134,10 +138,10 @@ describe('familyRepository', () => {
         return record;
       }),
       clearGroup: vi.fn(),
-      subscribe: vi.fn(() => () => {}),
+      subscribe: vi.fn((_groupCode: string, _session: FamilyRemoteSession) => () => {}),
     };
 
-    const repository = createFamilyRepository({ mode: 'hybrid', remoteGateway });
+    const repository = createFamilyRepository({ mode: 'hybrid', remoteGateway, remoteSession: session });
     const listener = vi.fn();
     const unsubscribe = repository.subscribe(listener);
     const group = repository.createGroup('Dana');
