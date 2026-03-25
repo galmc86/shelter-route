@@ -11,6 +11,8 @@ import type { FamilyRemoteSession } from './familyRemoteSessionService';
 
 const STORAGE_KEY_PREFIX = 'shelter-route:family-remote-http-cache:';
 const REMOTE_CACHE_UPDATED_EVENT = 'family-remote-http-cache-updated';
+export const FAMILY_REMOTE_HTTP_POLL_INTERVAL_MS = 15000;
+
 function getStorageKey(groupCode: string): string {
   return `${STORAGE_KEY_PREFIX}${groupCode.toUpperCase()}`;
 }
@@ -61,6 +63,13 @@ function notifyCacheChanged(groupCode: string, kind: FamilyRemoteChangeEvent['ki
   }));
 }
 
+function areRemoteGroupsEqual(
+  left: FamilyRemoteGroupRecord | null,
+  right: FamilyRemoteGroupRecord | null
+): boolean {
+  return JSON.stringify(left) === JSON.stringify(right);
+}
+
 async function refreshGroup(groupCode: string, session: FamilyRemoteSession): Promise<void> {
   const resolvedEndpoint = getFamilyRemoteGroupEndpoint(groupCode);
   if (!resolvedEndpoint) {
@@ -75,8 +84,16 @@ async function refreshGroup(groupCode: string, session: FamilyRemoteSession): Pr
     retryDelay: 500,
   });
 
-  if (result.ok) {
-    writeCachedGroup(decodeFamilyRemoteGroupResponse(result.data));
+  if (!result.ok) {
+    if (result.error.code === 'HTTP' && result.error.statusCode === 404 && readCachedGroup(groupCode)) {
+      clearCachedGroup(groupCode);
+    }
+    return;
+  }
+
+  const decodedRecord = decodeFamilyRemoteGroupResponse(result.data);
+  if (!areRemoteGroupsEqual(readCachedGroup(groupCode), decodedRecord)) {
+    writeCachedGroup(decodedRecord);
   }
 }
 
@@ -143,6 +160,9 @@ class HttpFamilyRemoteClient implements FamilyRemoteClient {
 
     const normalizedCode = groupCode.toUpperCase();
     const key = getStorageKey(normalizedCode);
+    const intervalId = window.setInterval(() => {
+      void refreshGroup(normalizedCode, _session);
+    }, FAMILY_REMOTE_HTTP_POLL_INTERVAL_MS);
 
     const handleCustomUpdate = (event: Event) => {
       const customEvent = event as CustomEvent<Partial<FamilyRemoteChangeEvent>>;
@@ -167,6 +187,7 @@ class HttpFamilyRemoteClient implements FamilyRemoteClient {
     window.addEventListener('storage', handleStorage);
 
     return () => {
+      window.clearInterval(intervalId);
       window.removeEventListener(REMOTE_CACHE_UPDATED_EVENT, handleCustomUpdate as EventListener);
       window.removeEventListener('storage', handleStorage);
     };

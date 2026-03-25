@@ -1,6 +1,9 @@
 import { waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { getHttpFamilyRemoteClient } from '../httpFamilyRemoteClient';
+import {
+  FAMILY_REMOTE_HTTP_POLL_INTERVAL_MS,
+  getHttpFamilyRemoteClient,
+} from '../httpFamilyRemoteClient';
 import { getFamilyRemoteSession } from '../familyRemoteSessionService';
 import type { FamilyRemoteGroupRecord } from '../familyRemoteModel';
 
@@ -16,6 +19,7 @@ const groupFixture: FamilyRemoteGroupRecord = {
 describe('httpFamilyRemoteClient', () => {
   beforeEach(() => {
     localStorage.clear();
+    vi.useRealTimers();
     vi.restoreAllMocks();
     vi.unstubAllEnvs();
   });
@@ -60,5 +64,59 @@ describe('httpFamilyRemoteClient', () => {
     await waitFor(() => {
       expect(client.fetchGroup('ABC123', session)?.inviteCode).toBe('ABC123');
     });
+  });
+
+  it('polls subscribed groups and emits updated change events', async () => {
+    vi.useFakeTimers();
+    vi.stubEnv('VITE_FAMILY_REMOTE_URL', 'https://family.example.com/api');
+    const { getHttpFamilyRemoteClient: getClient } = await import('../httpFamilyRemoteClient');
+    const client = getClient();
+    const session = getFamilyRemoteSession();
+    const listener = vi.fn();
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({
+      ...groupFixture,
+      inviteCode: 'abc123',
+    }), { status: 200 }));
+
+    const unsubscribe = client.subscribe('ABC123', session, listener);
+    await vi.advanceTimersByTimeAsync(FAMILY_REMOTE_HTTP_POLL_INTERVAL_MS);
+
+    expect(fetchSpy).toHaveBeenCalled();
+    expect(listener).toHaveBeenCalledWith({
+      kind: 'updated',
+      groupCode: 'ABC123',
+    });
+
+    unsubscribe();
+  });
+
+  it('clears the cached group when polling receives a 404 response', async () => {
+    vi.useFakeTimers();
+    vi.stubEnv('VITE_FAMILY_REMOTE_URL', 'https://family.example.com/api');
+    const { getHttpFamilyRemoteClient: getClient } = await import('../httpFamilyRemoteClient');
+    const client = getClient();
+    const session = getFamilyRemoteSession();
+    const listener = vi.fn();
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({
+      message: 'not found',
+    }), {
+      status: 404,
+      statusText: 'Not Found',
+      headers: { 'Content-Type': 'application/json' },
+    }));
+
+    client.upsertGroup(groupFixture, session);
+
+    const unsubscribe = client.subscribe('ABC123', session, listener);
+    await vi.advanceTimersByTimeAsync(FAMILY_REMOTE_HTTP_POLL_INTERVAL_MS);
+
+    expect(fetchSpy).toHaveBeenCalled();
+    expect(client.fetchGroup('ABC123', session)).toBeNull();
+    expect(listener).toHaveBeenCalledWith({
+      kind: 'cleared',
+      groupCode: 'ABC123',
+    });
+
+    unsubscribe();
   });
 });

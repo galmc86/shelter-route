@@ -183,6 +183,7 @@ Notes:
 - The backend client now supports a flag-selectable cached HTTP shell built on the shared resilient fetch helper, which provides a non-destructive transport path before the final live API contract is available.
 - The HTTP family client now uses explicit endpoint/config and request/response codecs, which makes the future live API contract testable without leaking raw payload assumptions through the transport layer.
 - Remote family subscriptions now emit typed change events, which lets the hybrid repository clear stale local family state and drop queued mutations when another device deletes the group.
+- The HTTP family client now polls subscribed groups and treats `404` as a clear event, which gives the hybrid repository a real cross-device update/delete path before a websocket or push channel exists.
 
 ### Epic 10: Saved Places to Safety Profiles
 Objective: turn saved locations into reusable routines.
