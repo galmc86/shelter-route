@@ -174,6 +174,7 @@ Notes:
 - Hybrid family sync mode can now be enabled from the URL or env at app boot, which makes the mocked remote path reachable for dev/QA without code edits.
 - The hybrid repository now depends on a typed `FamilyRemoteGateway` contract rather than a concrete adapter file, so a real backend can replace the mock implementation without changing repository orchestration.
 - Remote family payloads now use an explicit record model and mapper layer instead of reusing the UI/local `FamilyGroup` shape, which keeps backend DTO evolution out of the app surface.
+- Hybrid family sync now queues failed remote mutations locally and retries them on later repository activity, which gives the sync path real offline/degraded semantics instead of assuming the remote write always succeeds.
 
 ### Epic 10: Saved Places to Safety Profiles
 Objective: turn saved locations into reusable routines.

@@ -143,6 +143,7 @@ Why:
 - update local state immediately
 - reflect UI state instantly
 - enqueue remote mutation if remote repository is active
+- persist pending remote mutations locally so retry survives refresh while the backend is unavailable
 
 ### Remote hydration
 
@@ -156,6 +157,12 @@ Why:
 - `safe` and `needs_check_in` are last-write-wins using server timestamp when available
 - membership removal beats local stale membership
 - invite code is immutable after group creation in v1
+
+### Retry behavior
+
+- failed remote mutations are queued locally by group
+- the latest pending mutation for a group supersedes older pending entries for that same group
+- queue flush happens on subsequent repository activity and app reads, not only on a full reload
 
 ## Rollout Plan
 

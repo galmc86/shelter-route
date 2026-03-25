@@ -15,6 +15,14 @@ import {
   mapFamilyGroupToRemoteRecord,
   mapRemoteRecordToFamilyGroup,
 } from './familyRemoteModel';
+import {
+  clearPendingFamilySyncMutations,
+  getPendingFamilySyncMutation,
+  getPendingFamilySyncMutations,
+  queueFamilySyncMutation,
+  savePendingFamilySyncMutations,
+  type FamilySyncMutation,
+} from './familySyncQueueService';
 import { getFamilySyncMode, type FamilySyncMode } from './familySyncModeService';
 
 export interface FamilyRepository {
@@ -83,6 +91,7 @@ export class HybridFamilyRepository implements FamilyRepository {
   }
 
   getSnapshot(): FamilyGroup | null {
+    this.flushPendingMutations();
     const localGroup = this.localRepository.getSnapshot();
     if (!localGroup) {
       return null;
@@ -92,9 +101,11 @@ export class HybridFamilyRepository implements FamilyRepository {
   }
 
   subscribe(listener: () => void): () => void {
+    this.flushPendingMutations();
     this.ensureRemoteSubscription();
 
     const unsubscribeLocal = this.localRepository.subscribe(() => {
+      this.flushPendingMutations();
       this.ensureRemoteSubscription();
       listener();
     });
@@ -109,18 +120,14 @@ export class HybridFamilyRepository implements FamilyRepository {
 
   createGroup(name: string): FamilyGroup {
     const group = this.localRepository.createGroup(name);
-    this.remoteGateway.upsertGroup(
-      mapFamilyGroupToRemoteRecord(group, this.remoteGateway.getGroup(group.groupCode))
-    );
+    this.enqueueOrApplyMutation(this.createUpsertMutation(group));
     this.ensureRemoteSubscription();
     return this.hydrateFromRemote(group.groupCode) ?? group;
   }
 
   joinGroup(code: string, name: string): FamilyGroup {
     const group = this.localRepository.joinGroup(code, name);
-    this.remoteGateway.upsertGroup(
-      mapFamilyGroupToRemoteRecord(group, this.remoteGateway.getGroup(group.groupCode))
-    );
+    this.enqueueOrApplyMutation(this.createUpsertMutation(group));
     this.ensureRemoteSubscription();
     return this.hydrateFromRemote(group.groupCode) ?? group;
   }
@@ -131,9 +138,7 @@ export class HybridFamilyRepository implements FamilyRepository {
       return null;
     }
 
-    this.remoteGateway.upsertGroup(
-      mapFamilyGroupToRemoteRecord(updated, this.remoteGateway.getGroup(updated.groupCode))
-    );
+    this.enqueueOrApplyMutation(this.createUpsertMutation(updated));
     return this.hydrateFromRemote(updated.groupCode);
   }
 
@@ -143,9 +148,7 @@ export class HybridFamilyRepository implements FamilyRepository {
       return null;
     }
 
-    this.remoteGateway.upsertGroup(
-      mapFamilyGroupToRemoteRecord(updated, this.remoteGateway.getGroup(updated.groupCode))
-    );
+    this.enqueueOrApplyMutation(this.createUpsertMutation(updated));
     return this.hydrateFromRemote(updated.groupCode);
   }
 
@@ -153,7 +156,11 @@ export class HybridFamilyRepository implements FamilyRepository {
     const groupCode = this.localRepository.getSnapshot()?.groupCode;
     this.localRepository.leaveGroup();
     if (groupCode) {
-      this.remoteGateway.clearGroup(groupCode);
+      this.enqueueOrApplyMutation({
+        kind: 'clear',
+        groupCode,
+        queuedAt: new Date().toISOString(),
+      });
     }
     this.remoteUnsubscribe?.();
     this.remoteUnsubscribe = null;
@@ -180,6 +187,7 @@ export class HybridFamilyRepository implements FamilyRepository {
     }
 
     this.remoteUnsubscribe = this.remoteGateway.subscribe(groupCode, () => {
+      this.flushPendingMutations();
       this.hydrateFromRemote(groupCode);
     });
   }
@@ -197,6 +205,71 @@ export class HybridFamilyRepository implements FamilyRepository {
     }
 
     return mergedGroup ?? localGroup;
+  }
+
+  private createUpsertMutation(group: FamilyGroup): FamilySyncMutation {
+    const previousRecord =
+      this.safeGetRemoteRecord(group.groupCode)
+      ?? this.getQueuedRemoteRecord(group.groupCode);
+
+    return {
+      kind: 'upsert',
+      groupCode: group.groupCode,
+      queuedAt: new Date().toISOString(),
+      record: mapFamilyGroupToRemoteRecord(group, previousRecord),
+    };
+  }
+
+  private getQueuedRemoteRecord(groupCode: string) {
+    const pendingMutation = getPendingFamilySyncMutation(groupCode);
+    return pendingMutation?.kind === 'upsert' ? pendingMutation.record : null;
+  }
+
+  private safeGetRemoteRecord(groupCode: string) {
+    try {
+      return this.remoteGateway.getGroup(groupCode);
+    } catch {
+      return null;
+    }
+  }
+
+  private enqueueOrApplyMutation(mutation: FamilySyncMutation): void {
+    if (!this.applyMutation(mutation)) {
+      queueFamilySyncMutation(mutation);
+      return;
+    }
+
+    this.flushPendingMutations();
+  }
+
+  private flushPendingMutations(): void {
+    const pendingMutations = getPendingFamilySyncMutations();
+    if (pendingMutations.length === 0) {
+      return;
+    }
+
+    const remainingMutations = pendingMutations.filter((mutation) => !this.applyMutation(mutation));
+
+    if (remainingMutations.length === 0) {
+      clearPendingFamilySyncMutations();
+      return;
+    }
+
+    savePendingFamilySyncMutations(remainingMutations);
+  }
+
+  private applyMutation(mutation: FamilySyncMutation): boolean {
+    try {
+      if (mutation.kind === 'clear') {
+        this.remoteGateway.clearGroup(mutation.groupCode);
+      } else {
+        this.remoteGateway.upsertGroup(mutation.record);
+      }
+
+      return true;
+    } catch {
+      return false;
+    }
   }
 }
 
