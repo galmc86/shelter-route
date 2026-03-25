@@ -163,6 +163,7 @@ Why:
 - failed remote mutations are queued locally by group
 - the latest pending mutation for a group supersedes older pending entries for that same group
 - queue flush happens on subsequent repository activity and app reads, not only on a full reload
+- when the browser regains connectivity, the hybrid repository retries queued mutations immediately
 
 ## Rollout Plan
 

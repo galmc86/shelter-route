@@ -83,6 +83,7 @@ export class HybridFamilyRepository implements FamilyRepository {
   private readonly localRepository: MutableFamilyRepository;
   private readonly remoteGateway: FamilyRemoteGateway;
   private remoteUnsubscribe: (() => void) | null = null;
+  private onlineUnsubscribe: (() => void) | null = null;
   private subscribedGroupCode: string | null = null;
 
   constructor(localRepository: MutableFamilyRepository, remoteGateway: FamilyRemoteGateway) {
@@ -103,6 +104,7 @@ export class HybridFamilyRepository implements FamilyRepository {
   subscribe(listener: () => void): () => void {
     this.flushPendingMutations();
     this.ensureRemoteSubscription();
+    this.ensureOnlineRetry(listener);
 
     const unsubscribeLocal = this.localRepository.subscribe(() => {
       this.flushPendingMutations();
@@ -113,7 +115,9 @@ export class HybridFamilyRepository implements FamilyRepository {
     return () => {
       unsubscribeLocal();
       this.remoteUnsubscribe?.();
+      this.onlineUnsubscribe?.();
       this.remoteUnsubscribe = null;
+      this.onlineUnsubscribe = null;
       this.subscribedGroupCode = null;
     };
   }
@@ -190,6 +194,26 @@ export class HybridFamilyRepository implements FamilyRepository {
       this.flushPendingMutations();
       this.hydrateFromRemote(groupCode);
     });
+  }
+
+  private ensureOnlineRetry(listener: () => void): void {
+    if (this.onlineUnsubscribe || typeof window === 'undefined') {
+      return;
+    }
+
+    const handleOnline = () => {
+      this.flushPendingMutations();
+      const groupCode = this.localRepository.getSnapshot()?.groupCode;
+      if (groupCode) {
+        this.hydrateFromRemote(groupCode);
+      }
+      listener();
+    };
+
+    window.addEventListener('online', handleOnline);
+    this.onlineUnsubscribe = () => {
+      window.removeEventListener('online', handleOnline);
+    };
   }
 
   private hydrateFromRemote(groupCode: string): FamilyGroup | null {

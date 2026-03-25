@@ -116,4 +116,42 @@ describe('familyRepository', () => {
     expect(syncedRecord?.inviteCode).toBe(group.groupCode);
     expect(getPendingFamilySyncMutations()).toEqual([]);
   });
+
+  it('flushes queued remote mutations when the browser comes back online', () => {
+    let shouldFail = true;
+    let storedRecord: FamilyRemoteGroupRecord | null = null;
+
+    const remoteGateway: FamilyRemoteGateway = {
+      getGroup: vi.fn((groupCode: string) => (
+        storedRecord?.inviteCode === groupCode.toUpperCase() ? storedRecord : null
+      )),
+      upsertGroup: vi.fn((record) => {
+        if (shouldFail) {
+          throw new Error('offline');
+        }
+
+        storedRecord = record;
+        return record;
+      }),
+      clearGroup: vi.fn(),
+      subscribe: vi.fn(() => () => {}),
+    };
+
+    const repository = createFamilyRepository({ mode: 'hybrid', remoteGateway });
+    const listener = vi.fn();
+    const unsubscribe = repository.subscribe(listener);
+    const group = repository.createGroup('Dana');
+
+    expect(getPendingFamilySyncMutations()).toHaveLength(1);
+
+    shouldFail = false;
+    window.dispatchEvent(new Event('online'));
+    const syncedRecord = storedRecord as FamilyRemoteGroupRecord | null;
+
+    expect(syncedRecord?.inviteCode).toBe(group.groupCode);
+    expect(getPendingFamilySyncMutations()).toEqual([]);
+    expect(listener).toHaveBeenCalled();
+
+    unsubscribe();
+  });
 });
