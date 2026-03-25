@@ -75,7 +75,7 @@ export function useFamilyGroupState(): UseFamilyGroupStateResult {
   }, [repository]);
 
   const currentMember = useMemo(() => (
-    group?.members.find((member) => member.name === group.memberName) ?? null
+    group?.members.find((member) => member.id === group.currentMemberId) ?? null
   ), [group]);
 
   const safeMembersCount = group?.members.filter((member) => member.isSafe).length ?? 0;

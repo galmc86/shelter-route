@@ -20,6 +20,7 @@ describe('familySafetyService', () => {
 
     expect(resetGroup).not.toBeNull();
     expect(resetGroup?.members.find((member) => member.name === 'Dana')?.isSafe).toBe(false);
+    expect(resetGroup?.members.find((member) => member.name === 'Dana')?.deviceId).toBeTruthy();
     expect(getGroup()?.members.find((member) => member.name === 'Dana')?.isSafe).toBe(false);
   });
 
@@ -48,7 +49,11 @@ describe('familySafetyService', () => {
     const persisted = JSON.parse(localStorage.getItem('shelter-route:family-group') ?? 'null');
 
     expect(group?.groupCode).toBe('ABC123');
-    expect(persisted.version).toBe(1);
+    expect(group?.currentMemberId).toBe('1');
+    expect(group?.members[0].deviceId).toBeTruthy();
+    expect(persisted.version).toBe(2);
     expect(persisted.group.groupCode).toBe('ABC123');
+    expect(persisted.group.currentMemberId).toBe('1');
+    expect(persisted.group.members[0].deviceId).toBeTruthy();
   });
 });

@@ -45,6 +45,7 @@ describe('useFamilyGroupState', () => {
       getSnapshot: () => ({
         groupCode: 'ABC123',
         memberName: 'Dana',
+        currentMemberId: 'member-1',
         members: [
           { id: 'member-1', name: 'Dana', isSafe: true, lastSeen: '2026-03-25T19:00:00.000Z' },
         ],

@@ -1,10 +1,13 @@
+import { getDeviceId } from './deviceIdentityService';
+
 const STORAGE_KEY = 'shelter-route:family-group';
 const FAMILY_GROUP_UPDATED_EVENT = 'family-group-updated';
-const STORAGE_VERSION = 1;
+const STORAGE_VERSION = 2;
 
 export interface FamilyMember {
   id: string;
   name: string;
+  deviceId?: string;
   lastSeen?: string; // ISO timestamp
   isSafe?: boolean;
 }
@@ -12,6 +15,7 @@ export interface FamilyMember {
 export interface FamilyGroup {
   groupCode: string;
   memberName: string;
+  currentMemberId: string;
   members: FamilyMember[];
 }
 
@@ -84,11 +88,45 @@ function sanitizeGroup(raw: unknown): FamilyGroup | null {
     .map((member) => sanitizeMember(member))
     .filter((member): member is FamilyMember => member !== null);
 
+  const currentMemberId = resolveCurrentMemberId(
+    typeof candidate.currentMemberId === 'string' ? candidate.currentMemberId : undefined,
+    candidate.memberName,
+    members
+  );
+
+  if (!currentMemberId) {
+    return null;
+  }
+
+  const hydratedMembers = members.map((member) => (
+    member.id === currentMemberId && !member.deviceId
+      ? { ...member, deviceId: getDeviceId() }
+      : member
+  ));
+
   return {
     groupCode: candidate.groupCode.toUpperCase(),
     memberName: candidate.memberName,
-    members,
+    currentMemberId,
+    members: hydratedMembers,
   };
+}
+
+function resolveCurrentMemberId(
+  currentMemberId: string | undefined,
+  memberName: string,
+  members: FamilyMember[]
+): string | null {
+  if (currentMemberId && members.some((member) => member.id === currentMemberId)) {
+    return currentMemberId;
+  }
+
+  const matchedByName = members.find((member) => member.name === memberName);
+  if (matchedByName) {
+    return matchedByName.id;
+  }
+
+  return members[0]?.id ?? null;
 }
 
 function sanitizeMember(raw: unknown): FamilyMember | null {
@@ -104,6 +142,7 @@ function sanitizeMember(raw: unknown): FamilyMember | null {
   return {
     id: candidate.id,
     name: candidate.name,
+    deviceId: typeof candidate.deviceId === 'string' ? candidate.deviceId : undefined,
     lastSeen: typeof candidate.lastSeen === 'string' ? candidate.lastSeen : undefined,
     isSafe: typeof candidate.isSafe === 'boolean' ? candidate.isSafe : undefined,
   };
@@ -122,10 +161,12 @@ export function createGroup(name: string): FamilyGroup {
   const group: FamilyGroup = {
     groupCode: generateGroupCode(),
     memberName: name,
+    currentMemberId: memberId,
     members: [
       {
         id: memberId,
         name,
+        deviceId: getDeviceId(),
         lastSeen: new Date().toISOString(),
         isSafe: false,
       },
@@ -145,10 +186,12 @@ export function joinGroup(code: string, name: string): FamilyGroup {
   const group: FamilyGroup = {
     groupCode: code.toUpperCase(),
     memberName: name,
+    currentMemberId: memberId,
     members: [
       {
         id: memberId,
         name,
+        deviceId: getDeviceId(),
         lastSeen: new Date().toISOString(),
         isSafe: false,
       },
@@ -163,7 +206,7 @@ export function setImSafe(): FamilyGroup | null {
   if (!group) return null;
   const now = new Date().toISOString();
   group.members = group.members.map((m) =>
-    m.name === group.memberName
+    m.id === group.currentMemberId
       ? { ...m, isSafe: true, lastSeen: now }
       : m
   );
@@ -177,7 +220,7 @@ export function markCurrentMemberNeedsCheckIn(): FamilyGroup | null {
 
   const now = new Date().toISOString();
   group.members = group.members.map((member) =>
-    member.name === group.memberName
+    member.id === group.currentMemberId
       ? { ...member, isSafe: false, lastSeen: now }
       : member
   );

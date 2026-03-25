@@ -61,6 +61,7 @@ describe('FamilySafety', () => {
     const existingGroup: FamilyGroup = {
       groupCode: 'ABC123',
       memberName: 'Dana',
+      currentMemberId: '1',
       members: [
         { id: '1', name: 'Dana', isSafe: true },
         { id: '2', name: 'Noam', isSafe: false },
