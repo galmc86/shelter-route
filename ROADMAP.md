@@ -170,6 +170,7 @@ Notes:
 - The app shell now provides the family repository through context instead of hard-coding access at the hook level, which means a remote or hybrid repository can be injected at the boundary where the app boots.
 - Family state now tracks the active local member by stable member ID instead of display name, which removes a weak identity assumption before cross-device sync is added.
 - The local family member now also carries a stable device ID and the stored family payload has been versioned forward again, which prepares the current local model for anonymous remote identity later.
+- The repository layer now supports a feature-flagged hybrid mode with a mocked remote adapter, so the app can exercise the local-first plus remote-hydration path before a real backend is wired in.
 
 ### Epic 10: Saved Places to Safety Profiles
 Objective: turn saved locations into reusable routines.

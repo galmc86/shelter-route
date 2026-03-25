@@ -1,0 +1,103 @@
+import type { FamilyGroup } from './familySafetyService';
+
+const STORAGE_KEY_PREFIX = 'shelter-route:family-remote-group:';
+const REMOTE_GROUP_UPDATED_EVENT = 'family-remote-group-updated';
+
+export interface FamilyRemoteAdapter {
+  getGroup(groupCode: string): FamilyGroup | null;
+  upsertGroup(group: FamilyGroup): FamilyGroup;
+  clearGroup(groupCode: string): void;
+  subscribe(groupCode: string, listener: () => void): () => void;
+}
+
+function getStorageKey(groupCode: string): string {
+  return `${STORAGE_KEY_PREFIX}${groupCode.toUpperCase()}`;
+}
+
+function cloneGroup(group: FamilyGroup): FamilyGroup {
+  return JSON.parse(JSON.stringify(group)) as FamilyGroup;
+}
+
+function notifyRemoteGroupChanged(groupCode: string): void {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  window.dispatchEvent(new CustomEvent(REMOTE_GROUP_UPDATED_EVENT, {
+    detail: { groupCode: groupCode.toUpperCase() },
+  }));
+}
+
+class MockFamilyRemoteAdapter implements FamilyRemoteAdapter {
+  getGroup(groupCode: string): FamilyGroup | null {
+    try {
+      const raw = localStorage.getItem(getStorageKey(groupCode));
+      if (!raw) {
+        return null;
+      }
+
+      return JSON.parse(raw) as FamilyGroup;
+    } catch {
+      return null;
+    }
+  }
+
+  upsertGroup(group: FamilyGroup): FamilyGroup {
+    const nextGroup = cloneGroup(group);
+
+    try {
+      localStorage.setItem(getStorageKey(nextGroup.groupCode), JSON.stringify(nextGroup));
+      notifyRemoteGroupChanged(nextGroup.groupCode);
+    } catch {
+      // ignore storage failures in mock adapter
+    }
+
+    return nextGroup;
+  }
+
+  clearGroup(groupCode: string): void {
+    try {
+      localStorage.removeItem(getStorageKey(groupCode));
+      notifyRemoteGroupChanged(groupCode);
+    } catch {
+      // ignore storage failures in mock adapter
+    }
+  }
+
+  subscribe(groupCode: string, listener: () => void): () => void {
+    if (typeof window === 'undefined') {
+      return () => {};
+    }
+
+    const normalizedCode = groupCode.toUpperCase();
+    const key = getStorageKey(normalizedCode);
+
+    const handleCustomUpdate = (event: Event) => {
+      const customEvent = event as CustomEvent<{ groupCode?: string }>;
+      if (customEvent.detail?.groupCode?.toUpperCase() === normalizedCode) {
+        listener();
+      }
+    };
+
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key === key) {
+        listener();
+      }
+    };
+
+    window.addEventListener(REMOTE_GROUP_UPDATED_EVENT, handleCustomUpdate as EventListener);
+    window.addEventListener('storage', handleStorage);
+
+    return () => {
+      window.removeEventListener(REMOTE_GROUP_UPDATED_EVENT, handleCustomUpdate as EventListener);
+      window.removeEventListener('storage', handleStorage);
+    };
+  }
+}
+
+const familyRemoteAdapter = new MockFamilyRemoteAdapter();
+
+export function getFamilyRemoteAdapter(): FamilyRemoteAdapter {
+  return familyRemoteAdapter;
+}
+

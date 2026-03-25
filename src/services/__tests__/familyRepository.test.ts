@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { getFamilyRepository } from '../familyRepository';
+import { createFamilyRepository, FAMILY_SYNC_MODE_STORAGE_KEY, getFamilyRepository } from '../familyRepository';
+import { getFamilyRemoteAdapter } from '../familyRemoteAdapter';
 
 describe('familyRepository', () => {
   beforeEach(() => {
@@ -32,5 +33,38 @@ describe('familyRepository', () => {
     repository.markCurrentMemberSafe();
 
     expect(listener).toHaveBeenCalledTimes(1);
+  });
+
+  it('can hydrate additional members from the mock remote adapter in hybrid mode', () => {
+    localStorage.setItem(FAMILY_SYNC_MODE_STORAGE_KEY, 'hybrid');
+    const repository = getFamilyRepository();
+    const group = repository.createGroup('Dana');
+    const remoteAdapter = getFamilyRemoteAdapter();
+
+    remoteAdapter.upsertGroup({
+      ...group,
+      members: [
+        ...group.members,
+        {
+          id: 'member-2',
+          name: 'Noam',
+          isSafe: true,
+          lastSeen: '2026-03-25T21:00:00.000Z',
+        },
+      ],
+    });
+
+    const hydrated = repository.getSnapshot();
+
+    expect(hydrated?.members).toHaveLength(2);
+    expect(hydrated?.members.find((member) => member.id === 'member-2')?.name).toBe('Noam');
+  });
+
+  it('can be created explicitly in hybrid mode without depending on storage flags', () => {
+    const repository = createFamilyRepository({ mode: 'hybrid' });
+
+    repository.createGroup('Dana');
+
+    expect(repository.getSnapshot()?.groupCode).toHaveLength(6);
   });
 });

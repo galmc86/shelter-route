@@ -70,6 +70,15 @@ function saveGroup(group: FamilyGroup): void {
   }
 }
 
+export function replaceStoredGroup(group: FamilyGroup | null): void {
+  if (!group) {
+    leaveGroup();
+    return;
+  }
+
+  saveGroup(group);
+}
+
 function sanitizeGroup(raw: unknown): FamilyGroup | null {
   if (!raw || typeof raw !== 'object') {
     return null;
