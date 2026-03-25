@@ -37,7 +37,7 @@ Status: `[~]`
 
 - [x] Define a unified shelter trust/ranking model from accessibility, capacity, community reports, and freshness/confidence
 - [x] Update shelter sorting/ranking logic to reflect trust and urgency
-- [ ] Redesign shelter result cards into primary vs secondary information layers
+- [x] Redesign shelter result cards into primary vs secondary information layers
 - [x] Expose ranking rationale in the UI where needed
 - [x] Verify trust/ranking behavior with automated tests
 
@@ -45,6 +45,7 @@ Notes:
 - This should improve both safety and product differentiation.
 - Nearby and emergency flows now default to a recommended ranking that combines walking time, distance, accessibility, capacity occupancy, community status, and freshness when data is available.
 - The top recommended shelter now surfaces a short rationale in the results list instead of leaving the recommendation implicit.
+- Shelter result cards now prioritize the decision layer first: name, distance, walk time, accessibility, and capacity summary, with address and the occupancy bar moved into a quieter secondary layer.
 
 ### Epic 3: App-State Refactor Foundation
 Objective: reduce mode coupling and regression risk.

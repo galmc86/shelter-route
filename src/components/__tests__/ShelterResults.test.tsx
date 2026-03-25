@@ -22,6 +22,9 @@ const translations: Record<string, string> = {
   'accessibility.groundFloor': 'Ground floor',
   'accessibility.floor': 'Floor {{level}}',
   'capacity.occupancy': 'Occupancy',
+  'capacity.low': 'Low occupancy',
+  'capacity.medium': 'Medium occupancy',
+  'capacity.high': 'High occupancy',
   'capacity.unknown': 'Unknown',
   'capacity.legend': 'Capacity legend',
   'capacity.legendLow': 'Low',
@@ -90,6 +93,8 @@ describe('ShelterResults', () => {
 
     expect(screen.getByRole('button', { name: 'Recommended' })).toBeInTheDocument();
     expect(screen.getByText('Recommended: community reports say it is open')).toBeInTheDocument();
+    expect(screen.getByText('~2 min walk')).toBeInTheDocument();
+    expect(screen.getByText('Low occupancy · 22%')).toBeInTheDocument();
   });
 
   it('does not show the recommended sort in regular route mode', () => {
