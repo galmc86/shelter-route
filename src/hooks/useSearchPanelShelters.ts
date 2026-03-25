@@ -1,12 +1,17 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { LatLng, RouteInfo, RouteWithShelters, SavedRouteData, SearchHistoryEntry, ShelterSortMode } from '../types';
 import type { ShelterWithDistance } from './useShelters';
+import type { CapacityData } from '../services/capacityService';
+import { getAggregatedStatus } from '../services/shelterReportsService';
+import { rankSheltersByRecommendation } from '../services/shelterRankingService';
 
 interface UseSearchPanelSheltersOptions {
   routeInfo: RouteInfo | null;
   routesWithShelters: RouteWithShelters[];
   selectedRouteIndex: number;
   nearbyShelters: ShelterWithDistance[];
+  capacityMap?: Map<string, CapacityData>;
+  preferRecommendedSort?: boolean;
   currentOrigin: LatLng | null;
   currentDestination: LatLng | null;
   historyEntries: SearchHistoryEntry[];
@@ -20,6 +25,8 @@ export function useSearchPanelShelters({
   routesWithShelters,
   selectedRouteIndex,
   nearbyShelters,
+  capacityMap,
+  preferRecommendedSort = false,
   currentOrigin,
   currentDestination,
   historyEntries,
@@ -27,24 +34,37 @@ export function useSearchPanelShelters({
   saveHistoryRoute,
   unsaveHistoryRoute,
 }: UseSearchPanelSheltersOptions) {
-  const [sortMode, setSortMode] = useState<ShelterSortMode>('distance');
+  const [sortMode, setSortMode] = useState<ShelterSortMode>(preferRecommendedSort ? 'recommended' : 'distance');
   const [showAccessibleOnly, setShowAccessibleOnly] = useState(false);
 
+  useEffect(() => {
+    setSortMode(preferRecommendedSort ? 'recommended' : 'distance');
+  }, [preferRecommendedSort]);
+
   const displayedShelters = useMemo(() => {
-    const shelters = [...nearbyShelters];
-
     const filteredShelters = showAccessibleOnly
-      ? shelters.filter((shelter) => shelter.isAccessible)
-      : shelters;
+      ? nearbyShelters.filter((shelter) => shelter.isAccessible)
+      : nearbyShelters;
 
-    filteredShelters.sort((a, b) =>
+    const communityStatusMap = new Map(
+      filteredShelters.map((shelter) => [shelter.id, getAggregatedStatus(shelter.id)])
+    );
+
+    const rankedShelters = rankSheltersByRecommendation(filteredShelters, {
+      capacityMap,
+      communityStatusMap,
+    });
+
+    if (sortMode === 'recommended') {
+      return rankedShelters;
+    }
+
+    return [...rankedShelters].sort((a, b) =>
       sortMode === 'walkingTime'
         ? a.walkingTimeMinutes - b.walkingTimeMinutes
         : a.distanceFromRoute - b.distanceFromRoute
     );
-
-    return filteredShelters;
-  }, [nearbyShelters, showAccessibleOnly, sortMode]);
+  }, [capacityMap, nearbyShelters, showAccessibleOnly, sortMode]);
 
   const bestRouteIndex = useMemo(() => {
     if (routesWithShelters.length <= 1) return 0;

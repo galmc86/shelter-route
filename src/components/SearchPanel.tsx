@@ -129,6 +129,8 @@ export function SearchPanel({
     routesWithShelters,
     selectedRouteIndex,
     nearbyShelters,
+    capacityMap,
+    preferRecommendedSort: emergencyMode || nearMeMode,
     currentOrigin,
     currentDestination,
     historyEntries,
@@ -154,8 +156,8 @@ export function SearchPanel({
     : nearMeMode
       ? 'nearby-results'
       : activeSearchMode;
-  const nearestEmergencyShelter = emergencyMode && nearbyShelters.length > 0
-    ? nearbyShelters[0]
+  const nearestEmergencyShelter = emergencyMode && displayedShelters.length > 0
+    ? displayedShelters[0]
     : null;
 
   const contextualChips = useMemo(() => {

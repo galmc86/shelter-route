@@ -33,16 +33,18 @@ Notes:
 
 ### Epic 2: Shelter Decision Quality
 Objective: help users choose the best shelter, not just the nearest one.
-Status: `[ ]`
+Status: `[~]`
 
-- [ ] Define a unified shelter trust/ranking model from accessibility, capacity, community reports, and freshness/confidence
-- [ ] Update shelter sorting/ranking logic to reflect trust and urgency
+- [x] Define a unified shelter trust/ranking model from accessibility, capacity, community reports, and freshness/confidence
+- [x] Update shelter sorting/ranking logic to reflect trust and urgency
 - [ ] Redesign shelter result cards into primary vs secondary information layers
-- [ ] Expose ranking rationale in the UI where needed
-- [ ] Verify trust/ranking behavior with automated tests
+- [x] Expose ranking rationale in the UI where needed
+- [x] Verify trust/ranking behavior with automated tests
 
 Notes:
 - This should improve both safety and product differentiation.
+- Nearby and emergency flows now default to a recommended ranking that combines walking time, distance, accessibility, capacity occupancy, community status, and freshness when data is available.
+- The top recommended shelter now surfaces a short rationale in the results list instead of leaving the recommendation implicit.
 
 ### Epic 3: App-State Refactor Foundation
 Objective: reduce mode coupling and regression risk.

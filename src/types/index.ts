@@ -17,7 +17,7 @@ export interface Shelter {
   lastUpdated?: string;
 }
 
-export type ShelterSortMode = 'distance' | 'walkingTime';
+export type ShelterSortMode = 'recommended' | 'distance' | 'walkingTime';
 
 export type TravelMode = 'WALKING' | 'BICYCLING' | 'DRIVING';
 

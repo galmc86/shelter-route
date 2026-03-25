@@ -139,7 +139,7 @@ vi.mock('../../hooks/useSearchPanelShelters', () => ({
     setSortMode: vi.fn(),
     showAccessibleOnly: false,
     setShowAccessibleOnly: vi.fn(),
-    displayedShelters: [],
+    displayedShelters: mockRouteState.nearbyShelters,
     bestRouteIndex: 0,
     currentRouteEntry: null,
     isRouteSaved: false,

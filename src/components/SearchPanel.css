@@ -875,6 +875,11 @@
   border-color: var(--color-primary);
 }
 
+.shelter-item-recommended {
+  border-color: rgba(21, 101, 192, 0.28);
+  background: linear-gradient(180deg, rgba(21, 101, 192, 0.08), var(--color-shelter-bg));
+}
+
 .shelter-item:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
@@ -910,6 +915,27 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.shelter-item-recommendation {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--color-primary);
+  flex-wrap: wrap;
+}
+
+.shelter-item-recommendation-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(21, 101, 192, 0.14);
+  color: var(--color-primary);
+  font-size: 10px;
+  font-weight: 700;
 }
 
 .shelter-item-distance {
@@ -974,6 +1000,7 @@
   display: flex;
   align-items: center;
   gap: 4px;
+  flex-wrap: wrap;
 }
 
 .control-label {

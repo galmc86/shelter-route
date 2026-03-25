@@ -141,8 +141,18 @@ export const translations = {
 
     // Sorting
     'sort.label': 'מיון לפי',
+    'sort.recommended': 'מומלץ',
     'sort.distance': 'מרחק',
     'sort.walkingTime': 'זמן הליכה',
+
+    // Recommendations
+    'recommendation.label': 'מומלץ: {{reason}}',
+    'recommendation.reportedOpen': 'דווח כפתוח בקהילה',
+    'recommendation.accessibleAndAvailable': 'נגיש עם תפוסה נמוכה',
+    'recommendation.accessible': 'אפשרות נגישה יותר',
+    'recommendation.spaceAvailable': 'נראה שיש יותר מקום פנוי',
+    'recommendation.freshData': 'עם נתונים מעודכנים יותר',
+    'recommendation.shortestWalk': 'ההליכה הקצרה ביותר',
 
     // Walking time
     'shelters.walkingTime': '~{{minutes}} דק׳ הליכה',
@@ -526,8 +536,18 @@ export const translations = {
 
     // Sorting
     'sort.label': 'Sort by',
+    'sort.recommended': 'Recommended',
     'sort.distance': 'Distance',
     'sort.walkingTime': 'Walking time',
+
+    // Recommendations
+    'recommendation.label': 'Recommended: {{reason}}',
+    'recommendation.reportedOpen': 'community reports say it is open',
+    'recommendation.accessibleAndAvailable': 'accessible with lower occupancy',
+    'recommendation.accessible': 'more accessible access',
+    'recommendation.spaceAvailable': 'it appears to have more space',
+    'recommendation.freshData': 'it has fresher status data',
+    'recommendation.shortestWalk': 'shortest walk',
 
     // Walking time
     'shelters.walkingTime': '~{{minutes}} min walk',
@@ -910,8 +930,18 @@ export const translations = {
 
     // Sorting
     'sort.label': 'ترتيب حسب',
+    'sort.recommended': 'موصى به',
     'sort.distance': 'المسافة',
     'sort.walkingTime': 'وقت المشي',
+
+    // Recommendations
+    'recommendation.label': 'موصى به: {{reason}}',
+    'recommendation.reportedOpen': 'تقارير المجتمع تشير إلى أنه مفتوح',
+    'recommendation.accessibleAndAvailable': 'مهيأ مع إشغال منخفض',
+    'recommendation.accessible': 'وصول أكثر تهيئة',
+    'recommendation.spaceAvailable': 'يبدو أن فيه مساحة أكبر',
+    'recommendation.freshData': 'توجد له بيانات أحدث',
+    'recommendation.shortestWalk': 'أقصر مسافة مشياً',
 
     // Walking time
     'shelters.walkingTime': '~{{minutes}} دق. مشي',
@@ -1294,8 +1324,18 @@ export const translations = {
 
     // Sorting
     'sort.label': 'Сортировать по',
+    'sort.recommended': 'Рекомендуем',
     'sort.distance': 'Расстояние',
     'sort.walkingTime': 'Время пешком',
+
+    // Recommendations
+    'recommendation.label': 'Рекомендуем: {{reason}}',
+    'recommendation.reportedOpen': 'по отзывам сообщества укрытие открыто',
+    'recommendation.accessibleAndAvailable': 'доступнее и менее заполнено',
+    'recommendation.accessible': 'более доступный вход',
+    'recommendation.spaceAvailable': 'там, похоже, больше места',
+    'recommendation.freshData': 'по нему более свежие данные',
+    'recommendation.shortestWalk': 'самый короткий путь пешком',
 
     // Walking time
     'shelters.walkingTime': '~{{minutes}} мин. пешком',
