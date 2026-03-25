@@ -158,11 +158,12 @@ Status: `[~]`
 
 - [ ] Add cross-device shared family state
 - [~] Support invite/join flows
-- [ ] Add alert-triggered “I’m safe” coordination
+- [~] Add alert-triggered “I’m safe” coordination
 - [ ] Define persistence/auth approach
 
 Notes:
 - The first pass is staying local/mock-backed, but the family surface is now being reshaped around explicit create/join states plus an invite card so the eventual sync model has a clearer UX seam.
+- Alert and debrief surfaces now expose a one-tap local family check-in action and reset the current member to “needs check-in” when a new alert starts, so the core coordination loop exists before real cross-device sync is added.
 
 ### Epic 10: Saved Places to Safety Profiles
 Objective: turn saved locations into reusable routines.
