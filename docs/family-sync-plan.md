@@ -43,6 +43,7 @@ Introduce a repository boundary with a gateway seam:
    - encapsulates the actual backend transport details for the backend gateway
    - gives the first real integration a place to land without leaking fetch/auth concerns into repository code
    - can start as a cached HTTP shell before the full live API contract is available
+   - should use typed endpoint builders and request/response codecs so transport contracts are explicit and testable
 
 3. `RemoteFamilyRepository`
    - composes local state with the remote gateway

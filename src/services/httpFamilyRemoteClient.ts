@@ -1,12 +1,15 @@
 import { resilientFetch } from './fetchClient';
 import type { FamilyRemoteClient } from './familyRemoteClient';
 import type { FamilyRemoteGroupRecord } from './familyRemoteModel';
+import {
+  decodeFamilyRemoteGroupResponse,
+  encodeFamilyRemoteGroupRequest,
+  getFamilyRemoteGroupEndpoint,
+} from './familyRemoteHttpContract';
 import type { FamilyRemoteSession } from './familyRemoteSessionService';
 
 const STORAGE_KEY_PREFIX = 'shelter-route:family-remote-http-cache:';
 const REMOTE_CACHE_UPDATED_EVENT = 'family-remote-http-cache-updated';
-const HTTP_ENDPOINT = (import.meta.env.VITE_FAMILY_REMOTE_URL as string | undefined)?.trim();
-
 function getStorageKey(groupCode: string): string {
   return `${STORAGE_KEY_PREFIX}${groupCode.toUpperCase()}`;
 }
@@ -18,14 +21,6 @@ function getHeaders(session: FamilyRemoteSession): HeadersInit {
     ...(session.userId ? { 'X-Family-User-Id': session.userId } : {}),
     'X-Family-Auth-State': session.authState,
   };
-}
-
-function getEndpoint(groupCode: string): string | null {
-  if (!HTTP_ENDPOINT) {
-    return null;
-  }
-
-  return `${HTTP_ENDPOINT.replace(/\/+$/, '')}/${encodeURIComponent(groupCode.toUpperCase())}`;
 }
 
 function readCachedGroup(groupCode: string): FamilyRemoteGroupRecord | null {
@@ -66,12 +61,12 @@ function notifyCacheChanged(groupCode: string): void {
 }
 
 async function refreshGroup(groupCode: string, session: FamilyRemoteSession): Promise<void> {
-  const endpoint = getEndpoint(groupCode);
-  if (!endpoint) {
+  const resolvedEndpoint = getFamilyRemoteGroupEndpoint(groupCode);
+  if (!resolvedEndpoint) {
     return;
   }
 
-  const result = await resilientFetch<FamilyRemoteGroupRecord>(endpoint, {
+  const result = await resilientFetch<unknown>(resolvedEndpoint, {
     method: 'GET',
     headers: getHeaders(session),
   }, {
@@ -80,32 +75,32 @@ async function refreshGroup(groupCode: string, session: FamilyRemoteSession): Pr
   });
 
   if (result.ok) {
-    writeCachedGroup(result.data);
+    writeCachedGroup(decodeFamilyRemoteGroupResponse(result.data));
   }
 }
 
 async function pushGroup(record: FamilyRemoteGroupRecord, session: FamilyRemoteSession): Promise<void> {
-  const endpoint = getEndpoint(record.inviteCode);
+  const endpoint = getFamilyRemoteGroupEndpoint(record.inviteCode);
   if (!endpoint) {
     return;
   }
 
-  const result = await resilientFetch<FamilyRemoteGroupRecord>(endpoint, {
+  const result = await resilientFetch<unknown>(endpoint, {
     method: 'PUT',
     headers: getHeaders(session),
-    body: JSON.stringify(record),
+    body: JSON.stringify(encodeFamilyRemoteGroupRequest(record)),
   }, {
     retries: 1,
     retryDelay: 500,
   });
 
   if (result.ok) {
-    writeCachedGroup(result.data);
+    writeCachedGroup(decodeFamilyRemoteGroupResponse(result.data));
   }
 }
 
 async function deleteGroup(groupCode: string, session: FamilyRemoteSession): Promise<void> {
-  const endpoint = getEndpoint(groupCode);
+  const endpoint = getFamilyRemoteGroupEndpoint(groupCode);
   if (!endpoint) {
     return;
   }
@@ -172,4 +167,3 @@ const httpFamilyRemoteClient = new HttpFamilyRemoteClient();
 export function getHttpFamilyRemoteClient(): FamilyRemoteClient {
   return httpFamilyRemoteClient;
 }
-
