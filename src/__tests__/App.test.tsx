@@ -5,8 +5,6 @@ import App from '../App';
 import type { LatLng } from '../types';
 import type { ShelterWithDistance } from '../hooks/useShelters';
 import type { RouteContextValue } from '../contexts/RouteContext';
-import type { EmergencyContextValue } from '../contexts/EmergencyContext';
-import type { ShelterContextValue } from '../contexts/ShelterContext';
 
 const origin: LatLng = { lat: 32.1, lng: 34.8 };
 const destination: LatLng = { lat: 32.2, lng: 34.9 };
@@ -24,9 +22,6 @@ const mockShelter: ShelterWithDistance = {
   currentOccupancy: 3,
 };
 
-let latestRouteContext: RouteContextValue | undefined;
-let latestEmergencyContext: EmergencyContextValue | undefined;
-let latestShelterContext: ShelterContextValue | undefined;
 const savedOrigin: LatLng = { lat: 32.33, lng: 34.91 };
 
 const mockSearchRoute = vi.fn();
@@ -154,27 +149,39 @@ vi.mock('../components/MapView', () => ({
   MapView: () => <div>map-view</div>,
 }));
 
-vi.mock('../components/SearchPanel', () => ({
-  SearchPanel: ({ panelExpanded }: { panelExpanded?: boolean }) => (
-    <div>
-      <div data-testid="panel-expanded">{String(panelExpanded)}</div>
-      <div data-testid="emergency-mode">{String(latestEmergencyContext?.emergencyMode)}</div>
-      <div data-testid="near-me-mode">{String(latestEmergencyContext?.nearMeMode)}</div>
-      <div data-testid="route-info">{latestRouteContext?.routeInfo ? 'route' : 'none'}</div>
-      <div data-testid="nearby-count">{String(latestRouteContext?.nearbyShelters.length ?? 0)}</div>
-      <button onClick={() => latestRouteContext?.onSearch(origin, destination, 'WALKING')}>
-        search-route
-      </button>
-      <button onClick={() => latestEmergencyContext?.onNearMeClick()}>near-me</button>
-      <button onClick={() => latestEmergencyContext?.onSearchFromSavedLocation(savedOrigin, 'Home')}>
-        saved-place
-      </button>
-      <button onClick={() => latestShelterContext?.onNavigateToShelter?.(mockShelter)}>
-        navigate-shelter
-      </button>
-    </div>
-  ),
-}));
+vi.mock('../components/SearchPanel', async () => {
+  const { useRouteContext } = await import('../contexts/RouteContext');
+  const { useEmergencyContext } = await import('../contexts/EmergencyContext');
+  const { useShelterContext } = await import('../contexts/ShelterContext');
+
+  return {
+    SearchPanel: ({ panelExpanded }: { panelExpanded?: boolean }) => {
+      const routeContext = useRouteContext();
+      const emergencyContext = useEmergencyContext();
+      const shelterContext = useShelterContext();
+
+      return (
+        <div>
+          <div data-testid="panel-expanded">{String(panelExpanded)}</div>
+          <div data-testid="emergency-mode">{String(emergencyContext.emergencyMode)}</div>
+          <div data-testid="near-me-mode">{String(emergencyContext.nearMeMode)}</div>
+          <div data-testid="route-info">{routeContext.routeInfo ? 'route' : 'none'}</div>
+          <div data-testid="nearby-count">{String(routeContext.nearbyShelters.length)}</div>
+          <button onClick={() => routeContext.onSearch(origin, destination, 'WALKING')}>
+            search-route
+          </button>
+          <button onClick={() => emergencyContext.onNearMeClick()}>near-me</button>
+          <button onClick={() => emergencyContext.onSearchFromSavedLocation(savedOrigin, 'Home')}>
+            saved-place
+          </button>
+          <button onClick={() => shelterContext.onNavigateToShelter?.(mockShelter)}>
+            navigate-shelter
+          </button>
+        </div>
+      );
+    },
+  };
+});
 
 vi.mock('../hooks/useGoogleMaps', () => ({
   useGoogleMaps: () => mockGoogleMapsState,
@@ -222,35 +229,11 @@ vi.mock('../services/safetyAnalyticsService', () => ({
   trackEmergency: () => mockTrackEmergency(),
 }));
 
-vi.mock('../contexts/RouteContext', () => ({
-  RouteProvider: ({ value, children }: { value: RouteContextValue; children: ReactNode }) => {
-    latestRouteContext = value;
-    return <>{children}</>;
-  },
-}));
-
-vi.mock('../contexts/EmergencyContext', () => ({
-  EmergencyProvider: ({ value, children }: { value: EmergencyContextValue; children: ReactNode }) => {
-    latestEmergencyContext = value;
-    return <>{children}</>;
-  },
-}));
-
-vi.mock('../contexts/ShelterContext', () => ({
-  ShelterProvider: ({ value, children }: { value: ShelterContextValue; children: ReactNode }) => {
-    latestShelterContext = value;
-    return <>{children}</>;
-  },
-}));
-
 describe('App', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
     localStorage.setItem('shelter-route:onboarding-completed', 'true');
-    latestRouteContext = undefined;
-    latestEmergencyContext = undefined;
-    latestShelterContext = undefined;
 
     mockGoogleMapsState = { isLoaded: true, error: null };
     mockRouteState = {

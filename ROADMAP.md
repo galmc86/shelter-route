@@ -74,13 +74,14 @@ Status: `[~]`
 - [x] Add automated coverage for the saved-places flow
 - [x] Expand automated coverage for emergency mode and location fallback
 - [x] Expand automated coverage for route planning and route alternatives
-- [ ] Reduce reliance on full-tree mocking in app integration tests
+- [x] Reduce reliance on full-tree mocking in app integration tests
 - [ ] Define a stable PR test gate for safety-critical flows
 
 Notes:
 - Saved places are already covered by unit, integration, and E2E checks.
 - Emergency E2E coverage now targets the current `emergency-mode-surface`, validates the navigate CTA, and verifies the `Use map center` fallback when geolocation is unavailable.
 - Route planning and route alternatives now have deterministic integration coverage, including a StrictMode regression test that preserves shared-route bootstrap from URL params during development.
+- `App.test.tsx` now consumes the real route, emergency, and shelter providers via a context probe instead of intercepting provider props, so controller composition is exercised end-to-end inside the app shell tests.
 
 ## Next
 
