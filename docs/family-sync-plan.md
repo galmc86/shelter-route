@@ -42,6 +42,7 @@ Introduce a repository boundary with a gateway seam:
 2a. `FamilyRemoteClient`
    - encapsulates the actual backend transport details for the backend gateway
    - gives the first real integration a place to land without leaking fetch/auth concerns into repository code
+   - can start as a cached HTTP shell before the full live API contract is available
 
 3. `RemoteFamilyRepository`
    - composes local state with the remote gateway
@@ -188,6 +189,7 @@ The remote gateway should accept an explicit remote session object instead of re
 - keep remote feature behind a flag
 - allow hybrid mode to be enabled in development with `?familySyncMode=hybrid` or `VITE_FAMILY_SYNC_MODE=hybrid`
 - allow remote gateway selection in development with `?familyRemoteGateway=backend` or `VITE_FAMILY_REMOTE_GATEWAY=backend`
+- allow backend client selection in development with `?familyRemoteClient=http` or `VITE_FAMILY_REMOTE_CLIENT=http`
 
 ### Phase 3
 

@@ -16,6 +16,7 @@ import { ShelterProvider } from './contexts/ShelterContext';
 import { FamilyRepositoryProvider } from './contexts/FamilyRepositoryContext';
 import { useAppController } from './hooks/useAppController';
 import { getFamilyRepository } from './services/familyRepository';
+import { initializeFamilyRemoteClientModeFromUrl } from './services/familyRemoteClientModeService';
 import { initializeFamilyRemoteGatewayModeFromUrl } from './services/familyRemoteGatewayModeService';
 import { initializeFamilySyncModeFromUrl } from './services/familySyncModeService';
 import './App.css';
@@ -81,6 +82,7 @@ function App() {
   const [activeSection, setActiveSection] = useState<AppSection>('search');
   const [fabBottomOffset, setFabBottomOffset] = useState<number | null>(null);
   const [familyRepository] = useState(() => {
+    initializeFamilyRemoteClientModeFromUrl();
     initializeFamilyRemoteGatewayModeFromUrl();
     initializeFamilySyncModeFromUrl();
     return getFamilyRepository();

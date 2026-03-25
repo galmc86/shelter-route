@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
+  createBackendFamilyRemoteClient,
   FamilyRemoteClientNotConfiguredError,
   getBackendFamilyRemoteClient,
 } from '../backendFamilyRemoteClient';
@@ -24,5 +25,11 @@ describe('backendFamilyRemoteClient', () => {
       members: [],
     }, session)).toThrow(FamilyRemoteClientNotConfiguredError);
   });
-});
 
+  it('can create the http-backed client shell explicitly', () => {
+    const client = createBackendFamilyRemoteClient({ mode: 'http' });
+    const session = getFamilyRemoteSession();
+
+    expect(client.fetchGroup('ABC123', session)).toBeNull();
+  });
+});

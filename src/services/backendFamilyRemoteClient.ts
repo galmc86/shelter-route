@@ -1,4 +1,6 @@
 import type { FamilyRemoteClient } from './familyRemoteClient';
+import { getFamilyRemoteClientMode, type FamilyRemoteClientMode } from './familyRemoteClientModeService';
+import { getHttpFamilyRemoteClient } from './httpFamilyRemoteClient';
 import type { FamilyRemoteGroupRecord } from './familyRemoteModel';
 import type { FamilyRemoteSession } from './familyRemoteSessionService';
 
@@ -29,7 +31,16 @@ class BackendFamilyRemoteClient implements FamilyRemoteClient {
 
 const backendFamilyRemoteClient = new BackendFamilyRemoteClient();
 
-export function getBackendFamilyRemoteClient(): FamilyRemoteClient {
-  return backendFamilyRemoteClient;
+export function createBackendFamilyRemoteClient({
+  mode = getFamilyRemoteClientMode(),
+}: {
+  mode?: FamilyRemoteClientMode;
+} = {}): FamilyRemoteClient {
+  return mode === 'http'
+    ? getHttpFamilyRemoteClient()
+    : backendFamilyRemoteClient;
 }
 
+export function getBackendFamilyRemoteClient(): FamilyRemoteClient {
+  return createBackendFamilyRemoteClient();
+}
