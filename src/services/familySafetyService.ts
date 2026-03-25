@@ -1,4 +1,5 @@
 const STORAGE_KEY = 'shelter-route:family-group';
+const FAMILY_GROUP_UPDATED_EVENT = 'family-group-updated';
 
 export interface FamilyMember {
   id: string;
@@ -39,9 +40,18 @@ export function getGroup(): FamilyGroup | null {
 function saveGroup(group: FamilyGroup): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(group));
+    notifyFamilyGroupChanged();
   } catch {
     // storage full or unavailable
   }
+}
+
+function notifyFamilyGroupChanged(): void {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  window.dispatchEvent(new CustomEvent(FAMILY_GROUP_UPDATED_EVENT));
 }
 
 export function createGroup(name: string): FamilyGroup {
@@ -98,12 +108,48 @@ export function setImSafe(): FamilyGroup | null {
   return group;
 }
 
+export function markCurrentMemberNeedsCheckIn(): FamilyGroup | null {
+  const group = getGroup();
+  if (!group) return null;
+
+  const now = new Date().toISOString();
+  group.members = group.members.map((member) =>
+    member.name === group.memberName
+      ? { ...member, isSafe: false, lastSeen: now }
+      : member
+  );
+  saveGroup(group);
+  return group;
+}
+
 export function leaveGroup(): void {
   try {
     localStorage.removeItem(STORAGE_KEY);
+    notifyFamilyGroupChanged();
   } catch {
     // ignore
   }
+}
+
+export function subscribeToFamilyGroupChanges(listener: () => void): () => void {
+  if (typeof window === 'undefined') {
+    return () => {};
+  }
+
+  const handleCustomUpdate = () => listener();
+  const handleStorage = (event: StorageEvent) => {
+    if (event.key === STORAGE_KEY || event.key === null) {
+      listener();
+    }
+  };
+
+  window.addEventListener(FAMILY_GROUP_UPDATED_EVENT, handleCustomUpdate);
+  window.addEventListener('storage', handleStorage);
+
+  return () => {
+    window.removeEventListener(FAMILY_GROUP_UPDATED_EVENT, handleCustomUpdate);
+    window.removeEventListener('storage', handleStorage);
+  };
 }
 
 export function getShareLink(): string {

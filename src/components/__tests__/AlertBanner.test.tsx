@@ -2,6 +2,37 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { AlertBanner } from '../AlertBanner';
 import type { AlertRegion } from '../../services/orefAlertService';
+import type { FamilyGroup } from '../../services/familySafetyService';
+
+let mockFamilyGroup: FamilyGroup | null = null;
+const mockSetImSafe = vi.fn(() => {
+  if (!mockFamilyGroup) return null;
+
+  mockFamilyGroup = {
+    ...mockFamilyGroup,
+    members: mockFamilyGroup.members.map((member) => (
+      member.name === mockFamilyGroup?.memberName
+        ? { ...member, isSafe: true }
+        : member
+    )),
+  };
+
+  return mockFamilyGroup;
+});
+const mockMarkNeedsCheckIn = vi.fn(() => {
+  if (!mockFamilyGroup) return null;
+
+  mockFamilyGroup = {
+    ...mockFamilyGroup,
+    members: mockFamilyGroup.members.map((member) => (
+      member.name === mockFamilyGroup?.memberName
+        ? { ...member, isSafe: false }
+        : member
+    )),
+  };
+
+  return mockFamilyGroup;
+});
 
 // Mock useLanguage to return English translations
 vi.mock('../../i18n', () => ({
@@ -28,10 +59,20 @@ vi.mock('../../i18n', () => ({
         'alert.mda': 'Ambulance / MDA',
         'alert.fire': 'Fire',
         'alert.homeFrontCommand': 'Home Front Command',
+        'family.alertCheckInNeeded': 'Check in with your family once you reach shelter.',
+        'family.alertSafeShared': 'Your safe status was shared with the local family group.',
+        'family.markedSafe': 'Marked as Safe',
       };
       return translations[key] ?? key;
     },
   }),
+}));
+
+vi.mock('../../services/familySafetyService', () => ({
+  getGroup: () => mockFamilyGroup,
+  setImSafe: () => mockSetImSafe(),
+  markCurrentMemberNeedsCheckIn: () => mockMarkNeedsCheckIn(),
+  subscribeToFamilyGroupChanges: () => () => {},
 }));
 
 // Mock IntersectionObserver
@@ -67,6 +108,9 @@ describe('AlertBanner', () => {
   beforeEach(() => {
     onFindShelter = vi.fn() as unknown as () => void;
     onDismiss = vi.fn() as unknown as () => void;
+    mockFamilyGroup = null;
+    mockSetImSafe.mockClear();
+    mockMarkNeedsCheckIn.mockClear();
   });
 
   it('renders countdown when countdown > 0', () => {
@@ -159,5 +203,55 @@ describe('AlertBanner', () => {
 
     expect(screen.getByText('Refresh shelter guidance')).toBeInTheDocument();
     expect(screen.getByText('Shelter mode is already open and updating below.')).toBeInTheDocument();
+  });
+
+  it('shows a family check-in action and marks the user safe when clicked', () => {
+    mockFamilyGroup = {
+      groupCode: 'ABC123',
+      memberName: 'Dana',
+      members: [
+        { id: '1', name: 'Dana', isSafe: false },
+        { id: '2', name: 'Noam', isSafe: false },
+      ],
+    };
+
+    render(
+      <AlertBanner
+        matchedRegion={mockRegion}
+        countdown={10}
+        onFindShelter={onFindShelter}
+        onDismiss={onDismiss}
+        isAlertActive={true}
+      />
+    );
+
+    expect(screen.getByText('Check in with your family once you reach shelter.')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: "I'm Safe" }));
+
+    expect(mockSetImSafe).toHaveBeenCalledTimes(1);
+    expect(screen.getByText('Your safe status was shared with the local family group.')).toBeInTheDocument();
+  });
+
+  it('resets the local family status when a new alert starts', () => {
+    mockFamilyGroup = {
+      groupCode: 'ABC123',
+      memberName: 'Dana',
+      members: [
+        { id: '1', name: 'Dana', isSafe: true },
+      ],
+    };
+
+    render(
+      <AlertBanner
+        matchedRegion={mockRegion}
+        countdown={10}
+        onFindShelter={onFindShelter}
+        onDismiss={onDismiss}
+        isAlertActive={true}
+      />
+    );
+
+    expect(mockMarkNeedsCheckIn).toHaveBeenCalledTimes(1);
   });
 });

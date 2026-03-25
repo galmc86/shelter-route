@@ -18,6 +18,7 @@ vi.mock('../../services/familySafetyService', () => ({
   setImSafe: vi.fn(),
   leaveGroup: vi.fn(),
   getShareLink: vi.fn(() => 'https://example.com'),
+  subscribeToFamilyGroupChanges: vi.fn(() => () => {}),
 }));
 
 describe('FamilySafety', () => {

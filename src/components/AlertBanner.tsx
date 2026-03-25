@@ -2,6 +2,13 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLanguage } from '../i18n';
 import './AlertBanner.css';
 import type { AlertRegion } from '../services/orefAlertService';
+import {
+  getGroup,
+  markCurrentMemberNeedsCheckIn,
+  setImSafe,
+  subscribeToFamilyGroupChanges,
+  type FamilyGroup,
+} from '../services/familySafetyService';
 
 interface AlertBannerProps {
   matchedRegion: AlertRegion | null;
@@ -86,8 +93,14 @@ function FloatingCountdownBadge({
 
 function DebriefScreen({
   onDismiss,
+  hasFamilyGroup,
+  isFamilySafe,
+  onMarkSafe,
 }: {
   onDismiss: () => void;
+  hasFamilyGroup: boolean;
+  isFamilySafe: boolean;
+  onMarkSafe: () => void;
 }) {
   const { t } = useLanguage();
   const [debriefCountdown, setDebriefCountdown] = useState(DEBRIEF_DURATION);
@@ -110,8 +123,11 @@ function DebriefScreen({
   }, []);
 
   const handleDismiss = useCallback(() => {
+    if (hasFamilyGroup && !isFamilySafe) {
+      onMarkSafe();
+    }
     onDismiss();
-  }, [onDismiss]);
+  }, [hasFamilyGroup, isFamilySafe, onDismiss, onMarkSafe]);
 
   return (
     <div className="alert-banner alert-banner--debrief" role="alert" aria-live="polite">
@@ -157,6 +173,12 @@ function DebriefScreen({
             </button>
           </div>
 
+          {hasFamilyGroup && (
+            <div className="debrief-family-note">
+              {isFamilySafe ? t('family.alertSafeShared') : t('family.alertCheckInNeeded')}
+            </div>
+          )}
+
           <div className="debrief-help-section">
             <div className="debrief-help-title">{t('alert.needHelp')}</div>
             <div className="debrief-hotlines">
@@ -195,6 +217,8 @@ export function AlertBanner({
 
   const bannerRef = useRef<HTMLDivElement>(null);
   const [bannerVisible, setBannerVisible] = useState(true);
+  const [familyGroup, setFamilyGroup] = useState<FamilyGroup | null>(() => getGroup());
+  const previousAlertActive = useRef(false);
 
   useEffect(() => {
     const el = bannerRef.current;
@@ -211,14 +235,49 @@ export function AlertBanner({
     return () => observer.disconnect();
   }, []);
 
+  useEffect(() => {
+    setFamilyGroup(getGroup());
+    return subscribeToFamilyGroupChanges(() => {
+      setFamilyGroup(getGroup());
+    });
+  }, []);
+
+  useEffect(() => {
+    if (isAlertActive && !previousAlertActive.current && familyGroup) {
+      const updated = markCurrentMemberNeedsCheckIn();
+      if (updated) {
+        setFamilyGroup(updated);
+      }
+    }
+
+    previousAlertActive.current = isAlertActive;
+  }, [familyGroup, isAlertActive]);
+
+  const handleMarkFamilySafe = useCallback(() => {
+    const updated = setImSafe();
+    if (updated) {
+      setFamilyGroup(updated);
+    }
+  }, []);
+
   const totalTime = matchedRegion?.timeToShelter ?? 0;
   const showBadge = isAlertActive && !bannerVisible && countdown !== null && countdown > 0;
   const ctaLabel = emergencyMode ? t('alert.refreshShelter') : t('alert.openShelter');
   const ctaHint = emergencyMode ? t('alert.actionHintActive') : t('alert.actionHintFallback');
+  const currentFamilyMember = familyGroup?.members.find((member) => member.name === familyGroup.memberName) ?? null;
+  const familyCheckInSafe = currentFamilyMember?.isSafe ?? false;
+  const hasFamilyGroup = Boolean(familyGroup);
 
   // Show debrief screen when countdown expires
   if (isExpired) {
-    return <DebriefScreen onDismiss={onDismiss} />;
+    return (
+      <DebriefScreen
+        onDismiss={onDismiss}
+        hasFamilyGroup={hasFamilyGroup}
+        isFamilySafe={familyCheckInSafe}
+        onMarkSafe={handleMarkFamilySafe}
+      />
+    );
   }
 
   return (
@@ -273,6 +332,20 @@ export function AlertBanner({
                 {ctaLabel}
               </button>
               <div className="alert-banner-action-hint">{ctaHint}</div>
+              {hasFamilyGroup && (
+                <div className="alert-banner-family-row">
+                  <span className={`alert-banner-family-status ${familyCheckInSafe ? 'is-safe' : 'is-pending'}`}>
+                    {familyCheckInSafe ? t('family.alertSafeShared') : t('family.alertCheckInNeeded')}
+                  </span>
+                  <button
+                    className={`alert-banner-safe-btn ${familyCheckInSafe ? 'is-safe' : ''}`}
+                    type="button"
+                    onClick={handleMarkFamilySafe}
+                  >
+                    {familyCheckInSafe ? t('family.markedSafe') : t('alert.imSafe')}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>

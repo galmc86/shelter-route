@@ -7,6 +7,7 @@ import {
   setImSafe,
   leaveGroup,
   getShareLink,
+  subscribeToFamilyGroupChanges,
   type FamilyGroup,
 } from '../services/familySafetyService';
 
@@ -41,6 +42,12 @@ export function FamilySafety({
       });
     }
   }, [initialGroupCode]);
+
+  useEffect(() => {
+    return subscribeToFamilyGroupChanges(() => {
+      setGroup(getGroup());
+    });
+  }, []);
 
   useEffect(() => {
     if (presentation === 'section') {
