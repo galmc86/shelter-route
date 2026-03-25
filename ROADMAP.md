@@ -154,12 +154,15 @@ Notes:
 
 ### Epic 9: Family Safety Sync
 Objective: turn the family feature into a real retention loop.
-Status: `[ ]`
+Status: `[~]`
 
 - [ ] Add cross-device shared family state
-- [ ] Support invite/join flows
+- [~] Support invite/join flows
 - [ ] Add alert-triggered “I’m safe” coordination
 - [ ] Define persistence/auth approach
+
+Notes:
+- The first pass is staying local/mock-backed, but the family surface is now being reshaped around explicit create/join states plus an invite card so the eventual sync model has a clearer UX seam.
 
 ### Epic 10: Saved Places to Safety Profiles
 Objective: turn saved locations into reusable routines.

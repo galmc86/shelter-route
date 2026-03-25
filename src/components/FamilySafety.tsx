@@ -23,8 +23,9 @@ export function FamilySafety({
   const [group, setGroup] = useState<FamilyGroup | null>(null);
   const [nameInput, setNameInput] = useState('');
   const [codeInput, setCodeInput] = useState('');
-  const [showJoinInput, setShowJoinInput] = useState(false);
+  const [setupMode, setSetupMode] = useState<'create' | 'join'>(initialGroupCode ? 'join' : 'create');
   const [copied, setCopied] = useState(false);
+  const [codeCopied, setCodeCopied] = useState(false);
   const [isExpanded, setIsExpanded] = useState(presentation === 'section');
 
   // Load existing group on mount
@@ -34,7 +35,7 @@ export function FamilySafety({
       queueMicrotask(() => setGroup(existing));
     } else if (initialGroupCode) {
       queueMicrotask(() => {
-        setShowJoinInput(true);
+        setSetupMode('join');
         setCodeInput(initialGroupCode);
         setIsExpanded(true);
       });
@@ -60,7 +61,7 @@ export function FamilySafety({
     setGroup(g);
     setNameInput('');
     setCodeInput('');
-    setShowJoinInput(false);
+    setSetupMode('create');
   }, [nameInput, codeInput]);
 
   const handleImSafe = useCallback(() => {
@@ -96,8 +97,21 @@ export function FamilySafety({
     }
   }, [t]);
 
+  const handleCopyCode = useCallback(async () => {
+    if (!group) return;
+    try {
+      await navigator.clipboard.writeText(group.groupCode);
+      setCodeCopied(true);
+      setTimeout(() => setCodeCopied(false), 2000);
+    } catch {
+      // clipboard unavailable
+    }
+  }, [group]);
+
   const currentMember = group?.members.find((m) => m.name === group.memberName);
   const isSafe = currentMember?.isSafe ?? false;
+  const safeMembersCount = group?.members.filter((member) => member.isSafe).length ?? 0;
+  const waitingMembersCount = group ? Math.max(0, group.members.length - safeMembersCount) : 0;
 
   const content = (
     <div className="family-safety-content">
@@ -105,6 +119,33 @@ export function FamilySafety({
             <div className="family-safety-setup">
               <p className="family-safety-desc">{t('family.description')}</p>
               <p className="family-safety-local-note">{t('family.localNote')}</p>
+
+              <div className="family-safety-setup-modes" role="tablist" aria-label={t('family.title')}>
+                <button
+                  type="button"
+                  role="tab"
+                  className={`family-safety-setup-tab ${setupMode === 'create' ? 'active' : ''}`}
+                  aria-selected={setupMode === 'create'}
+                  onClick={() => setSetupMode('create')}
+                >
+                  {t('family.mode.create')}
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  className={`family-safety-setup-tab ${setupMode === 'join' ? 'active' : ''}`}
+                  aria-selected={setupMode === 'join'}
+                  onClick={() => setSetupMode('join')}
+                >
+                  {t('family.mode.join')}
+                </button>
+              </div>
+
+              {setupMode === 'join' && initialGroupCode && (
+                <div className="family-safety-prefill-note">
+                  {t('family.prefilledCodeHint')}
+                </div>
+              )}
 
               <input
                 className="family-safety-input"
@@ -115,7 +156,7 @@ export function FamilySafety({
                 maxLength={30}
               />
 
-              {!showJoinInput ? (
+              {setupMode === 'create' ? (
                 <div className="family-safety-actions">
                   <button
                     className="family-safety-btn family-safety-btn-create"
@@ -123,12 +164,6 @@ export function FamilySafety({
                     disabled={!nameInput.trim()}
                   >
                     {t('family.createGroup')}
-                  </button>
-                  <button
-                    className="family-safety-btn family-safety-btn-join"
-                    onClick={() => setShowJoinInput(true)}
-                  >
-                    {t('family.joinGroup')}
                   </button>
                 </div>
               ) : (
@@ -149,24 +184,41 @@ export function FamilySafety({
                     >
                       {t('family.join')}
                     </button>
-                    <button
-                      className="family-safety-btn family-safety-btn-join"
-                      onClick={() => {
-                        setShowJoinInput(false);
-                        setCodeInput('');
-                      }}
-                    >
-                      {t('family.cancel')}
-                    </button>
                   </div>
                 </div>
               )}
             </div>
           ) : (
             <div className="family-safety-group">
-              <div className="family-safety-code-row">
-                <span className="family-safety-code-label">{t('family.groupCode')}:</span>
-                <span className="family-safety-code-value">{group.groupCode}</span>
+              <div className="family-safety-invite-card">
+                <div className="family-safety-invite-copy">
+                  <span className="family-safety-code-label">{t('family.inviteTitle')}</span>
+                  <span className="family-safety-code-value">{group.groupCode}</span>
+                  <span className="family-safety-invite-subtitle">{t('family.inviteSubtitle')}</span>
+                </div>
+                <div className="family-safety-invite-actions">
+                  <button
+                    className="family-safety-btn family-safety-btn-share"
+                    onClick={handleShare}
+                  >
+                    {copied ? t('family.linkCopied') : t('family.shareWithFamily')}
+                  </button>
+                  <button
+                    className="family-safety-btn family-safety-btn-copy"
+                    onClick={handleCopyCode}
+                  >
+                    {codeCopied ? t('family.codeCopied') : t('family.copyCode')}
+                  </button>
+                </div>
+              </div>
+
+              <div className="family-safety-summary">
+                <span className="family-safety-summary-chip family-safety-summary-chip-safe">
+                  {t('family.safeCount').replace('{{count}}', String(safeMembersCount))}
+                </span>
+                <span className="family-safety-summary-chip family-safety-summary-chip-waiting">
+                  {t('family.awaitingCount').replace('{{count}}', String(waitingMembersCount))}
+                </span>
               </div>
 
               <div className="family-safety-members">
@@ -183,6 +235,9 @@ export function FamilySafety({
                       {m.name}
                       {m.name === group.memberName ? ` (${t('family.you')})` : ''}
                     </span>
+                    <span className={`family-safety-member-status ${m.isSafe ? 'safe' : 'unknown'}`}>
+                      {m.isSafe ? t('family.statusSafe') : t('family.statusUnknown')}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -195,12 +250,6 @@ export function FamilySafety({
               </button>
 
               <div className="family-safety-group-actions">
-                <button
-                  className="family-safety-btn family-safety-btn-share"
-                  onClick={handleShare}
-                >
-                  {copied ? t('family.linkCopied') : t('family.shareWithFamily')}
-                </button>
                 <button
                   className="family-safety-btn family-safety-btn-leave"
                   onClick={handleLeave}
