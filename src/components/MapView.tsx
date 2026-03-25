@@ -16,6 +16,7 @@ import type { RouteOption, LocationPoint } from '../types';
 import type { ShelterWithDistance } from '../hooks/useShelters';
 import { useRouteLayer } from './map/useRouteLayer';
 import { useShelterMarkersLayer } from './map/useShelterMarkersLayer';
+import { useUserLocationEmergencyLayer } from './map/useUserLocationEmergencyLayer';
 interface MapViewProps {
   routes?: RouteOption[];
   onSelectRoute?: (index: number) => void;
@@ -28,18 +29,6 @@ interface MapViewProps {
 }
 
 const ISRAEL_CENTER: L.LatLngExpression = [31.5, 34.8];
-
-const USER_LOCATION_SVG = `<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-  <circle cx="12" cy="12" r="10" fill="#4285F4" opacity="0.2" stroke="#4285F4" stroke-width="2"/>
-  <circle cx="12" cy="12" r="5" fill="#4285F4"/>
-</svg>`;
-
-const userLocationIcon = L.divIcon({
-  html: USER_LOCATION_SVG,
-  className: 'user-location-icon',
-  iconSize: [24, 24],
-  iconAnchor: [12, 12],
-});
 
 function tRaw(lang: Language, key: TranslationKey): string {
   return translations[lang][key] ?? key;
@@ -60,20 +49,6 @@ function heatMapRadius(zoom: number): number {
   return 10;
 }
 
-function buildUserLocationPopupElement(lang: Language): HTMLElement {
-  const dir = lang === 'en' || lang === 'ru' ? 'ltr' : 'rtl';
-  const label = tRaw(lang, 'map.yourLocation');
-  const wrapper = document.createElement('div');
-  wrapper.style.direction = dir;
-  wrapper.style.fontFamily = '-apple-system, sans-serif';
-  wrapper.style.textAlign = 'center';
-  wrapper.style.padding = '4px';
-  const strong = document.createElement('strong');
-  strong.textContent = label;
-  wrapper.appendChild(strong);
-  return wrapper;
-}
-
 export function MapView({
   routes,
   onSelectRoute,
@@ -91,9 +66,6 @@ export function MapView({
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
-  const userMarkerRef = useRef<L.Marker | null>(null);
-  const isochroneCircleRef = useRef<L.Circle | null>(null);
-  const walkingRadiusRef = useRef<number>(0);
   const heatMapLayerRef = useRef<L.LayerGroup | null>(null);
   const heatMapControlRef = useRef<L.Control | null>(null);
   const heatMapLegendRef = useRef<L.Control | null>(null);
@@ -166,6 +138,16 @@ export function MapView({
     language,
   });
 
+  const { walkingRadiusMeters } = useUserLocationEmergencyLayer({
+    mapRef: mapInstanceRef,
+    userLocation,
+    language,
+    emergencyMode,
+    emergencyCountdown,
+    shelters,
+    routeInfo,
+  });
+
   useShelterMarkersLayer({
     markersLayerRef,
     shelters,
@@ -177,87 +159,8 @@ export function MapView({
     capacityMap,
     emergencyMode,
     userLocation,
-    walkingRadiusMeters: walkingRadiusRef.current,
+    walkingRadiusMeters,
   });
-
-  // Update user location marker
-  useEffect(() => {
-    const map = mapInstanceRef.current;
-    if (!map) return;
-
-    if (userMarkerRef.current) {
-      userMarkerRef.current.remove();
-      userMarkerRef.current = null;
-    }
-
-    if (userLocation) {
-      userMarkerRef.current = L.marker([userLocation.lat, userLocation.lng], {
-        icon: userLocationIcon,
-        title: tRaw(language, 'map.yourLocation'),
-        zIndexOffset: 1000,
-      }).addTo(map);
-
-      userMarkerRef.current.bindPopup(buildUserLocationPopupElement(language));
-    }
-  }, [userLocation, language]);
-
-  // Walking-time isochrone circle in emergency mode
-  useEffect(() => {
-    const map = mapInstanceRef.current;
-    if (!map) return;
-
-    // Remove existing circle if conditions no longer apply
-    if (!emergencyMode || !emergencyCountdown || !userLocation) {
-      if (isochroneCircleRef.current) {
-        isochroneCircleRef.current.remove();
-        isochroneCircleRef.current = null;
-        walkingRadiusRef.current = 0;
-      }
-      return;
-    }
-
-    // Calculate walking distance radius: (seconds * 5000/3600) * 0.8 meters
-    const radius = (emergencyCountdown * 5000 / 3600) * 0.8;
-    walkingRadiusRef.current = radius;
-
-    if (isochroneCircleRef.current) {
-      // Update existing circle
-      isochroneCircleRef.current.setLatLng([userLocation.lat, userLocation.lng]);
-      isochroneCircleRef.current.setRadius(radius);
-    } else {
-      // Create new circle
-      isochroneCircleRef.current = L.circle([userLocation.lat, userLocation.lng], {
-        radius,
-        fillColor: '#4CAF50',
-        fillOpacity: 0.15,
-        color: '#4CAF50',
-        weight: 2,
-      }).addTo(map);
-    }
-
-    return () => {
-      if (isochroneCircleRef.current) {
-        isochroneCircleRef.current.remove();
-        isochroneCircleRef.current = null;
-        walkingRadiusRef.current = 0;
-      }
-    };
-  }, [emergencyMode, emergencyCountdown, userLocation]);
-
-  // Fit bounds to show user + nearest shelters in emergency mode
-  useEffect(() => {
-    const map = mapInstanceRef.current;
-    if (!map || !userLocation || !shelters.length) return;
-
-    if (!routeInfo) {
-      const points: L.LatLngExpression[] = [
-        [userLocation.lat, userLocation.lng],
-        ...shelters.slice(0, 5).map((s): L.LatLngExpression => [s.lat, s.lon]),
-      ];
-      const bounds = L.latLngBounds(points);
-      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
-    }
-  }, [userLocation, shelters, routeInfo]);
 
 
   // Heat map toggle button (always present on the map)
