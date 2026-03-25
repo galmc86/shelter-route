@@ -167,6 +167,7 @@ Notes:
 - Family state is now centralized behind a shared hook with versioned local storage, which removes duplicate subscription logic from UI components and creates a cleaner seam for a future remote repository/auth layer.
 - The repository/auth direction is now captured in [docs/family-sync-plan.md](/Users/gal.machluf/projects/shelter-finder/docs/family-sync-plan.md), including the proposed local/remote/hybrid repository split and a phased rollout path.
 - The current local family behavior now also sits behind a repository interface, so the next sync step can introduce a remote implementation without changing the family UI surface again.
+- The app shell now provides the family repository through context instead of hard-coding access at the hook level, which means a remote or hybrid repository can be injected at the boundary where the app boots.
 
 ### Epic 10: Saved Places to Safety Profiles
 Objective: turn saved locations into reusable routines.

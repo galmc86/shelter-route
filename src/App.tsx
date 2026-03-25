@@ -13,7 +13,9 @@ import { NavigationPanel } from './components/NavigationPanel';
 import { RouteProvider } from './contexts/RouteContext';
 import { EmergencyProvider } from './contexts/EmergencyContext';
 import { ShelterProvider } from './contexts/ShelterContext';
+import { FamilyRepositoryProvider } from './contexts/FamilyRepositoryContext';
 import { useAppController } from './hooks/useAppController';
+import { getFamilyRepository } from './services/familyRepository';
 import './App.css';
 
 type AppSection = 'search' | 'family' | 'dashboard';
@@ -76,6 +78,7 @@ function App() {
   } = useAppController();
   const [activeSection, setActiveSection] = useState<AppSection>('search');
   const [fabBottomOffset, setFabBottomOffset] = useState<number | null>(null);
+  const [familyRepository] = useState(() => getFamilyRepository());
   const [usesRailLayout, setUsesRailLayout] = useState(() => {
     if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
       return false;
@@ -243,6 +246,7 @@ function App() {
     <RouteProvider value={routeContextValue}>
     <EmergencyProvider value={emergencyContextValue}>
     <ShelterProvider value={shelterContextValue}>
+    <FamilyRepositoryProvider value={familyRepository}>
     <div className={`app${isAlertActive ? ' app-with-alert' : ''}`} dir={language === 'en' || language === 'ru' ? 'ltr' : 'rtl'} data-theme={theme}>
       {showOnboarding && (
         <Onboarding onComplete={completeOnboarding} />
@@ -311,6 +315,7 @@ function App() {
         />
       )}
     </div>
+    </FamilyRepositoryProvider>
     </ShelterProvider>
     </EmergencyProvider>
     </RouteProvider>

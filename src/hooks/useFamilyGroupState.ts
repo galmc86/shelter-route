@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useFamilyRepositoryContext } from '../contexts/FamilyRepositoryContext';
 import {
   type FamilyGroup,
   type FamilyMember,
@@ -21,7 +22,11 @@ export interface UseFamilyGroupStateResult {
 }
 
 export function useFamilyGroupState(): UseFamilyGroupStateResult {
-  const repository = useMemo(() => getFamilyRepository(), []);
+  const repositoryFromContext = useFamilyRepositoryContext();
+  const repository = useMemo(
+    () => repositoryFromContext ?? getFamilyRepository(),
+    [repositoryFromContext]
+  );
   const [group, setGroup] = useState<FamilyGroup | null>(() => repository.getSnapshot());
 
   useEffect(() => {
