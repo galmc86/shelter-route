@@ -18,6 +18,7 @@ export interface UseFamilyGroupStateResult {
   joinFamilyGroup: (code: string, name: string) => FamilyGroup | null;
   markFamilySafe: () => FamilyGroup | null;
   markNeedsCheckIn: () => FamilyGroup | null;
+  retryFamilySync: () => FamilyGroup | null;
   leaveFamilyGroup: () => void;
 }
 
@@ -69,6 +70,12 @@ export function useFamilyGroupState(): UseFamilyGroupStateResult {
     return updated;
   }, [repository]);
 
+  const retryFamilySync = useCallback(() => {
+    const updated = repository.retrySync();
+    setGroup(updated);
+    return updated;
+  }, [repository]);
+
   const leaveFamilyGroup = useCallback(() => {
     repository.leaveGroup();
     setGroup(null);
@@ -93,6 +100,7 @@ export function useFamilyGroupState(): UseFamilyGroupStateResult {
     joinFamilyGroup,
     markFamilySafe,
     markNeedsCheckIn,
+    retryFamilySync,
     leaveFamilyGroup,
   };
 }

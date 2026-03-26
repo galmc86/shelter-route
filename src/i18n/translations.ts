@@ -422,6 +422,7 @@ export const translations = {
     'family.sync.pausedBody': '{{count}} עדכונים יישלחו מחדש כשהחיבור יתאושש.',
     'family.sync.preparingTitle': 'הסנכרון מתכונן',
     'family.sync.preparingBody': 'ממתין לעדכון הראשון בין מכשירים.',
+    'family.sync.retry': 'נסה שוב',
 
     // In-app Navigation
     'nav.directions': 'ניווט למקלט',
@@ -859,6 +860,7 @@ export const translations = {
     'family.sync.pausedBody': '{{count}} updates will retry when the connection recovers.',
     'family.sync.preparingTitle': 'Sync preparing',
     'family.sync.preparingBody': 'Waiting for the first cross-device update.',
+    'family.sync.retry': 'Retry now',
 
     // In-app Navigation
     'nav.directions': 'Navigate to shelter',
@@ -1295,6 +1297,7 @@ export const translations = {
     'family.sync.pausedBody': 'ستُعاد محاولة إرسال {{count}} تحديثات عند عودة الاتصال.',
     'family.sync.preparingTitle': 'يتم تجهيز المزامنة',
     'family.sync.preparingBody': 'بانتظار أول تحديث بين الأجهزة.',
+    'family.sync.retry': 'أعد المحاولة',
 
     // In-app Navigation
     'nav.directions': 'التنقل إلى الملجأ',
@@ -1731,6 +1734,7 @@ export const translations = {
     'family.sync.pausedBody': '{{count}} обновлений будут повторно отправлены после восстановления связи.',
     'family.sync.preparingTitle': 'Синхронизация готовится',
     'family.sync.preparingBody': 'Ожидается первое обновление между устройствами.',
+    'family.sync.retry': 'Повторить',
 
     // In-app Navigation
     'nav.directions': 'Навигация к укрытию',

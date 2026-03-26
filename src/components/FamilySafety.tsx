@@ -60,6 +60,7 @@ export function FamilySafety({
     createFamilyGroup,
     joinFamilyGroup,
     markFamilySafe,
+    retryFamilySync,
     leaveFamilyGroup,
   } = useFamilyGroupState();
 
@@ -105,6 +106,10 @@ export function FamilySafety({
   const handleLeave = useCallback(() => {
     leaveFamilyGroup();
   }, [leaveFamilyGroup]);
+
+  const handleRetrySync = useCallback(() => {
+    retryFamilySync();
+  }, [retryFamilySync]);
 
   const handleShare = useCallback(async () => {
     const link = shareLink ?? window.location.href;
@@ -291,6 +296,15 @@ export function FamilySafety({
                   <span className="family-safety-sync-title">{syncState.title}</span>
                   <span className="family-safety-sync-body">{syncState.body}</span>
                 </div>
+                {syncMode === 'hybrid' && (syncStatus.pendingCount > 0 || Boolean(syncStatus.lastError)) && (
+                  <button
+                    type="button"
+                    className="family-safety-sync-action"
+                    onClick={handleRetrySync}
+                  >
+                    {t('family.sync.retry')}
+                  </button>
+                )}
               </div>
 
               <div className="family-safety-summary">

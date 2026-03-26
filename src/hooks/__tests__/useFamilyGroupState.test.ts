@@ -55,6 +55,7 @@ describe('useFamilyGroupState', () => {
       joinGroup: vi.fn(),
       markCurrentMemberSafe: vi.fn(),
       markCurrentMemberNeedsCheckIn: vi.fn(),
+      retrySync: vi.fn(),
       leaveGroup: vi.fn(),
       getShareLink: vi.fn(() => 'https://example.com/family/ABC123'),
     };
@@ -68,5 +69,40 @@ describe('useFamilyGroupState', () => {
     expect(result.current.isCurrentMemberSafe).toBe(true);
     expect(result.current.shareLink).toBe('https://example.com/family/ABC123');
     expect(repository.subscribe).toHaveBeenCalledTimes(1);
+  });
+
+  it('retries family sync through the provided repository when requested', () => {
+    const retrySync = vi.fn(() => ({
+      groupCode: 'ABC123',
+      memberName: 'Dana',
+      currentMemberId: 'member-1',
+      members: [
+        { id: 'member-1', name: 'Dana', isSafe: true, lastSeen: '2026-03-25T19:00:00.000Z' },
+      ],
+    }));
+
+    const repository: FamilyRepository = {
+      getSnapshot: () => null,
+      subscribe: vi.fn(() => () => {}),
+      createGroup: vi.fn(),
+      joinGroup: vi.fn(),
+      markCurrentMemberSafe: vi.fn(),
+      markCurrentMemberNeedsCheckIn: vi.fn(),
+      retrySync,
+      leaveGroup: vi.fn(),
+      getShareLink: vi.fn(() => null),
+    };
+
+    const wrapper = ({ children }: { children: ReactNode }) =>
+      createElement(FamilyRepositoryProvider, { value: repository, children });
+
+    const { result } = renderHook(() => useFamilyGroupState(), { wrapper });
+
+    act(() => {
+      result.current.retryFamilySync();
+    });
+
+    expect(retrySync).toHaveBeenCalledTimes(1);
+    expect(result.current.group?.groupCode).toBe('ABC123');
   });
 });

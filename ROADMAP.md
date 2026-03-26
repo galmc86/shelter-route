@@ -188,6 +188,7 @@ Notes:
 - Duplicate subscriptions for the same family group/session now share one HTTP poller, so adding more UI listeners no longer multiplies backend polling load.
 - The shared family HTTP poller now backs off after repeated failures and returns to the normal cadence after a successful refresh, which reduces remote load during outages without slowing steady-state sync.
 - The family section now surfaces a compact sync-status capsule for local, active, pending, and paused sync states, so the hybrid path has a user-facing diagnostic seam without turning the panel into a debugging surface.
+- The family sync capsule now exposes a direct retry action when hybrid sync is pending or paused, so users can force an immediate flush instead of waiting for the next automatic retry trigger.
 
 ### Epic 10: Saved Places to Safety Profiles
 Objective: turn saved locations into reusable routines.

@@ -124,6 +124,43 @@ describe('familyRepository', () => {
     expect(getFamilySyncStatus().lastError).toBeNull();
   });
 
+  it('retries queued remote writes when retrySync is requested explicitly', () => {
+    let shouldFail = true;
+    let storedRecord: FamilyRemoteGroupRecord | null = null;
+    const session: FamilyRemoteSession = { deviceId: 'device-test', userId: null, authState: 'anonymous' };
+
+    const remoteGateway: FamilyRemoteGateway = {
+      getGroup: vi.fn((groupCode: string, _session: FamilyRemoteSession) => (
+        storedRecord?.inviteCode === groupCode.toUpperCase() ? storedRecord : null
+      )),
+      upsertGroup: vi.fn((record, _session: FamilyRemoteSession) => {
+        if (shouldFail) {
+          throw new Error('remote unavailable');
+        }
+
+        storedRecord = record;
+        return record;
+      }),
+      clearGroup: vi.fn(),
+      subscribe: vi.fn((_groupCode: string, _session: FamilyRemoteSession) => () => {}),
+    };
+
+    const repository = createFamilyRepository({ mode: 'hybrid', remoteGateway, remoteSession: session });
+    const group = repository.createGroup('Dana');
+
+    expect(getPendingFamilySyncMutations()).toHaveLength(1);
+
+    shouldFail = false;
+
+    const retried = repository.retrySync();
+    const syncedRecord = storedRecord as FamilyRemoteGroupRecord | null;
+
+    expect(retried?.groupCode).toBe(group.groupCode);
+    expect(syncedRecord?.inviteCode).toBe(group.groupCode);
+    expect(getPendingFamilySyncMutations()).toEqual([]);
+    expect(getFamilySyncStatus().lastError).toBeNull();
+  });
+
   it('flushes queued remote mutations when the browser comes back online', () => {
     let shouldFail = true;
     let storedRecord: FamilyRemoteGroupRecord | null = null;

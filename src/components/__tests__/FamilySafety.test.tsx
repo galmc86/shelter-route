@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FamilySafety } from '../FamilySafety';
 import type { FamilyGroup } from '../../services/familySafetyService';
@@ -37,6 +37,7 @@ describe('FamilySafety', () => {
       joinFamilyGroup: vi.fn(),
       markFamilySafe: vi.fn(),
       markNeedsCheckIn: vi.fn(),
+      retryFamilySync: vi.fn(),
       leaveFamilyGroup: vi.fn(),
     });
     mockUseFamilySyncStatus.mockReturnValue({
@@ -96,6 +97,7 @@ describe('FamilySafety', () => {
       joinFamilyGroup: vi.fn(),
       markFamilySafe: vi.fn(),
       markNeedsCheckIn: vi.fn(),
+      retryFamilySync: vi.fn(),
       leaveFamilyGroup: vi.fn(),
     });
 
@@ -132,6 +134,7 @@ describe('FamilySafety', () => {
       joinFamilyGroup: vi.fn(),
       markFamilySafe: vi.fn(),
       markNeedsCheckIn: vi.fn(),
+      retryFamilySync: vi.fn(),
       leaveFamilyGroup: vi.fn(),
     });
     mockUseFamilySyncStatus.mockReturnValue({
@@ -149,9 +152,11 @@ describe('FamilySafety', () => {
 
     expect(await screen.findByText('family.sync.pendingTitle')).toBeInTheDocument();
     expect(screen.getByText('family.sync.pendingBody')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'family.sync.retry' })).toBeInTheDocument();
   });
 
   it('shows a paused sync state when hybrid sync is failing', async () => {
+    const retryFamilySync = vi.fn();
     const existingGroup: FamilyGroup = {
       groupCode: 'ABC123',
       memberName: 'Dana',
@@ -172,6 +177,7 @@ describe('FamilySafety', () => {
       joinFamilyGroup: vi.fn(),
       markFamilySafe: vi.fn(),
       markNeedsCheckIn: vi.fn(),
+      retryFamilySync,
       leaveFamilyGroup: vi.fn(),
     });
     mockUseFamilySyncStatus.mockReturnValue({
@@ -189,5 +195,7 @@ describe('FamilySafety', () => {
 
     expect(await screen.findByText('family.sync.pausedTitle')).toBeInTheDocument();
     expect(screen.getByText('family.sync.pausedBody')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'family.sync.retry' }));
+    expect(retryFamilySync).toHaveBeenCalledTimes(1);
   });
 });

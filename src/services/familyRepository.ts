@@ -41,6 +41,7 @@ export interface FamilyRepository {
   joinGroup(code: string, name: string): FamilyGroup;
   markCurrentMemberSafe(): FamilyGroup | null;
   markCurrentMemberNeedsCheckIn(): FamilyGroup | null;
+  retrySync(): FamilyGroup | null;
   leaveGroup(): void;
   getShareLink(): string | null;
 }
@@ -72,6 +73,10 @@ export class LocalFamilyRepository implements MutableFamilyRepository {
 
   markCurrentMemberNeedsCheckIn(): FamilyGroup | null {
     return markCurrentMemberNeedsCheckIn();
+  }
+
+  retrySync(): FamilyGroup | null {
+    return this.getSnapshot();
   }
 
   leaveGroup(): void {
@@ -169,6 +174,17 @@ export class HybridFamilyRepository implements FamilyRepository {
 
     this.enqueueOrApplyMutation(this.createUpsertMutation(updated));
     return this.hydrateFromRemote(updated.groupCode);
+  }
+
+  retrySync(): FamilyGroup | null {
+    this.flushPendingMutations();
+    this.ensureRemoteSubscription();
+    const groupCode = this.localRepository.getSnapshot()?.groupCode;
+    if (!groupCode) {
+      return null;
+    }
+
+    return this.hydrateFromRemote(groupCode);
   }
 
   leaveGroup(): void {

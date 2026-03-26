@@ -177,6 +177,7 @@ The remote gateway should accept an explicit remote session object instead of re
 - the latest pending mutation for a group supersedes older pending entries for that same group
 - queue flush happens on subsequent repository activity and app reads, not only on a full reload
 - when the browser regains connectivity, the hybrid repository retries queued mutations immediately
+- the repository should also expose an explicit manual retry path so the family UI can offer a user-triggered “retry now” action while sync is pending or paused
 - sync status metadata should track pending count plus last success/failure timestamps so the app can expose trustworthy diagnostics later without reworking repository internals
 - remote subscriptions should emit typed change events (`updated` vs `cleared`) so the repository can distinguish remote deletion from a transient null fetch result
 

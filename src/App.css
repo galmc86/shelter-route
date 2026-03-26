@@ -2290,6 +2290,7 @@ body {
 .family-safety-sync {
   display: flex;
   align-items: flex-start;
+  justify-content: space-between;
   gap: 10px;
   margin-bottom: 12px;
   padding: 10px 12px;
@@ -2347,6 +2348,7 @@ body {
   flex-direction: column;
   gap: 2px;
   min-width: 0;
+  flex: 1;
 }
 
 .family-safety-sync-title {
@@ -2359,6 +2361,31 @@ body {
   font-size: 12px;
   line-height: 1.45;
   color: var(--color-subtle-text, #616161);
+}
+
+.family-safety-sync-action {
+  flex: 0 0 auto;
+  align-self: center;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid rgba(21, 101, 192, 0.16);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.8);
+  color: var(--color-primary, #1565C0);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease, transform 0.12s ease;
+}
+
+.family-safety-sync-action:hover {
+  background: rgba(255, 255, 255, 0.96);
+  border-color: rgba(21, 101, 192, 0.24);
+}
+
+.family-safety-sync-action:active {
+  transform: scale(0.98);
 }
 
 .family-safety-summary {
@@ -2536,6 +2563,17 @@ body {
 
 [data-theme="dark"] .family-safety-sync-body {
   color: rgba(226, 232, 240, 0.72);
+}
+
+[data-theme="dark"] .family-safety-sync-action {
+  background: rgba(15, 23, 42, 0.66);
+  border-color: rgba(148, 163, 184, 0.22);
+  color: #BFDBFE;
+}
+
+[data-theme="dark"] .family-safety-sync-action:hover {
+  background: rgba(15, 23, 42, 0.82);
+  border-color: rgba(191, 219, 254, 0.3);
 }
 
 [data-theme="dark"] .family-safety-btn-copy {
