@@ -180,6 +180,8 @@ The remote gateway should accept an explicit remote session object instead of re
 - the repository should also expose an explicit manual retry path so the family UI can offer a user-triggered “retry now” action while sync is pending or paused
 - sync status metadata should track pending count plus last success/failure timestamps so the app can expose trustworthy diagnostics later without reworking repository internals
 - remote subscriptions should emit typed change events (`updated` vs `cleared`) so the repository can distinguish remote deletion from a transient null fetch result
+- remote upserts for hybrid join/update flows must preserve existing remote-only members and ownership metadata, so a second device joining the same invite code cannot overwrite the first device out of the shared group
+- remote hydration and join reconciliation should also prefer stable device identity when the local member ID has changed, so refresh/rejoin flows do not create duplicate remote members for the same device
 
 ## Rollout Plan
 

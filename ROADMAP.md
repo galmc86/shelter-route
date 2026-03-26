@@ -189,6 +189,8 @@ Notes:
 - The shared family HTTP poller now backs off after repeated failures and returns to the normal cadence after a successful refresh, which reduces remote load during outages without slowing steady-state sync.
 - The family section now surfaces a compact sync-status capsule for local, active, pending, and paused sync states, so the hybrid path has a user-facing diagnostic seam without turning the panel into a debugging surface.
 - The family sync capsule now exposes a direct retry action when hybrid sync is pending or paused, so users can force an immediate flush instead of waiting for the next automatic retry trigger.
+- Hybrid join/upsert now preserves existing remote members and owner role when another device joins the same family code, which removes a destructive overwrite path from the cross-device sync model.
+- Hybrid join/hydration now reconciles the current member by stable `deviceId`, so the same device can rejoin a remote family group without creating a duplicate member entry.
 
 ### Epic 10: Saved Places to Safety Profiles
 Objective: turn saved locations into reusable routines.

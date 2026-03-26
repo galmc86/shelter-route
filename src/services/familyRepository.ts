@@ -352,21 +352,44 @@ function mergeFamilyGroups(localGroup: FamilyGroup | null, remoteGroup: FamilyGr
     return remoteGroup;
   }
 
-  const localMembers = new Map(localGroup.members.map((member) => [member.id, member]));
-  const mergedMembers = remoteGroup.members.map((remoteMember) =>
-    mergeFamilyMembers(localMembers.get(remoteMember.id), remoteMember)
-  );
+  const matchedLocalMemberIds = new Set<string>();
+  const mergedMembers = remoteGroup.members.map((remoteMember) => {
+    const matchedLocalMember = findMatchingLocalMember(localGroup.members, remoteMember);
+    if (matchedLocalMember) {
+      matchedLocalMemberIds.add(matchedLocalMember.id);
+    }
+
+    return mergeFamilyMembers(matchedLocalMember, remoteMember);
+  });
 
   for (const localMember of localGroup.members) {
-    if (!mergedMembers.some((member) => member.id === localMember.id)) {
+    const alreadyMerged = mergedMembers.some((member) => (
+      member.id === localMember.id
+      || (
+        member.deviceId
+        && localMember.deviceId
+        && member.deviceId === localMember.deviceId
+      )
+    ));
+
+    if (!alreadyMerged && !matchedLocalMemberIds.has(localMember.id)) {
       mergedMembers.push(localMember);
     }
   }
 
+  const localCurrentMember = localGroup.members.find((member) => member.id === localGroup.currentMemberId);
+  const mergedCurrentMember = mergedMembers.find((member) => (
+    member.id === localGroup.currentMemberId
+    || (
+      localCurrentMember?.deviceId
+      && member.deviceId === localCurrentMember.deviceId
+    )
+  ));
+
   return {
     ...remoteGroup,
     memberName: localGroup.memberName,
-    currentMemberId: localGroup.currentMemberId,
+    currentMemberId: mergedCurrentMember?.id ?? remoteGroup.currentMemberId,
     members: mergedMembers,
   };
 }
@@ -390,6 +413,22 @@ function mergeFamilyMembers(
     ...mergedMember,
     deviceId: mergedMember.deviceId ?? localMember.deviceId ?? remoteMember.deviceId,
   };
+}
+
+function findMatchingLocalMember(
+  localMembers: FamilyGroup['members'],
+  remoteMember: FamilyGroup['members'][number]
+): FamilyGroup['members'][number] | undefined {
+  const byId = localMembers.find((member) => member.id === remoteMember.id);
+  if (byId) {
+    return byId;
+  }
+
+  if (!remoteMember.deviceId) {
+    return undefined;
+  }
+
+  return localMembers.find((member) => member.deviceId === remoteMember.deviceId);
 }
 
 function parseTimestamp(value: string | undefined): number {
