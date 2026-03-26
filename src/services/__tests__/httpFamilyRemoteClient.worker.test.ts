@@ -177,4 +177,121 @@ describe('httpFamilyRemoteClient worker integration', () => {
 
     expect(getPendingFamilySyncMutation('ABC123')).toBeNull();
   });
+
+  it('propagates needs-check-in and safe status changes across simulated device sessions', async () => {
+    vi.stubEnv('VITE_FAMILY_REMOTE_URL', 'https://family-sync.example');
+    const { getHttpFamilyRemoteClient } = await import('../httpFamilyRemoteClient');
+    const client = getHttpFamilyRemoteClient();
+    const env = createEnv();
+    installWorkerFetch(env);
+
+    const ownerSession: FamilyRemoteSession = {
+      deviceId: 'device-1',
+      userId: null,
+      authState: 'anonymous',
+    };
+    const joinerSession: FamilyRemoteSession = {
+      deviceId: 'device-2',
+      userId: null,
+      authState: 'anonymous',
+    };
+
+    client.upsertGroup(ownerRecordFixture, ownerSession);
+
+    await waitFor(async () => {
+      expect((await readRemoteGroup(env, 'ABC123'))?.members).toHaveLength(1);
+    });
+
+    localStorage.clear();
+    await waitFor(() => {
+      expect(client.fetchGroup('ABC123', joinerSession)?.members).toHaveLength(1);
+    });
+
+    const joinerView = client.fetchGroup('ABC123', joinerSession) as FamilyRemoteGroupRecord;
+    client.upsertGroup({
+      ...joinerView,
+      members: [
+        {
+          id: 'member-2',
+          name: 'Noam',
+          deviceId: 'device-2',
+          role: 'member',
+          status: 'unknown',
+          joinedAt: '2026-03-26T00:05:00.000Z',
+          lastSeenAt: '2026-03-26T00:05:00.000Z',
+        },
+        ...joinerView.members,
+      ],
+    }, joinerSession);
+
+    await waitFor(async () => {
+      expect((await readRemoteGroup(env, 'ABC123'))?.members).toHaveLength(2);
+    });
+
+    localStorage.clear();
+    await waitFor(() => {
+      expect(client.fetchGroup('ABC123', ownerSession)?.members).toHaveLength(2);
+    });
+
+    localStorage.clear();
+    await waitFor(() => {
+      expect(client.fetchGroup('ABC123', joinerSession)?.members).toHaveLength(2);
+    });
+
+    const initialJoinedGroup = client.fetchGroup('ABC123', joinerSession) as FamilyRemoteGroupRecord;
+    client.upsertGroup({
+      ...initialJoinedGroup,
+      members: initialJoinedGroup.members.map((member) => (
+        member.deviceId === 'device-2'
+          ? {
+              ...member,
+              status: 'needs_check_in',
+              lastStatusAt: '2026-03-26T00:06:00.000Z',
+            }
+          : member
+      )),
+    }, joinerSession);
+
+    await waitFor(async () => {
+      const remote = await readRemoteGroup(env, 'ABC123');
+      expect(remote?.members.find((member) => member.deviceId === 'device-2')?.status).toBe('needs_check_in');
+    });
+
+    localStorage.clear();
+    await waitFor(() => {
+      const ownerView = client.fetchGroup('ABC123', ownerSession);
+      expect(ownerView?.members.find((member) => member.deviceId === 'device-2')?.status).toBe('needs_check_in');
+    });
+
+    localStorage.clear();
+    await waitFor(() => {
+      expect(client.fetchGroup('ABC123', joinerSession)?.members).toHaveLength(2);
+    });
+
+    const alertGroup = client.fetchGroup('ABC123', joinerSession) as FamilyRemoteGroupRecord;
+    client.upsertGroup({
+      ...alertGroup,
+      members: alertGroup.members.map((member) => (
+        member.deviceId === 'device-2'
+          ? {
+              ...member,
+              status: 'safe',
+              lastStatusAt: '2026-03-26T00:07:00.000Z',
+              lastSeenAt: '2026-03-26T00:07:00.000Z',
+            }
+          : member
+      )),
+    }, joinerSession);
+
+    await waitFor(async () => {
+      const remote = await readRemoteGroup(env, 'ABC123');
+      expect(remote?.members.find((member) => member.deviceId === 'device-2')?.status).toBe('safe');
+    });
+
+    localStorage.clear();
+    await waitFor(() => {
+      const ownerView = client.fetchGroup('ABC123', ownerSession);
+      expect(ownerView?.members.find((member) => member.deviceId === 'device-2')?.status).toBe('safe');
+    });
+  });
 });
