@@ -6,6 +6,7 @@ import type { FamilyRemoteGroupRecord } from '../familyRemoteModel';
 import { mapFamilyGroupToRemoteRecord } from '../familyRemoteModel';
 import type { FamilyRemoteGateway } from '../familyRemoteGateway';
 import {
+  setFamilyRemoteAuthSessionConfig,
   registerFamilyRemoteAuthProvider,
   type FamilyRemoteSession,
 } from '../familyRemoteSessionService';
@@ -23,6 +24,7 @@ describe('familyRepository', () => {
     localStorage.clear();
     clearPendingFamilySyncMutations();
     registerFamilyRemoteAuthProvider(null);
+    setFamilyRemoteAuthSessionConfig(null);
   });
 
   it('wraps the current local family state and derives a share link only when a group exists', () => {
@@ -358,6 +360,48 @@ describe('familyRepository', () => {
     expect(subscribeSessions[1]).toEqual({
       deviceId: 'device-base',
       userId: 'user-123',
+      authState: 'authenticated',
+    });
+    expect(listener).toHaveBeenCalled();
+
+    unsubscribe();
+  });
+
+  it('resubscribes when the built-in auth bridge changes remote identity', () => {
+    localStorage.setItem('shelter-route:device-id', 'device-base');
+
+    const subscribeSessions: FamilyRemoteSession[] = [];
+    const remoteGateway: FamilyRemoteGateway = {
+      getGroup: vi.fn(() => null),
+      upsertGroup: vi.fn((record) => record),
+      clearGroup: vi.fn(),
+      subscribe: vi.fn((_groupCode: string, session: FamilyRemoteSession) => {
+        subscribeSessions.push(session);
+        return () => {};
+      }),
+    };
+
+    const repository = createFamilyRepository({ mode: 'hybrid', remoteGateway });
+    const listener = vi.fn();
+    const unsubscribe = repository.subscribe(listener);
+    repository.createGroup('Dana');
+
+    expect(subscribeSessions).toHaveLength(1);
+    expect(subscribeSessions[0]).toEqual({
+      deviceId: 'device-base',
+      userId: null,
+      authState: 'anonymous',
+    });
+
+    setFamilyRemoteAuthSessionConfig({
+      authState: 'authenticated',
+      userId: 'bridge-user',
+    });
+
+    expect(subscribeSessions).toHaveLength(2);
+    expect(subscribeSessions[1]).toEqual({
+      deviceId: 'device-base',
+      userId: 'bridge-user',
       authState: 'authenticated',
     });
     expect(listener).toHaveBeenCalled();

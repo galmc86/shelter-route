@@ -208,6 +208,7 @@ Notes:
 - Backend-backed Playwright coverage now also proves authenticated same-user rejoin across two browser sessions, so `familyRemoteUserId` can move between devices without duplicating the shared family member.
 - Hybrid family sync now reads remote identity through a live session source instead of freezing a single boot-time session, which prepares the stack for a real auth provider without forcing repository recreation when auth changes.
 - Hybrid family sync now also listens for auth-provider session changes and resubscribes/rehydrates automatically, so a future sign-in flow can take effect without waiting for another manual family action.
+- Family sync now also exposes a built-in auth bridge API for set/clear/reset session control, so future auth integration can drive remote identity without custom provider plumbing at each call site.
 
 ### Epic 10: Saved Places to Safety Profiles
 Objective: turn saved locations into reusable routines.
