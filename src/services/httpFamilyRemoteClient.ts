@@ -12,11 +12,16 @@ import type { FamilyRemoteSession } from './familyRemoteSessionService';
 const STORAGE_KEY_PREFIX = 'shelter-route:family-remote-http-cache:';
 const REMOTE_CACHE_UPDATED_EVENT = 'family-remote-http-cache-updated';
 export const FAMILY_REMOTE_HTTP_POLL_INTERVAL_MS = 15000;
+export const FAMILY_REMOTE_HTTP_MAX_POLL_INTERVAL_MS = 120000;
 const activePollingSubscriptions = new Map<string, {
   refCount: number;
-  intervalId: number;
+  timeoutId: number | null;
   refreshIfInteractive: () => void;
+  consecutiveFailures: number;
+  isRefreshing: boolean;
 }>();
+
+type FamilyRemotePollOutcome = 'success' | 'failure' | 'skipped';
 
 function getStorageKey(groupCode: string): string {
   return `${STORAGE_KEY_PREFIX}${groupCode.toUpperCase()}`;
@@ -96,10 +101,23 @@ function getPollingSubscriptionKey(groupCode: string, session: FamilyRemoteSessi
   ].join('::');
 }
 
-async function refreshGroup(groupCode: string, session: FamilyRemoteSession): Promise<void> {
+function getNextPollingDelayMs(consecutiveFailures: number): number {
+  if (consecutiveFailures <= 0) {
+    return FAMILY_REMOTE_HTTP_POLL_INTERVAL_MS;
+  }
+
+  const backoffDelay = Math.min(
+    FAMILY_REMOTE_HTTP_MAX_POLL_INTERVAL_MS,
+    FAMILY_REMOTE_HTTP_POLL_INTERVAL_MS * Math.pow(2, consecutiveFailures)
+  );
+  const jitterFactor = 1 + ((Math.random() - 0.5) * 0.2);
+  return Math.round(backoffDelay * jitterFactor);
+}
+
+async function refreshGroup(groupCode: string, session: FamilyRemoteSession): Promise<FamilyRemotePollOutcome> {
   const resolvedEndpoint = getFamilyRemoteGroupEndpoint(groupCode);
   if (!resolvedEndpoint) {
-    return;
+    return 'skipped';
   }
 
   const result = await resilientFetch<unknown>(resolvedEndpoint, {
@@ -111,15 +129,23 @@ async function refreshGroup(groupCode: string, session: FamilyRemoteSession): Pr
   });
 
   if (!result.ok) {
-    if (result.error.code === 'HTTP' && result.error.statusCode === 404 && readCachedGroup(groupCode)) {
-      clearCachedGroup(groupCode);
+    if (result.error.code === 'HTTP' && result.error.statusCode === 404) {
+      if (readCachedGroup(groupCode)) {
+        clearCachedGroup(groupCode);
+      }
+      return 'success';
     }
-    return;
+    return 'failure';
   }
 
-  const decodedRecord = decodeFamilyRemoteGroupResponse(result.data);
-  if (!areRemoteGroupsEqual(readCachedGroup(groupCode), decodedRecord)) {
-    writeCachedGroup(decodedRecord);
+  try {
+    const decodedRecord = decodeFamilyRemoteGroupResponse(result.data);
+    if (!areRemoteGroupsEqual(readCachedGroup(groupCode), decodedRecord)) {
+      writeCachedGroup(decodedRecord);
+    }
+    return 'success';
+  } catch {
+    return 'failure';
   }
 }
 
@@ -173,20 +199,85 @@ function acquirePollingSubscription(groupCode: string, session: FamilyRemoteSess
 
   const refreshIfInteractive = () => {
     if (shouldPollRemoteGroup()) {
-      void refreshGroup(normalizedCode, session);
+      const activeSubscription = activePollingSubscriptions.get(subscriptionKey);
+      if (activeSubscription && activeSubscription.timeoutId !== null) {
+        window.clearTimeout(activeSubscription.timeoutId);
+        activeSubscription.timeoutId = null;
+      }
+      void runPollingRefreshCycle(subscriptionKey, normalizedCode, session);
     }
   };
 
-  const intervalId = window.setInterval(refreshIfInteractive, FAMILY_REMOTE_HTTP_POLL_INTERVAL_MS);
-  window.addEventListener('online', refreshIfInteractive);
-  document.addEventListener('visibilitychange', refreshIfInteractive);
   activePollingSubscriptions.set(subscriptionKey, {
     refCount: 1,
-    intervalId,
+    timeoutId: null,
     refreshIfInteractive,
+    consecutiveFailures: 0,
+    isRefreshing: false,
   });
+  scheduleNextPollingRefresh(subscriptionKey, normalizedCode, session);
+  window.addEventListener('online', refreshIfInteractive);
+  document.addEventListener('visibilitychange', refreshIfInteractive);
 
   return () => releasePollingSubscription(subscriptionKey);
+}
+
+function scheduleNextPollingRefresh(
+  subscriptionKey: string,
+  groupCode: string,
+  session: FamilyRemoteSession
+): void {
+  const activeSubscription = activePollingSubscriptions.get(subscriptionKey);
+  if (!activeSubscription || typeof window === 'undefined') {
+    return;
+  }
+
+  if (activeSubscription.timeoutId !== null) {
+    window.clearTimeout(activeSubscription.timeoutId);
+  }
+
+  activeSubscription.timeoutId = window.setTimeout(() => {
+    void runPollingRefreshCycle(subscriptionKey, groupCode, session);
+  }, getNextPollingDelayMs(activeSubscription.consecutiveFailures));
+}
+
+async function runPollingRefreshCycle(
+  subscriptionKey: string,
+  groupCode: string,
+  session: FamilyRemoteSession
+): Promise<void> {
+  const activeSubscription = activePollingSubscriptions.get(subscriptionKey);
+  if (!activeSubscription || activeSubscription.isRefreshing) {
+    return;
+  }
+
+  activeSubscription.timeoutId = null;
+
+  if (!shouldPollRemoteGroup()) {
+    scheduleNextPollingRefresh(subscriptionKey, groupCode, session);
+    return;
+  }
+
+  activeSubscription.isRefreshing = true;
+  try {
+    const outcome = await refreshGroup(groupCode, session);
+    const currentSubscription = activePollingSubscriptions.get(subscriptionKey);
+    if (!currentSubscription) {
+      return;
+    }
+
+    currentSubscription.consecutiveFailures = outcome === 'failure'
+      ? currentSubscription.consecutiveFailures + 1
+      : 0;
+  } finally {
+    const currentSubscription = activePollingSubscriptions.get(subscriptionKey);
+    if (!currentSubscription) {
+      return;
+    }
+
+    currentSubscription.isRefreshing = false;
+    scheduleNextPollingRefresh(subscriptionKey, groupCode, session);
+  }
 }
 
 function releasePollingSubscription(subscriptionKey: string): void {
@@ -200,7 +291,9 @@ function releasePollingSubscription(subscriptionKey: string): void {
     return;
   }
 
-  window.clearInterval(activeSubscription.intervalId);
+  if (activeSubscription.timeoutId !== null) {
+    window.clearTimeout(activeSubscription.timeoutId);
+  }
   window.removeEventListener('online', activeSubscription.refreshIfInteractive);
   document.removeEventListener('visibilitychange', activeSubscription.refreshIfInteractive);
   activePollingSubscriptions.delete(subscriptionKey);

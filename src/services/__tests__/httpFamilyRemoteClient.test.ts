@@ -224,4 +224,46 @@ describe('httpFamilyRemoteClient', () => {
     await vi.advanceTimersByTimeAsync(FAMILY_REMOTE_HTTP_POLL_INTERVAL_MS);
     expect(fetchSpy).toHaveBeenCalledTimes(2);
   });
+
+  it('backs off after polling failures and returns to the base cadence after recovery', async () => {
+    vi.useFakeTimers();
+    vi.stubEnv('VITE_FAMILY_REMOTE_URL', 'https://family.example.com/api');
+    vi.spyOn(Math, 'random').mockReturnValue(0.5);
+    const { getHttpFamilyRemoteClient: getClient } = await import('../httpFamilyRemoteClient');
+    const client = getClient();
+    const session = getFamilyRemoteSession();
+    const fetchSpy = vi.spyOn(globalThis, 'fetch')
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        ...groupFixture,
+        updatedAt: '2026-03-26T01:30:00.000Z',
+      }), { status: 200 }))
+      .mockResolvedValue(new Response(JSON.stringify({
+        ...groupFixture,
+        updatedAt: '2026-03-26T01:45:00.000Z',
+      }), { status: 200 }));
+
+    const unsubscribe = client.subscribe('ABC123', session, vi.fn());
+
+    await vi.advanceTimersByTimeAsync(FAMILY_REMOTE_HTTP_POLL_INTERVAL_MS);
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+
+    await vi.advanceTimersByTimeAsync(500);
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+
+    await vi.advanceTimersByTimeAsync((FAMILY_REMOTE_HTTP_POLL_INTERVAL_MS * 2) - 1);
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+
+    await vi.advanceTimersByTimeAsync(1);
+    expect(fetchSpy).toHaveBeenCalledTimes(3);
+
+    await vi.advanceTimersByTimeAsync(FAMILY_REMOTE_HTTP_POLL_INTERVAL_MS - 1);
+    expect(fetchSpy).toHaveBeenCalledTimes(3);
+
+    await vi.advanceTimersByTimeAsync(1);
+    expect(fetchSpy).toHaveBeenCalledTimes(4);
+
+    unsubscribe();
+  });
 });
