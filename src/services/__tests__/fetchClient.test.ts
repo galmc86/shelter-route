@@ -93,6 +93,7 @@ describe('resilientFetch', () => {
       expect(result.error.code).toBe('HTTP');
       expect(result.error.statusCode).toBe(404);
       expect(result.error.retryable).toBe(false);
+      expect(result.error.message).toBe('Not found');
     }
   });
 
@@ -108,6 +109,22 @@ describe('resilientFetch', () => {
       expect(result.error).toBeInstanceOf(ServiceError);
       expect(result.error.code).toBe('HTTP');
       expect(result.error.statusCode).toBe(500);
+      expect(result.error.message).toBe('Server error');
+    }
+  });
+
+  it('extracts plain string error bodies from HTTP responses', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      mockFetchResponse({ error: 'Family sync write is not authorized for this session' }, false, 403)
+    );
+
+    const result = await resilientFetch('https://example.com/forbidden', {}, { retries: 0 });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error.code).toBe('HTTP');
+      expect(result.error.statusCode).toBe(403);
+      expect(result.error.message).toBe('Family sync write is not authorized for this session');
     }
   });
 

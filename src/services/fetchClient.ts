@@ -72,7 +72,10 @@ export async function resilientFetch<T>(
         let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
         try {
           const errorBody = await response.clone().json();
-          const bodyMessage = errorBody?.error?.message ?? errorBody?.message;
+          const bodyMessage =
+            (typeof errorBody?.error === 'string' ? errorBody.error : undefined)
+            ?? errorBody?.error?.message
+            ?? errorBody?.message;
           if (typeof bodyMessage === 'string') {
             errorMessage = bodyMessage;
           }

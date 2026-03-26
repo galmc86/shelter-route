@@ -144,7 +144,8 @@ describe('httpFamilyRemoteClient', () => {
         removedMemberIds: undefined,
         removedDeviceIds: undefined,
       });
-      expect(getFamilySyncStatus().lastError).toContain('HTTP 403');
+      expect(getFamilySyncStatus().lastError)
+        .toBe('Family sync write is not authorized for this session');
     });
   });
 
@@ -170,7 +171,8 @@ describe('httpFamilyRemoteClient', () => {
         groupCode: 'ABC123',
         queuedAt: expect.any(String),
       });
-      expect(getFamilySyncStatus().lastError).toContain('HTTP 403');
+      expect(getFamilySyncStatus().lastError)
+        .toBe('Family sync delete is not authorized for this session');
     });
   });
 

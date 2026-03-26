@@ -200,6 +200,7 @@ Notes:
 - The family sync worker now enforces lightweight session-scoped writes: a device can only create a group if it is one of the submitted members, join by appending itself without mutating existing members, update its own member state, and delete only when it is the last remaining member.
 - The HTTP family client now re-queues backend-rejected writes and deletes and records sync failures when the real backend responds with an auth or transport error, so optimistic sync no longer hides server-side rejection behind a warm local cache.
 - The HTTP family client now also has worker-backed integration coverage for create/join/leave/delete across two simulated device sessions, so the real backend contract is exercised beyond isolated unit mocks.
+- Family sync diagnostics now preserve backend error strings from the worker instead of collapsing them to generic HTTP status text, which makes the retry/paused UI materially more actionable.
 
 ### Epic 10: Saved Places to Safety Profiles
 Objective: turn saved locations into reusable routines.
