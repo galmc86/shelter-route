@@ -14,7 +14,8 @@ import type { FamilyRemoteSession } from './familyRemoteSessionService';
 const STORAGE_KEY_PREFIX = 'shelter-route:family-remote-http-cache:';
 const REMOTE_CACHE_UPDATED_EVENT = 'family-remote-http-cache-updated';
 export const FAMILY_REMOTE_HTTP_POLL_INTERVAL_MS = 5000;
-export const FAMILY_REMOTE_HTTP_MAX_POLL_INTERVAL_MS = 120000;
+export const FAMILY_REMOTE_HTTP_BACKGROUND_POLL_INTERVAL_MS = 15000;
+export const FAMILY_REMOTE_HTTP_MAX_POLL_INTERVAL_MS = 15000;
 const activePollingSubscriptions = new Map<string, {
   refCount: number;
   timeoutId: number | null;
@@ -87,10 +88,6 @@ function shouldPollRemoteGroup(): boolean {
     return false;
   }
 
-  if (typeof document !== 'undefined' && document.hidden) {
-    return false;
-  }
-
   return true;
 }
 
@@ -104,13 +101,17 @@ function getPollingSubscriptionKey(groupCode: string, session: FamilyRemoteSessi
 }
 
 function getNextPollingDelayMs(consecutiveFailures: number): number {
+  const baseInterval = typeof document !== 'undefined' && document.hidden
+    ? FAMILY_REMOTE_HTTP_BACKGROUND_POLL_INTERVAL_MS
+    : FAMILY_REMOTE_HTTP_POLL_INTERVAL_MS;
+
   if (consecutiveFailures <= 0) {
-    return FAMILY_REMOTE_HTTP_POLL_INTERVAL_MS;
+    return baseInterval;
   }
 
   const backoffDelay = Math.min(
     FAMILY_REMOTE_HTTP_MAX_POLL_INTERVAL_MS,
-    FAMILY_REMOTE_HTTP_POLL_INTERVAL_MS * Math.pow(2, consecutiveFailures)
+    baseInterval * Math.pow(2, consecutiveFailures)
   );
   const jitterFactor = 1 + ((Math.random() - 0.5) * 0.2);
   return Math.round(backoffDelay * jitterFactor);
@@ -277,6 +278,7 @@ function acquirePollingSubscription(groupCode: string, session: FamilyRemoteSess
   });
   scheduleNextPollingRefresh(subscriptionKey, normalizedCode, session);
   window.addEventListener('online', refreshIfInteractive);
+  window.addEventListener('focus', refreshIfInteractive);
   document.addEventListener('visibilitychange', refreshIfInteractive);
 
   return () => releasePollingSubscription(subscriptionKey);
@@ -355,6 +357,7 @@ function releasePollingSubscription(subscriptionKey: string): void {
     window.clearTimeout(activeSubscription.timeoutId);
   }
   window.removeEventListener('online', activeSubscription.refreshIfInteractive);
+  window.removeEventListener('focus', activeSubscription.refreshIfInteractive);
   document.removeEventListener('visibilitychange', activeSubscription.refreshIfInteractive);
   activePollingSubscriptions.delete(subscriptionKey);
 }

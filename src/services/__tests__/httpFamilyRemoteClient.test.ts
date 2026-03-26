@@ -1,6 +1,7 @@
 import { waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  FAMILY_REMOTE_HTTP_BACKGROUND_POLL_INTERVAL_MS,
   FAMILY_REMOTE_HTTP_POLL_INTERVAL_MS,
   getHttpFamilyRemoteClient,
 } from '../httpFamilyRemoteClient';
@@ -331,7 +332,7 @@ describe('httpFamilyRemoteClient', () => {
     });
   });
 
-  it('waits for visibility before polling and refreshes when the tab becomes visible again', async () => {
+  it('uses a slower polling cadence while hidden and refreshes immediately when the tab becomes visible again', async () => {
     vi.useFakeTimers();
     vi.stubEnv('VITE_FAMILY_REMOTE_URL', 'https://family.example.com/api');
     const { getHttpFamilyRemoteClient: getClient } = await import('../httpFamilyRemoteClient');
@@ -353,12 +354,17 @@ describe('httpFamilyRemoteClient', () => {
 
     expect(fetchSpy).not.toHaveBeenCalled();
 
+    await vi.advanceTimersByTimeAsync(
+      FAMILY_REMOTE_HTTP_BACKGROUND_POLL_INTERVAL_MS - FAMILY_REMOTE_HTTP_POLL_INTERVAL_MS
+    );
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+
     vi.useRealTimers();
     hidden = false;
     document.dispatchEvent(new Event('visibilitychange'));
 
     await waitFor(() => {
-      expect(fetchSpy).toHaveBeenCalledTimes(1);
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
       expect(localStorage.getItem(CACHE_KEY)).not.toBeNull();
     });
 
@@ -427,7 +433,7 @@ describe('httpFamilyRemoteClient', () => {
     expect(fetchSpy).toHaveBeenCalledTimes(2);
   });
 
-  it('backs off after polling failures and returns to the base cadence after recovery', async () => {
+  it('backs off after polling failures but stays capped to the responsive sync window', async () => {
     vi.useFakeTimers();
     vi.stubEnv('VITE_FAMILY_REMOTE_URL', 'https://family.example.com/api');
     vi.spyOn(Math, 'random').mockReturnValue(0.5);

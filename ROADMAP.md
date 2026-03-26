@@ -220,6 +220,7 @@ Notes:
 - Rejected `403` family writes now force a remote refresh even when a stale local cache already exists, so legacy local-only family groups can rebase onto the live backend instead of staying stuck in a paused retry loop forever.
 - The service worker now bypasses HTTP cache for update checks, auto-activates new builds, and serves `/sw.js` with no-store caching, which reduces the chance that phones stay on stale family-sync client code after production fixes ship.
 - Family sync now stays subscribed app-wide once a repository is mounted, and visible-tab backend polling now runs on a 5-second cadence instead of 15 seconds, which makes cross-browser family joins and safety updates surface much faster.
+- Family sync now keeps a slower 15-second backend poll even while the browser is backgrounded, and polling backoff is capped to that same window so cross-device updates do not stall indefinitely after transient failures.
 
 ### Epic 10: Saved Places to Safety Profiles
 Objective: turn saved locations into reusable routines.
