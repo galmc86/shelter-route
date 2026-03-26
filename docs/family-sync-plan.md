@@ -213,6 +213,7 @@ The remote gateway should accept an explicit remote session object instead of re
 - once the worker URL is configured, there should also be a backend-backed browser E2E that exercises the actual UI across two sessions, with the app dev server receiving `VITE_FAMILY_REMOTE_URL` and the worker allowing the local app origin for CORS
 - the remote session seam should be bootstrapable from query/env/storage before real auth exists, so authenticated family identity can be exercised in QA and eventually swapped to a proper auth provider without rewiring repository/client code
 - the worker-backed transport tests should also prove the alert coordination loop end to end: a member transitions to `needs_check_in`, other devices observe that state, and the later safe confirmation propagates back through the real backend/client path
+- the backend-backed browser E2E should also prove authenticated same-user rejoin, so the same remote `userId` can move across devices without creating duplicate family members in the shared group
 
 ### Phase 3
 

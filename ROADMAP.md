@@ -157,7 +157,7 @@ Objective: turn the family feature into a real retention loop.
 Status: `[~]`
 
 - [ ] Add cross-device shared family state
-- [~] Support invite/join flows
+- [x] Support invite/join flows
 - [x] Add alert-triggered “I’m safe” coordination
 - [x] Define persistence/auth approach
 
@@ -205,6 +205,7 @@ Notes:
 - The repo now also includes a backend-backed Playwright family sync flow that can validate the real UI across two browser sessions once `VITE_FAMILY_REMOTE_URL` and worker CORS are configured for local QA.
 - Family sync now has a real session bootstrap seam (`query` / `storage` / `env`) with optional authenticated `userId`, and the remote member mapper can reconcile the same authenticated user across devices instead of only matching by device ID.
 - Worker-backed family sync integration now explicitly covers the alert loop too: one session can move to `needs_check_in`, another session sees it through the real backend/client path, and the later safe confirmation propagates back to `safe`.
+- Backend-backed Playwright coverage now also proves authenticated same-user rejoin across two browser sessions, so `familyRemoteUserId` can move between devices without duplicating the shared family member.
 
 ### Epic 10: Saved Places to Safety Profiles
 Objective: turn saved locations into reusable routines.

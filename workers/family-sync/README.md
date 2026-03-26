@@ -71,6 +71,7 @@ VITE_FAMILY_REMOTE_URL=https://family-sync.<your-subdomain>.workers.dev npm run 
 ```
 
 If you run that Playwright flow against a deployed worker from local dev, make sure `ALLOWED_ORIGINS` includes your local app origin such as `http://localhost:5174`.
+The spec also verifies authenticated same-user rejoin, so a repeated `familyRemoteUserId` can move across device sessions without duplicating the shared family member record.
 
 For authenticated-session QA without a full auth provider yet, the app can also bootstrap family sync identity from env or query params:
 

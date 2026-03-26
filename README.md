@@ -126,6 +126,8 @@ VITE_FAMILY_REMOTE_URL=https://family-sync.<your-subdomain>.workers.dev npm run 
 
 That Playwright flow uses two real browser contexts and verifies UI-driven create, join, "I'm Safe", member-scoped leave, and final remote clear against the configured backend.
 
+It also includes an authenticated-session rejoin path, so the same `familyRemoteUserId` can rejoin from a second device context without creating a duplicate family member.
+
 ## License
 
 Private project.
