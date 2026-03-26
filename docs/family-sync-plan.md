@@ -205,6 +205,7 @@ The remote gateway should accept an explicit remote session object instead of re
 - the deployed app CSP also needs to allow Worker-hosted connect targets, otherwise the browser will block the family sync worker even when the backend is configured correctly
 - remote writes should use explicit record versions so the backend can reject stale updates with `409` instead of treating concurrent device writes as accidental last-write-wins
 - when a `409` does happen, the client should queue the local upsert and rebase it onto the latest remote record before retrying, so conflict recovery preserves both the remote winner and the local pending edit
+- the backend worker should enforce lightweight session-scoped write rules, so anonymous device sessions can create/join/update only their own membership and can delete a group only when they are the last remaining member
 
 ### Phase 3
 

@@ -33,6 +33,12 @@ export interface Env {
   ALLOWED_ORIGIN?: string;
 }
 
+interface FamilySyncRequestSession {
+  deviceId: string | null;
+  userId: string | null;
+  authState: 'anonymous' | 'authenticated';
+}
+
 export function parseAllowedOrigins(env: Env): string[] {
   const raw = env.ALLOWED_ORIGINS || env.ALLOWED_ORIGIN || '';
   return raw
@@ -133,6 +139,123 @@ function normalizeMemberStatus(status: unknown): FamilyRemoteMemberRecord['statu
   return status === 'safe' || status === 'needs_check_in' ? status : 'unknown';
 }
 
+function getRequestSession(request: Request): FamilySyncRequestSession {
+  const rawDeviceId = request.headers.get('X-Family-Device-Id');
+  const rawUserId = request.headers.get('X-Family-User-Id');
+  const rawAuthState = request.headers.get('X-Family-Auth-State');
+
+  return {
+    deviceId: rawDeviceId?.trim() || null,
+    userId: rawUserId?.trim() || null,
+    authState: rawAuthState === 'authenticated' ? 'authenticated' : 'anonymous',
+  };
+}
+
+function isSessionMissingIdentity(session: FamilySyncRequestSession): boolean {
+  return !session.deviceId;
+}
+
+function isSessionMember(
+  member: Pick<FamilyRemoteMemberRecord, 'userId' | 'deviceId'>,
+  session: FamilySyncRequestSession
+): boolean {
+  if (session.userId && member.userId === session.userId) {
+    return true;
+  }
+
+  return Boolean(session.deviceId) && member.deviceId === session.deviceId;
+}
+
+function isSameMemberIdentity(
+  left: Pick<FamilyRemoteMemberRecord, 'id' | 'userId' | 'deviceId'>,
+  right: Pick<FamilyRemoteMemberRecord, 'id' | 'userId' | 'deviceId'>
+): boolean {
+  return left.id === right.id
+    || (Boolean(left.userId) && Boolean(right.userId) && left.userId === right.userId)
+    || (Boolean(left.deviceId) && Boolean(right.deviceId) && left.deviceId === right.deviceId);
+}
+
+function areMembersEquivalent(
+  left: FamilyRemoteMemberRecord,
+  right: FamilyRemoteMemberRecord
+): boolean {
+  return JSON.stringify(left) === JSON.stringify(right);
+}
+
+function canCreateGroup(
+  nextRecord: FamilyRemoteGroupRecord,
+  session: FamilySyncRequestSession
+): boolean {
+  return nextRecord.members.some((member) => isSessionMember(member, session));
+}
+
+function canJoinExistingGroup(
+  nextRecord: FamilyRemoteGroupRecord,
+  existingRecord: FamilyRemoteGroupRecord,
+  session: FamilySyncRequestSession
+): boolean {
+  const incomingSessionMembers = nextRecord.members.filter((member) => isSessionMember(member, session));
+  if (incomingSessionMembers.length === 0) {
+    return false;
+  }
+
+  return existingRecord.members.every((existingMember) => {
+    const incomingMember = nextRecord.members.find((member) => isSameMemberIdentity(member, existingMember));
+    return Boolean(incomingMember) && areMembersEquivalent(incomingMember!, existingMember);
+  });
+}
+
+function canUpdateExistingGroup(
+  nextRecord: FamilyRemoteGroupRecord,
+  existingRecord: FamilyRemoteGroupRecord,
+  sessionOwnedMembers: FamilyRemoteMemberRecord[]
+): boolean {
+  const existingOwnedIds = new Set(sessionOwnedMembers.map((member) => member.id));
+
+  for (const existingMember of existingRecord.members) {
+    if (existingOwnedIds.has(existingMember.id)) {
+      continue;
+    }
+
+    const incomingMember = nextRecord.members.find((member) => isSameMemberIdentity(member, existingMember));
+    if (!incomingMember || !areMembersEquivalent(incomingMember, existingMember)) {
+      return false;
+    }
+  }
+
+  return nextRecord.members.every((member) => (
+    existingRecord.members.some((existingMember) => isSameMemberIdentity(existingMember, member))
+  ));
+}
+
+function canWriteGroup(
+  nextRecord: FamilyRemoteGroupRecord,
+  existingRecord: FamilyRemoteGroupRecord | null,
+  session: FamilySyncRequestSession
+): boolean {
+  if (!existingRecord) {
+    return canCreateGroup(nextRecord, session);
+  }
+
+  const existingSessionMembers = existingRecord.members.filter((member) => isSessionMember(member, session));
+  if (existingSessionMembers.length === 0) {
+    return canJoinExistingGroup(nextRecord, existingRecord, session);
+  }
+
+  return canUpdateExistingGroup(nextRecord, existingRecord, existingSessionMembers);
+}
+
+function canDeleteGroup(
+  existingRecord: FamilyRemoteGroupRecord,
+  session: FamilySyncRequestSession
+): boolean {
+  if (existingRecord.members.length !== 1) {
+    return false;
+  }
+
+  return isSessionMember(existingRecord.members[0], session);
+}
+
 function jsonResponse(
   data: unknown,
   status: number,
@@ -184,12 +307,21 @@ async function handlePutGroup(
   corsHeaders: Record<string, string>
 ): Promise<Response> {
   try {
+    const session = getRequestSession(request);
+    if (isSessionMissingIdentity(session)) {
+      return jsonResponse({ error: 'Family sync session is missing device identity' }, 401, corsHeaders);
+    }
+
     const decoded = decodeFamilyRemoteGroupRecord(await request.json(), groupCode);
     const now = new Date().toISOString();
     const existingRaw = await env.FAMILY_GROUPS.get(groupCode);
     const existingRecord = existingRaw
       ? decodeFamilyRemoteGroupRecord(JSON.parse(existingRaw), groupCode)
       : null;
+
+    if (!canWriteGroup(decoded, existingRecord, session)) {
+      return jsonResponse({ error: 'Family sync write is not authorized for this session' }, 403, corsHeaders);
+    }
 
     if (existingRecord && decoded.version !== existingRecord.version) {
       return jsonResponse({
@@ -224,10 +356,32 @@ async function handlePutGroup(
 }
 
 async function handleDeleteGroup(
+  request: Request,
   groupCode: string,
   env: Env,
   corsHeaders: Record<string, string>
 ): Promise<Response> {
+  const session = getRequestSession(request);
+  if (isSessionMissingIdentity(session)) {
+    return jsonResponse({ error: 'Family sync session is missing device identity' }, 401, corsHeaders);
+  }
+
+  const existingRaw = await env.FAMILY_GROUPS.get(groupCode);
+  if (!existingRaw) {
+    return jsonResponse({ deleted: true }, 200, corsHeaders);
+  }
+
+  let existingRecord: FamilyRemoteGroupRecord;
+  try {
+    existingRecord = decodeFamilyRemoteGroupRecord(JSON.parse(existingRaw), groupCode);
+  } catch {
+    return jsonResponse({ error: 'Stored family record is malformed' }, 500, corsHeaders);
+  }
+
+  if (!canDeleteGroup(existingRecord, session)) {
+    return jsonResponse({ error: 'Family sync delete is not authorized for this session' }, 403, corsHeaders);
+  }
+
   await env.FAMILY_GROUPS.delete(groupCode);
   return jsonResponse({ deleted: true }, 200, corsHeaders);
 }
@@ -260,7 +414,7 @@ export default {
     }
 
     if (request.method === 'DELETE') {
-      return handleDeleteGroup(groupCode, env, corsHeaders);
+      return handleDeleteGroup(request, groupCode, env, corsHeaders);
     }
 
     return textResponse('Method not allowed', 405, corsHeaders);

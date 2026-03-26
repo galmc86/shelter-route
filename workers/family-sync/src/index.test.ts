@@ -31,6 +31,25 @@ function createEnv(): Env {
   };
 }
 
+function createSessionHeaders({
+  deviceId,
+  userId,
+  authState = 'anonymous',
+  origin = 'https://shelter-route.pages.dev',
+}: {
+  deviceId?: string;
+  userId?: string;
+  authState?: 'anonymous' | 'authenticated';
+  origin?: string;
+} = {}): Record<string, string> {
+  return {
+    Origin: origin,
+    ...(deviceId ? { 'X-Family-Device-Id': deviceId } : {}),
+    ...(userId ? { 'X-Family-User-Id': userId } : {}),
+    'X-Family-Auth-State': authState,
+  };
+}
+
 const recordFixture: FamilyRemoteGroupRecord = {
   id: 'family:ABC123',
   inviteCode: 'ABC123',
@@ -80,7 +99,7 @@ describe('family-sync worker', () => {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        Origin: origin,
+        ...createSessionHeaders({ deviceId: 'device-1', origin }),
       },
       body: JSON.stringify(recordFixture),
     }), env);
@@ -104,7 +123,7 @@ describe('family-sync worker', () => {
 
     const deleteResponse = await worker.fetch(new Request('https://family-sync.example/ABC123', {
       method: 'DELETE',
-      headers: { Origin: origin },
+      headers: createSessionHeaders({ deviceId: 'device-1', origin }),
     }), env);
 
     expect(deleteResponse.status).toBe(200);
@@ -125,7 +144,7 @@ describe('family-sync worker', () => {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        Origin: origin,
+        ...createSessionHeaders({ deviceId: 'device-1', origin }),
       },
       body: JSON.stringify(recordFixture),
     }), env);
@@ -134,25 +153,28 @@ describe('family-sync worker', () => {
     const current = await firstPut.json() as FamilyRemoteGroupRecord;
     expect(current.version).toBe(1);
 
+    const joinPayload: FamilyRemoteGroupRecord = {
+      ...current,
+      members: [
+        {
+          id: 'member-2',
+          name: 'Noam',
+          deviceId: 'device-2',
+          role: 'member',
+          status: 'needs_check_in',
+          joinedAt: '2026-03-26T10:05:00.000Z',
+        },
+        ...current.members,
+      ],
+    };
+
     const secondPut = await worker.fetch(new Request('https://family-sync.example/ABC123', {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        Origin: origin,
+        ...createSessionHeaders({ deviceId: 'device-2', origin }),
       },
-      body: JSON.stringify({
-        ...current,
-        members: [
-          ...current.members,
-          {
-            id: 'member-2',
-            name: 'Noam',
-            role: 'member',
-            status: 'needs_check_in',
-            joinedAt: '2026-03-26T10:05:00.000Z',
-          },
-        ],
-      }),
+      body: JSON.stringify(joinPayload),
     }), env);
 
     expect(secondPut.status).toBe(200);
@@ -163,15 +185,219 @@ describe('family-sync worker', () => {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        Origin: origin,
+        ...createSessionHeaders({ deviceId: 'device-2', origin }),
       },
-      body: JSON.stringify(current),
+      body: JSON.stringify(joinPayload),
     }), env);
 
     expect(stalePut.status).toBe(409);
     expect(await stalePut.json()).toEqual({
       error: 'Family record version conflict',
       latest: updated,
+    });
+  });
+
+  it('rejects creating a family group when the request session is not present in the payload', async () => {
+    const env = createEnv();
+
+    const response = await worker.fetch(new Request('https://family-sync.example/ABC123', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...createSessionHeaders({ deviceId: 'device-999' }),
+      },
+      body: JSON.stringify(recordFixture),
+    }), env);
+
+    expect(response.status).toBe(403);
+    expect(await response.json()).toEqual({
+      error: 'Family sync write is not authorized for this session',
+    });
+  });
+
+  it('allows a second device to join an existing family without modifying existing members', async () => {
+    const env = createEnv();
+
+    const initialResponse = await worker.fetch(new Request('https://family-sync.example/ABC123', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...createSessionHeaders({ deviceId: 'device-1' }),
+      },
+      body: JSON.stringify(recordFixture),
+    }), env);
+    const current = await initialResponse.json() as FamilyRemoteGroupRecord;
+
+    const joinResponse = await worker.fetch(new Request('https://family-sync.example/ABC123', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...createSessionHeaders({ deviceId: 'device-2' }),
+      },
+      body: JSON.stringify({
+        ...current,
+        members: [
+          {
+            id: 'member-2',
+            name: 'Noam',
+            deviceId: 'device-2',
+            role: 'member',
+            status: 'unknown',
+            joinedAt: '2026-03-26T10:05:00.000Z',
+          },
+          ...current.members,
+        ],
+      }),
+    }), env);
+
+    expect(joinResponse.status).toBe(200);
+    const updated = await joinResponse.json() as FamilyRemoteGroupRecord;
+    expect(updated.version).toBe(2);
+    expect(updated.members.map((member) => member.deviceId)).toEqual(['device-2', 'device-1']);
+  });
+
+  it('rejects non-member updates that rewrite an existing family group', async () => {
+    const env = createEnv();
+
+    const initialResponse = await worker.fetch(new Request('https://family-sync.example/ABC123', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...createSessionHeaders({ deviceId: 'device-1' }),
+      },
+      body: JSON.stringify(recordFixture),
+    }), env);
+    const current = await initialResponse.json() as FamilyRemoteGroupRecord;
+
+    const maliciousResponse = await worker.fetch(new Request('https://family-sync.example/ABC123', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...createSessionHeaders({ deviceId: 'device-2' }),
+      },
+      body: JSON.stringify({
+        ...current,
+        members: [
+          {
+            ...current.members[0],
+            status: 'needs_check_in',
+          },
+          {
+            id: 'member-2',
+            name: 'Noam',
+            deviceId: 'device-2',
+            role: 'member',
+            status: 'unknown',
+            joinedAt: '2026-03-26T10:05:00.000Z',
+          },
+        ],
+      }),
+    }), env);
+
+    expect(maliciousResponse.status).toBe(403);
+    expect(await maliciousResponse.json()).toEqual({
+      error: 'Family sync write is not authorized for this session',
+    });
+  });
+
+  it('allows an existing member to update their own status', async () => {
+    const env = createEnv();
+
+    const initialResponse = await worker.fetch(new Request('https://family-sync.example/ABC123', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...createSessionHeaders({ deviceId: 'device-1' }),
+      },
+      body: JSON.stringify(recordFixture),
+    }), env);
+    const current = await initialResponse.json() as FamilyRemoteGroupRecord;
+
+    const updateResponse = await worker.fetch(new Request('https://family-sync.example/ABC123', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...createSessionHeaders({ deviceId: 'device-1' }),
+      },
+      body: JSON.stringify({
+        ...current,
+        members: current.members.map((member) => (
+          member.deviceId === 'device-1'
+            ? {
+                ...member,
+                status: 'needs_check_in',
+                lastStatusAt: '2026-03-26T10:10:00.000Z',
+              }
+            : member
+        )),
+      }),
+    }), env);
+
+    expect(updateResponse.status).toBe(200);
+    const updated = await updateResponse.json() as FamilyRemoteGroupRecord;
+    expect(updated.members[0].status).toBe('needs_check_in');
+  });
+
+  it('rejects deleting a family group when the requester is not the last remaining member', async () => {
+    const env = createEnv();
+
+    const initialResponse = await worker.fetch(new Request('https://family-sync.example/ABC123', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...createSessionHeaders({ deviceId: 'device-1' }),
+      },
+      body: JSON.stringify({
+        ...recordFixture,
+        members: [
+          ...recordFixture.members,
+          {
+            id: 'member-2',
+            name: 'Noam',
+            deviceId: 'device-2',
+            role: 'member',
+            status: 'unknown',
+            joinedAt: '2026-03-26T10:05:00.000Z',
+          },
+        ],
+      }),
+    }), env);
+
+    expect(initialResponse.status).toBe(200);
+
+    const deleteResponse = await worker.fetch(new Request('https://family-sync.example/ABC123', {
+      method: 'DELETE',
+      headers: createSessionHeaders({ deviceId: 'device-1' }),
+    }), env);
+
+    expect(deleteResponse.status).toBe(403);
+    expect(await deleteResponse.json()).toEqual({
+      error: 'Family sync delete is not authorized for this session',
+    });
+  });
+
+  it('rejects deleting a family group when the requester does not belong to it', async () => {
+    const env = createEnv();
+
+    const initialResponse = await worker.fetch(new Request('https://family-sync.example/ABC123', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...createSessionHeaders({ deviceId: 'device-1' }),
+      },
+      body: JSON.stringify(recordFixture),
+    }), env);
+
+    expect(initialResponse.status).toBe(200);
+
+    const deleteResponse = await worker.fetch(new Request('https://family-sync.example/ABC123', {
+      method: 'DELETE',
+      headers: createSessionHeaders({ deviceId: 'device-2' }),
+    }), env);
+
+    expect(deleteResponse.status).toBe(403);
+    expect(await deleteResponse.json()).toEqual({
+      error: 'Family sync delete is not authorized for this session',
     });
   });
 });
