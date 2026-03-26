@@ -38,6 +38,7 @@ export interface FamilySyncSmokeTestOptions {
   ownerSession?: FamilySyncSmokeSession;
   rejoinSession?: FamilySyncSmokeSession | null;
   joinerSession?: FamilySyncSmokeSession;
+  includeAuthenticatedRejoin?: boolean;
   groupCode?: string;
   log?: (message: string) => void;
   now?: () => string;
@@ -46,6 +47,12 @@ export interface FamilySyncSmokeTestOptions {
 export interface FamilySyncSmokeTestResult {
   baseUrl: string;
   groupCode: string;
+}
+
+export interface FamilySyncSmokeCliOptions {
+  baseUrl: string | null;
+  groupCode?: string;
+  includeAuthenticatedRejoin: boolean;
 }
 
 function getHeaders(session: FamilySyncSmokeSession): HeadersInit {
@@ -125,6 +132,7 @@ export async function runFamilySyncSmokeTest({
   },
   rejoinSession = null,
   joinerSession = { deviceId: 'smoke-device-joiner', authState: 'anonymous' },
+  includeAuthenticatedRejoin = true,
   groupCode = createGroupCode(),
   log = () => {},
   now = () => new Date().toISOString(),
@@ -132,15 +140,17 @@ export async function runFamilySyncSmokeTest({
   const normalizedBaseUrl = normalizeBaseUrl(baseUrl);
   const groupUrl = `${normalizedBaseUrl}/${groupCode}`;
   const createdAt = now();
-  const resolvedRejoinSession = rejoinSession ?? (
-    ownerSession.authState === 'authenticated' && ownerSession.userId
-      ? {
-          deviceId: `${ownerSession.deviceId}-rejoin`,
-          authState: 'authenticated',
-          userId: ownerSession.userId,
-        }
-      : null
-  );
+  const resolvedRejoinSession = includeAuthenticatedRejoin
+    ? (rejoinSession ?? (
+      ownerSession.authState === 'authenticated' && ownerSession.userId
+        ? {
+            deviceId: `${ownerSession.deviceId}-rejoin`,
+            authState: 'authenticated',
+            userId: ownerSession.userId,
+          }
+        : null
+    ))
+    : null;
   const expectedOwnerDeviceId = resolvedRejoinSession?.deviceId ?? ownerSession.deviceId;
 
   log(`Creating group ${groupCode}`);
@@ -258,20 +268,30 @@ export async function runFamilySyncSmokeTest({
   };
 }
 
-function readCliBaseUrl(): string | null {
-  const arg = process.argv.slice(2).find((entry) => entry.startsWith('--url='));
-  const value = arg ? arg.slice('--url='.length).trim() : (process.env.VITE_FAMILY_REMOTE_URL ?? '').trim();
-  return value || null;
+export function readFamilySyncSmokeCliOptions(
+  argv: string[] = process.argv.slice(2),
+  env: NodeJS.ProcessEnv = process.env
+): FamilySyncSmokeCliOptions {
+  const urlArg = argv.find((entry) => entry.startsWith('--url='));
+  const groupCodeArg = argv.find((entry) => entry.startsWith('--group-code='));
+
+  return {
+    baseUrl: (urlArg ? urlArg.slice('--url='.length).trim() : (env.VITE_FAMILY_REMOTE_URL ?? '').trim()) || null,
+    groupCode: groupCodeArg ? groupCodeArg.slice('--group-code='.length).trim().toUpperCase() : undefined,
+    includeAuthenticatedRejoin: !argv.includes('--no-auth-rejoin'),
+  };
 }
 
 async function main(): Promise<void> {
-  const baseUrl = readCliBaseUrl();
-  if (!baseUrl) {
+  const cliOptions = readFamilySyncSmokeCliOptions();
+  if (!cliOptions.baseUrl) {
     throw new Error('VITE_FAMILY_REMOTE_URL or --url=<worker-url> is required');
   }
 
   const result = await runFamilySyncSmokeTest({
-    baseUrl,
+    baseUrl: cliOptions.baseUrl,
+    groupCode: cliOptions.groupCode,
+    includeAuthenticatedRejoin: cliOptions.includeAuthenticatedRejoin,
     log: (message) => console.log(`[family-sync-smoke] ${message}`),
   });
 

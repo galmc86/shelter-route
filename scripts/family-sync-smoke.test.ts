@@ -3,7 +3,10 @@ import worker, {
   type Env,
   type KeyValueStore,
 } from '../workers/family-sync/src/index';
-import { runFamilySyncSmokeTest } from './family-sync-smoke';
+import {
+  readFamilySyncSmokeCliOptions,
+  runFamilySyncSmokeTest,
+} from './family-sync-smoke';
 
 class MemoryStore implements KeyValueStore {
   private readonly store = new Map<string, string>();
@@ -47,5 +50,18 @@ describe('family-sync-smoke script', () => {
 
     const finalResponse = await worker.fetch(new Request('https://family-sync.example/SMOKE1'), env);
     expect(finalResponse.status).toBe(404);
+  });
+
+  it('parses CLI flags for a fixed group code and optional auth-rejoin disable', () => {
+    const options = readFamilySyncSmokeCliOptions(
+      ['--url=https://family-sync.example/', '--group-code=smoke9', '--no-auth-rejoin'],
+      {}
+    );
+
+    expect(options).toEqual({
+      baseUrl: 'https://family-sync.example/',
+      groupCode: 'SMOKE9',
+      includeAuthenticatedRejoin: false,
+    });
   });
 });

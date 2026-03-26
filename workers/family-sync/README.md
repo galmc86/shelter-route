@@ -64,6 +64,7 @@ VITE_FAMILY_REMOTE_URL=https://family-sync.<your-subdomain>.workers.dev npm run 
 ```
 
 That smoke path now covers authenticated same-user rejoin as well as create/join/leave/delete.
+It also supports `--group-code=<code>` for reproducible runs and `--no-auth-rejoin` when you want to isolate the non-auth backend path first.
 
 4. Optionally run the browser-backed family E2E against the same worker:
 

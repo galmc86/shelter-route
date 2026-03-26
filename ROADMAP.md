@@ -154,9 +154,9 @@ Notes:
 
 ### Epic 9: Family Safety Sync
 Objective: turn the family feature into a real retention loop.
-Status: `[~]`
+Status: `[x]`
 
-- [ ] Add cross-device shared family state
+- [x] Add cross-device shared family state
 - [x] Support invite/join flows
 - [x] Add alert-triggered “I’m safe” coordination
 - [x] Define persistence/auth approach
@@ -203,6 +203,7 @@ Notes:
 - Family sync diagnostics now preserve backend error strings from the worker instead of collapsing them to generic HTTP status text, which makes the retry/paused UI materially more actionable.
 - The family backend now has a concrete operator path: deployment/setup is documented under `workers/family-sync/`, and there is a smoke test that exercises create/join/leave/delete against a configured `VITE_FAMILY_REMOTE_URL`.
 - That backend smoke path now also validates authenticated same-user rejoin, so the deployed worker contract is checked for identity reconciliation before browser E2E is required.
+- The smoke script now also supports reproducible operator runs with a fixed group code and an opt-out for the auth-rejoin leg, which makes backend debugging less trial-and-error.
 - The repo now also includes a backend-backed Playwright family sync flow that can validate the real UI across two browser sessions once `VITE_FAMILY_REMOTE_URL` and worker CORS are configured for local QA.
 - Family sync now has a real session bootstrap seam (`query` / `storage` / `env`) with optional authenticated `userId`, and the remote member mapper can reconcile the same authenticated user across devices instead of only matching by device ID.
 - Worker-backed family sync integration now explicitly covers the alert loop too: one session can move to `needs_check_in`, another session sees it through the real backend/client path, and the later safe confirmation propagates back to `safe`.

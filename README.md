@@ -117,6 +117,7 @@ VITE_FAMILY_REMOTE_URL=https://family-sync.<your-subdomain>.workers.dev npm run 
 ```
 
 That smoke test exercises authenticated same-user rejoin, create, join, member-scoped leave, and final delete across simulated device sessions against the deployed backend.
+Use `-- --group-code=<code>` to pin a reproducible group code, or `-- --no-auth-rejoin` to isolate the basic create/join/leave/delete path.
 
 For a browser-level verification path, the repo also includes:
 
