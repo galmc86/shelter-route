@@ -195,6 +195,7 @@ Notes:
 - A first real family backend now exists as a Cloudflare Worker scaffold with KV-backed `GET`/`PUT`/`DELETE` group endpoints, which gives the current HTTP client an actual server contract to target.
 - When `VITE_FAMILY_REMOTE_URL` is configured, the app now defaults the family remote stack to `backend` + `http`, which removes most of the dev-only flag friction from turning the real sync path on.
 - The Pages CSP now allows Worker-hosted backend connections via `https://*.workers.dev`, so a deployed family sync worker can be reached without an additional shell change.
+- Family sync records now carry an explicit `version`, and the worker rejects stale `PUT`s with `409` instead of silently overwriting newer cross-device state.
 
 ### Epic 10: Saved Places to Safety Profiles
 Objective: turn saved locations into reusable routines.

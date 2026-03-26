@@ -80,6 +80,7 @@ describe('familyRepository', () => {
     let storedRecord: FamilyRemoteGroupRecord | null = {
       id: 'family:ABC123',
       inviteCode: 'ABC123',
+      version: 1,
       createdAt: '2026-03-25T20:00:00.000Z',
       updatedAt: '2026-03-25T20:00:00.000Z',
       createdByMemberId: 'member-1',
@@ -126,6 +127,7 @@ describe('familyRepository', () => {
     let storedRecord: FamilyRemoteGroupRecord | null = {
       id: 'family:ABC123',
       inviteCode: 'ABC123',
+      version: 2,
       createdAt: '2026-03-25T20:00:00.000Z',
       updatedAt: '2026-03-25T20:00:00.000Z',
       createdByMemberId: 'member-1',
@@ -305,6 +307,7 @@ describe('familyRepository', () => {
     let storedRecord: FamilyRemoteGroupRecord | null = {
       id: 'family:ABC123',
       inviteCode: 'ABC123',
+      version: 3,
       createdAt: '2026-03-25T20:00:00.000Z',
       updatedAt: '2026-03-25T20:00:00.000Z',
       createdByMemberId: 'member-1',

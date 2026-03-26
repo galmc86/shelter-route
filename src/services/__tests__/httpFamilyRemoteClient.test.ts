@@ -10,6 +10,7 @@ import type { FamilyRemoteGroupRecord } from '../familyRemoteModel';
 const groupFixture: FamilyRemoteGroupRecord = {
   id: 'family:ABC123',
   inviteCode: 'ABC123',
+  version: 1,
   createdAt: '2026-03-26T00:00:00.000Z',
   updatedAt: '2026-03-26T00:00:00.000Z',
   createdByMemberId: 'member-1',
@@ -62,6 +63,7 @@ describe('httpFamilyRemoteClient', () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response(JSON.stringify({
       id: 'family:ABC123',
       inviteCode: 'abc123',
+      version: 1,
       createdAt: '2026-03-26T00:00:00.000Z',
       updatedAt: '2026-03-26T00:00:00.000Z',
       createdByMemberId: 'member-1',
@@ -72,6 +74,34 @@ describe('httpFamilyRemoteClient', () => {
 
     await waitFor(() => {
       expect(client.fetchGroup('ABC123', session)?.inviteCode).toBe('ABC123');
+    });
+  });
+
+  it('refreshes cached groups after a version conflict response', async () => {
+    vi.stubEnv('VITE_FAMILY_REMOTE_URL', 'https://family.example.com/api');
+    const { getHttpFamilyRemoteClient: getClient } = await import('../httpFamilyRemoteClient');
+    const client = getClient();
+    const session = getFamilyRemoteSession();
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        error: 'Family record version conflict',
+      }), {
+        status: 409,
+        statusText: 'Conflict',
+        headers: { 'Content-Type': 'application/json' },
+      }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        ...groupFixture,
+        version: 2,
+        updatedAt: '2026-03-26T00:10:00.000Z',
+      }), { status: 200 }));
+
+    client.upsertGroup(groupFixture, session);
+
+    await waitFor(() => {
+      const cached = localStorage.getItem(CACHE_KEY);
+      expect(cached).not.toBeNull();
+      expect(JSON.parse(cached as string).version).toBe(2);
     });
   });
 

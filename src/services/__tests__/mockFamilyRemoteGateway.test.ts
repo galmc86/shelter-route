@@ -6,6 +6,7 @@ import { getFamilyRemoteSession } from '../familyRemoteSessionService';
 const groupFixture: FamilyRemoteGroupRecord = {
   id: 'family:ABC123',
   inviteCode: 'ABC123',
+  version: 1,
   createdAt: '2026-03-25T20:00:00.000Z',
   updatedAt: '2026-03-25T20:00:00.000Z',
   createdByMemberId: 'member-1',

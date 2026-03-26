@@ -13,6 +13,7 @@ export interface FamilyRemoteMemberRecord {
 export interface FamilyRemoteGroupRecord {
   id: string;
   inviteCode: string;
+  version: number;
   displayName?: string;
   createdAt: string;
   updatedAt: string;
@@ -92,6 +93,7 @@ export function decodeFamilyRemoteGroupRecord(
   return {
     id: candidate.id,
     inviteCode,
+    version: typeof candidate.version === 'number' && candidate.version >= 0 ? candidate.version : 0,
     displayName: typeof candidate.displayName === 'string' ? candidate.displayName : undefined,
     createdAt: candidate.createdAt,
     updatedAt: candidate.updatedAt,
@@ -183,8 +185,35 @@ async function handlePutGroup(
 ): Promise<Response> {
   try {
     const decoded = decodeFamilyRemoteGroupRecord(await request.json(), groupCode);
-    await env.FAMILY_GROUPS.put(groupCode, JSON.stringify(decoded));
-    return jsonResponse(decoded, 200, corsHeaders);
+    const now = new Date().toISOString();
+    const existingRaw = await env.FAMILY_GROUPS.get(groupCode);
+    const existingRecord = existingRaw
+      ? decodeFamilyRemoteGroupRecord(JSON.parse(existingRaw), groupCode)
+      : null;
+
+    if (existingRecord && decoded.version !== existingRecord.version) {
+      return jsonResponse({
+        error: 'Family record version conflict',
+        latest: existingRecord,
+      }, 409, corsHeaders);
+    }
+
+    const nextRecord: FamilyRemoteGroupRecord = existingRecord
+      ? {
+          ...decoded,
+          version: existingRecord.version + 1,
+          createdAt: existingRecord.createdAt,
+          updatedAt: now,
+        }
+      : {
+          ...decoded,
+          version: 1,
+          createdAt: decoded.createdAt || now,
+          updatedAt: now,
+        };
+
+    await env.FAMILY_GROUPS.put(groupCode, JSON.stringify(nextRecord));
+    return jsonResponse(nextRecord, 200, corsHeaders);
   } catch (error) {
     return jsonResponse(
       { error: error instanceof Error ? error.message : 'Invalid family payload' },

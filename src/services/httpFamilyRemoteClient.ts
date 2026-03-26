@@ -166,6 +166,11 @@ async function pushGroup(record: FamilyRemoteGroupRecord, session: FamilyRemoteS
 
   if (result.ok) {
     writeCachedGroup(decodeFamilyRemoteGroupResponse(result.data));
+    return;
+  }
+
+  if (result.error.code === 'HTTP' && result.error.statusCode === 409) {
+    await refreshGroup(record.inviteCode, session);
   }
 }
 

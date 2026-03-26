@@ -25,6 +25,7 @@ describe('familyRemoteModel', () => {
     const record = mapFamilyGroupToRemoteRecord(groupFixture);
 
     expect(record.inviteCode).toBe('ABC123');
+    expect(record.version).toBe(0);
     expect(record.createdByMemberId).toBe('member-1');
     expect(record.members[0].status).toBe('needs_check_in');
     expect(record.members[0].role).toBe('owner');
@@ -41,6 +42,7 @@ describe('familyRemoteModel', () => {
     const previousRecord = {
       id: 'family:ABC123',
       inviteCode: 'ABC123',
+      version: 3,
       createdAt: '2026-03-25T20:00:00.000Z',
       updatedAt: '2026-03-25T20:00:00.000Z',
       createdByMemberId: 'member-1',
@@ -74,6 +76,7 @@ describe('familyRemoteModel', () => {
 
     const record = mapFamilyGroupToRemoteRecord(joiningGroup, previousRecord);
 
+    expect(record.version).toBe(3);
     expect(record.createdByMemberId).toBe('member-1');
     expect(record.members).toHaveLength(2);
     expect(record.members.find((member) => member.id === 'member-1')?.role).toBe('owner');
@@ -84,6 +87,7 @@ describe('familyRemoteModel', () => {
     const previousRecord = {
       id: 'family:ABC123',
       inviteCode: 'ABC123',
+      version: 2,
       createdAt: '2026-03-25T20:00:00.000Z',
       updatedAt: '2026-03-25T20:00:00.000Z',
       createdByMemberId: 'member-1',

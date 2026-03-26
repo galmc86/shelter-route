@@ -24,6 +24,7 @@ describe('familyRemoteGateway', () => {
     expect(() => gateway.upsertGroup({
       id: 'family:ABC123',
       inviteCode: 'ABC123',
+      version: 1,
       createdAt: '2026-03-25T23:00:00.000Z',
       updatedAt: '2026-03-25T23:00:00.000Z',
       createdByMemberId: 'member-1',

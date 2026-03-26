@@ -17,6 +17,7 @@ export interface FamilyRemoteMemberRecord {
 export interface FamilyRemoteGroupRecord {
   id: string;
   inviteCode: string;
+  version: number;
   displayName?: string;
   createdAt: string;
   updatedAt: string;
@@ -44,6 +45,7 @@ export function mapFamilyGroupToRemoteRecord(
   return {
     id: previousRecord?.id ?? `family:${group.groupCode}`,
     inviteCode: group.groupCode,
+    version: previousRecord?.version ?? 0,
     displayName: previousRecord?.displayName,
     createdAt: previousRecord?.createdAt ?? group.members[0]?.lastSeen ?? now,
     updatedAt: now,

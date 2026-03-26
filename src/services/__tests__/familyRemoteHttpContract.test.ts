@@ -21,6 +21,7 @@ describe('familyRemoteHttpContract', () => {
     const record = encodeFamilyRemoteGroupRequest({
       id: 'family:ABC123',
       inviteCode: 'abc123',
+      version: 2,
       createdAt: '2026-03-26T00:30:00.000Z',
       updatedAt: '2026-03-26T00:30:00.000Z',
       createdByMemberId: 'member-1',
@@ -43,8 +44,20 @@ describe('familyRemoteHttpContract', () => {
     expect(() => decodeFamilyRemoteGroupResponse({ inviteCode: 'ABC123' })).toThrow();
   });
 
+  it('defaults missing record versions to zero for older stored payloads', () => {
+    const record = decodeFamilyRemoteGroupResponse({
+      id: 'family:ABC123',
+      inviteCode: 'ABC123',
+      createdAt: '2026-03-26T00:30:00.000Z',
+      updatedAt: '2026-03-26T00:30:00.000Z',
+      createdByMemberId: 'member-1',
+      members: [],
+    });
+
+    expect(record.version).toBe(0);
+  });
+
   it('returns null endpoint when the base URL is missing', () => {
     expect(getFamilyRemoteGroupEndpoint('ABC123')).toBeNull();
   });
 });
-

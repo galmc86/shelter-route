@@ -50,6 +50,7 @@ export function decodeFamilyRemoteGroupResponse(payload: unknown): FamilyRemoteG
   return {
     id: candidate.id,
     inviteCode: candidate.inviteCode.toUpperCase(),
+    version: typeof candidate.version === 'number' && candidate.version >= 0 ? candidate.version : 0,
     displayName: typeof candidate.displayName === 'string' ? candidate.displayName : undefined,
     createdAt: candidate.createdAt,
     updatedAt: candidate.updatedAt,

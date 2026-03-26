@@ -34,6 +34,7 @@ function createEnv(): Env {
 const recordFixture: FamilyRemoteGroupRecord = {
   id: 'family:ABC123',
   inviteCode: 'ABC123',
+  version: 0,
   createdAt: '2026-03-26T10:00:00.000Z',
   updatedAt: '2026-03-26T10:00:00.000Z',
   createdByMemberId: 'member-1',
@@ -85,14 +86,21 @@ describe('family-sync worker', () => {
     }), env);
 
     expect(putResponse.status).toBe(200);
-    expect(await putResponse.json()).toEqual(recordFixture);
+    const created = await putResponse.json() as FamilyRemoteGroupRecord;
+    expect(created.id).toBe(recordFixture.id);
+    expect(created.inviteCode).toBe(recordFixture.inviteCode);
+    expect(created.version).toBe(1);
+    expect(created.createdAt).toBe(recordFixture.createdAt);
+    expect(created.createdByMemberId).toBe(recordFixture.createdByMemberId);
+    expect(created.members).toEqual(recordFixture.members);
+    expect(created.updatedAt).not.toBe(recordFixture.updatedAt);
 
     const getResponse = await worker.fetch(new Request('https://family-sync.example/abc123', {
       headers: { Origin: origin },
     }), env);
 
     expect(getResponse.status).toBe(200);
-    expect(await getResponse.json()).toEqual(recordFixture);
+    expect(await getResponse.json()).toEqual(created);
 
     const deleteResponse = await worker.fetch(new Request('https://family-sync.example/ABC123', {
       method: 'DELETE',
@@ -107,5 +115,63 @@ describe('family-sync worker', () => {
     }), env);
 
     expect(missingResponse.status).toBe(404);
+  });
+
+  it('rejects stale writes with a 409 and returns the latest stored record', async () => {
+    const env = createEnv();
+    const origin = 'https://shelter-route.pages.dev';
+
+    const firstPut = await worker.fetch(new Request('https://family-sync.example/ABC123', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Origin: origin,
+      },
+      body: JSON.stringify(recordFixture),
+    }), env);
+
+    expect(firstPut.status).toBe(200);
+    const current = await firstPut.json() as FamilyRemoteGroupRecord;
+    expect(current.version).toBe(1);
+
+    const secondPut = await worker.fetch(new Request('https://family-sync.example/ABC123', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Origin: origin,
+      },
+      body: JSON.stringify({
+        ...current,
+        members: [
+          ...current.members,
+          {
+            id: 'member-2',
+            name: 'Noam',
+            role: 'member',
+            status: 'needs_check_in',
+            joinedAt: '2026-03-26T10:05:00.000Z',
+          },
+        ],
+      }),
+    }), env);
+
+    expect(secondPut.status).toBe(200);
+    const updated = await secondPut.json() as FamilyRemoteGroupRecord;
+    expect(updated.version).toBe(2);
+
+    const stalePut = await worker.fetch(new Request('https://family-sync.example/ABC123', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Origin: origin,
+      },
+      body: JSON.stringify(current),
+    }), env);
+
+    expect(stalePut.status).toBe(409);
+    expect(await stalePut.json()).toEqual({
+      error: 'Family record version conflict',
+      latest: updated,
+    });
   });
 });
