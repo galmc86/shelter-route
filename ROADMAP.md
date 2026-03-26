@@ -193,6 +193,8 @@ Notes:
 - Hybrid join/hydration now reconciles the current member by stable `deviceId`, so the same device can rejoin a remote family group without creating a duplicate member entry.
 - Hybrid leave semantics are now member-scoped: leaving removes the current member from the shared remote family and only clears the remote record when no members remain.
 - A first real family backend now exists as a Cloudflare Worker scaffold with KV-backed `GET`/`PUT`/`DELETE` group endpoints, which gives the current HTTP client an actual server contract to target.
+- When `VITE_FAMILY_REMOTE_URL` is configured, the app now defaults the family remote stack to `backend` + `http`, which removes most of the dev-only flag friction from turning the real sync path on.
+- The Pages CSP now allows Worker-hosted backend connections via `https://*.workers.dev`, so a deployed family sync worker can be reached without an additional shell change.
 
 ### Epic 10: Saved Places to Safety Profiles
 Objective: turn saved locations into reusable routines.

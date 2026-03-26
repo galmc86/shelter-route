@@ -9,9 +9,15 @@ export function getFamilyRemoteClientMode(search: string | null = null): FamilyR
     ? window.localStorage.getItem(FAMILY_REMOTE_CLIENT_STORAGE_KEY)
     : null;
   const envMode = import.meta.env.VITE_FAMILY_REMOTE_CLIENT;
-  const mode = queryMode ?? storageMode ?? envMode;
+  const implicitMode = getImplicitFamilyRemoteClientMode();
+  const mode = queryMode ?? storageMode ?? envMode ?? implicitMode;
 
   return mode === 'http' ? 'http' : 'stub';
+}
+
+function getImplicitFamilyRemoteClientMode(): FamilyRemoteClientMode | null {
+  const remoteUrl = (import.meta.env.VITE_FAMILY_REMOTE_URL as string | undefined)?.trim();
+  return remoteUrl ? 'http' : null;
 }
 
 export function initializeFamilyRemoteClientModeFromUrl(search: string | null = null): FamilyRemoteClientMode {
@@ -36,4 +42,3 @@ function getFamilyRemoteClientModeFromSearch(search: string | null): FamilyRemot
 
   return value === 'http' ? 'http' : value === 'stub' ? 'stub' : null;
 }
-

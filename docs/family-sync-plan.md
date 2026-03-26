@@ -201,6 +201,8 @@ The remote gateway should accept an explicit remote session object instead of re
 - allow remote gateway selection in development with `?familyRemoteGateway=backend` or `VITE_FAMILY_REMOTE_GATEWAY=backend`
 - allow backend client selection in development with `?familyRemoteClient=http` or `VITE_FAMILY_REMOTE_CLIENT=http`
 - a first KV-backed Cloudflare Worker now exists under [`workers/family-sync/`](/Users/gal.machluf/projects/shelter-finder/workers/family-sync), exposing the `GET`/`PUT`/`DELETE` group contract expected by the current HTTP client
+- when `VITE_FAMILY_REMOTE_URL` is present, the app should implicitly prefer the backend gateway and HTTP client unless an explicit mode override is supplied
+- the deployed app CSP also needs to allow Worker-hosted connect targets, otherwise the browser will block the family sync worker even when the backend is configured correctly
 
 ### Phase 3
 

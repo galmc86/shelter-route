@@ -9,9 +9,15 @@ export function getFamilyRemoteGatewayMode(search: string | null = null): Family
     ? window.localStorage.getItem(FAMILY_REMOTE_GATEWAY_STORAGE_KEY)
     : null;
   const envMode = import.meta.env.VITE_FAMILY_REMOTE_GATEWAY;
-  const mode = queryMode ?? storageMode ?? envMode;
+  const implicitMode = getImplicitFamilyRemoteGatewayMode();
+  const mode = queryMode ?? storageMode ?? envMode ?? implicitMode;
 
   return mode === 'backend' ? 'backend' : 'mock';
+}
+
+function getImplicitFamilyRemoteGatewayMode(): FamilyRemoteGatewayMode | null {
+  const remoteUrl = (import.meta.env.VITE_FAMILY_REMOTE_URL as string | undefined)?.trim();
+  return remoteUrl ? 'backend' : null;
 }
 
 export function initializeFamilyRemoteGatewayModeFromUrl(search: string | null = null): FamilyRemoteGatewayMode {
@@ -36,4 +42,3 @@ function getFamilyRemoteGatewayModeFromSearch(search: string | null): FamilyRemo
 
   return value === 'backend' ? 'backend' : value === 'mock' ? 'mock' : null;
 }
-

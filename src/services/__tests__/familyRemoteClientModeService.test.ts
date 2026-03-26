@@ -25,5 +25,10 @@ describe('familyRemoteClientModeService', () => {
 
     expect(getFamilyRemoteClientMode()).toBe('http');
   });
-});
 
+  it('defaults to the http client when a family remote URL is configured', () => {
+    vi.stubEnv('VITE_FAMILY_REMOTE_URL', 'https://family-sync.example');
+
+    expect(getFamilyRemoteClientMode()).toBe('http');
+  });
+});

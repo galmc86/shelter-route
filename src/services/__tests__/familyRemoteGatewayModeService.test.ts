@@ -25,5 +25,10 @@ describe('familyRemoteGatewayModeService', () => {
 
     expect(getFamilyRemoteGatewayMode()).toBe('backend');
   });
-});
 
+  it('defaults to the backend gateway when a family remote URL is configured', () => {
+    vi.stubEnv('VITE_FAMILY_REMOTE_URL', 'https://family-sync.example');
+
+    expect(getFamilyRemoteGatewayMode()).toBe('backend');
+  });
+});
