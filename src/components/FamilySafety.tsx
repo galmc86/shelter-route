@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useLanguage } from '../i18n';
 import { useFamilyGroupState } from '../hooks/useFamilyGroupState';
+import { useFamilyPushStatus } from '../hooks/useFamilyPushStatus';
 import { useFamilySyncStatus } from '../hooks/useFamilySyncStatus';
 import { syncFamilyPushSubscription } from '../services/familyPushNotificationService';
 import { requestNotificationPermission } from '../services/pushNotificationService';
 
 type FamilySyncTone = 'local' | 'active' | 'pending' | 'error';
+type FamilyPushTone = 'active' | 'pending' | 'error' | 'neutral';
 
 function getLocale(language: 'he' | 'en' | 'ar' | 'ru'): string {
   switch (language) {
@@ -53,6 +55,7 @@ export function FamilySafety({
   const [codeCopied, setCodeCopied] = useState(false);
   const [isExpanded, setIsExpanded] = useState(presentation === 'section');
   const { mode: syncMode, status: syncStatus } = useFamilySyncStatus();
+  const pushStatus = useFamilyPushStatus();
   const {
     group,
     isCurrentMemberSafe,
@@ -122,6 +125,26 @@ export function FamilySafety({
   const handleRetrySync = useCallback(() => {
     retryFamilySync();
   }, [retryFamilySync]);
+
+  const handleEnableNotifications = useCallback(() => {
+    if (!group) {
+      return;
+    }
+
+    void requestNotificationPermission().then((granted) => {
+      if (granted) {
+        void syncFamilyPushSubscription(group.groupCode);
+      }
+    });
+  }, [group]);
+
+  const handleRetryNotifications = useCallback(() => {
+    if (!group) {
+      return;
+    }
+
+    void syncFamilyPushSubscription(group.groupCode);
+  }, [group]);
 
   const handleShare = useCallback(async () => {
     const link = shareLink ?? window.location.href;
@@ -199,6 +222,80 @@ export function FamilySafety({
     };
   })();
   const setupNoteKey = syncMode === 'hybrid' ? 'family.hybridNote' : 'family.localNote';
+  const pushState = group && syncMode === 'hybrid'
+    ? (() => {
+        if (
+          pushStatus.state === 'active'
+          && pushStatus.registeredGroupCode === group.groupCode
+        ) {
+          return {
+            tone: 'active' as FamilyPushTone,
+            title: t('family.push.activeTitle'),
+            body: t('family.push.activeBody'),
+            actionLabel: null,
+            onAction: null,
+          };
+        }
+
+        if (pushStatus.environmentHint === 'ios_home_screen_required') {
+          return {
+            tone: 'neutral' as FamilyPushTone,
+            title: t('family.push.homeScreenTitle'),
+            body: t('family.push.homeScreenBody'),
+            actionLabel: null,
+            onAction: null,
+          };
+        }
+
+        if (pushStatus.permission === 'denied') {
+          return {
+            tone: 'error' as FamilyPushTone,
+            title: t('family.push.blockedTitle'),
+            body: t('family.push.blockedBody'),
+            actionLabel: null,
+            onAction: null,
+          };
+        }
+
+        if (pushStatus.permission === 'default' || pushStatus.state === 'needs_user_action') {
+          return {
+            tone: 'pending' as FamilyPushTone,
+            title: t('family.push.enableTitle'),
+            body: t('family.push.enableBody'),
+            actionLabel: t('family.push.enable'),
+            onAction: handleEnableNotifications,
+          };
+        }
+
+        if (pushStatus.state === 'unsupported') {
+          return {
+            tone: 'neutral' as FamilyPushTone,
+            title: t('family.push.unsupportedTitle'),
+            body: t('family.push.unsupportedBody'),
+            actionLabel: null,
+            onAction: null,
+          };
+        }
+
+        if (pushStatus.state === 'error') {
+          return {
+            tone: 'error' as FamilyPushTone,
+            title: t('family.push.errorTitle'),
+            body: t('family.push.errorBody'),
+            actionLabel: t('family.push.retry'),
+            onAction: handleRetryNotifications,
+          };
+        }
+
+        return {
+          tone: 'pending' as FamilyPushTone,
+          title: t('family.push.preparingTitle'),
+          body: t('family.push.preparingBody'),
+          actionLabel: t('family.push.retry'),
+          onAction: handleRetryNotifications,
+        };
+      })()
+    : null;
 
   const content = (
     <div className="family-safety-content">
@@ -319,6 +416,29 @@ export function FamilySafety({
                   </button>
                 )}
               </div>
+
+              {pushState && (
+                <div
+                  className={`family-safety-push family-safety-push--${pushState.tone}`}
+                  role="status"
+                  aria-live="polite"
+                >
+                  <span className={`family-safety-push-indicator family-safety-push-indicator--${pushState.tone}`} />
+                  <div className="family-safety-push-copy">
+                    <span className="family-safety-push-title">{pushState.title}</span>
+                    <span className="family-safety-push-body">{pushState.body}</span>
+                  </div>
+                  {pushState.actionLabel && pushState.onAction && (
+                    <button
+                      type="button"
+                      className="family-safety-push-action"
+                      onClick={pushState.onAction}
+                    >
+                      {pushState.actionLabel}
+                    </button>
+                  )}
+                </div>
+              )}
 
               <div className="family-safety-summary">
                 <span className="family-safety-summary-chip family-safety-summary-chip-safe">

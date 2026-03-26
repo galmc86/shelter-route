@@ -4,6 +4,7 @@ import { FamilySafety } from '../FamilySafety';
 import type { FamilyGroup } from '../../services/familySafetyService';
 
 const mockUseFamilyGroupState = vi.fn();
+const mockUseFamilyPushStatus = vi.fn();
 const mockUseFamilySyncStatus = vi.fn();
 const mockRequestNotificationPermission = vi.fn();
 const mockSyncFamilyPushSubscription = vi.fn();
@@ -17,6 +18,10 @@ vi.mock('../../i18n', () => ({
 
 vi.mock('../../hooks/useFamilyGroupState', () => ({
   useFamilyGroupState: () => mockUseFamilyGroupState(),
+}));
+
+vi.mock('../../hooks/useFamilyPushStatus', () => ({
+  useFamilyPushStatus: () => mockUseFamilyPushStatus(),
 }));
 
 vi.mock('../../hooks/useFamilySyncStatus', () => ({
@@ -34,6 +39,7 @@ vi.mock('../../services/familyPushNotificationService', () => ({
 describe('FamilySafety', () => {
   beforeEach(() => {
     mockUseFamilyGroupState.mockReset();
+    mockUseFamilyPushStatus.mockReset();
     mockUseFamilySyncStatus.mockReset();
     mockRequestNotificationPermission.mockReset();
     mockSyncFamilyPushSubscription.mockReset();
@@ -63,6 +69,16 @@ describe('FamilySafety', () => {
         lastFailureAt: null,
         lastError: null,
       },
+    });
+    mockUseFamilyPushStatus.mockReturnValue({
+      permission: 'default',
+      state: 'idle',
+      environmentHint: 'none',
+      registeredGroupCode: null,
+      lastAttemptAt: null,
+      lastSuccessAt: null,
+      lastFailureAt: null,
+      lastError: null,
     });
   });
 
@@ -186,6 +202,109 @@ describe('FamilySafety', () => {
     expect(await screen.findByText('family.sync.pendingTitle')).toBeInTheDocument();
     expect(screen.getByText('family.sync.pendingBody')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'family.sync.retry' })).toBeInTheDocument();
+  });
+
+  it('shows a push enable action for hybrid family groups when notifications are not enabled yet', async () => {
+    const existingGroup: FamilyGroup = {
+      groupCode: 'ABC123',
+      memberName: 'Dana',
+      currentMemberId: '1',
+      members: [{ id: '1', name: 'Dana', isSafe: true }],
+    };
+    mockUseFamilyGroupState.mockReturnValue({
+      group: existingGroup,
+      currentMember: existingGroup.members[0],
+      hasGroup: true,
+      isCurrentMemberSafe: true,
+      safeMembersCount: 1,
+      waitingMembersCount: 0,
+      shareLink: 'https://example.com/?familyGroup=ABC123',
+      createFamilyGroup: vi.fn(),
+      joinFamilyGroup: vi.fn(),
+      markFamilySafe: vi.fn(),
+      markNeedsCheckIn: vi.fn(),
+      retryFamilySync: vi.fn(),
+      leaveFamilyGroup: vi.fn(),
+    });
+    mockUseFamilySyncStatus.mockReturnValue({
+      mode: 'hybrid',
+      status: {
+        pendingCount: 0,
+        lastAttemptAt: null,
+        lastSuccessAt: '2026-03-26T08:00:00.000Z',
+        lastFailureAt: null,
+        lastError: null,
+      },
+    });
+    mockUseFamilyPushStatus.mockReturnValue({
+      permission: 'default',
+      state: 'needs_user_action',
+      environmentHint: 'none',
+      registeredGroupCode: null,
+      lastAttemptAt: null,
+      lastSuccessAt: null,
+      lastFailureAt: null,
+      lastError: null,
+    });
+    mockRequestNotificationPermission.mockResolvedValue(true);
+
+    render(<FamilySafety presentation="section" />);
+
+    expect(await screen.findByText('family.push.enableTitle')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'family.push.enable' }));
+
+    await waitFor(() => {
+      expect(mockSyncFamilyPushSubscription).toHaveBeenCalledWith('ABC123');
+    });
+  });
+
+  it('shows the iPhone home-screen hint when push requires standalone mode', async () => {
+    const existingGroup: FamilyGroup = {
+      groupCode: 'ABC123',
+      memberName: 'Dana',
+      currentMemberId: '1',
+      members: [{ id: '1', name: 'Dana', isSafe: true }],
+    };
+    mockUseFamilyGroupState.mockReturnValue({
+      group: existingGroup,
+      currentMember: existingGroup.members[0],
+      hasGroup: true,
+      isCurrentMemberSafe: true,
+      safeMembersCount: 1,
+      waitingMembersCount: 0,
+      shareLink: 'https://example.com/?familyGroup=ABC123',
+      createFamilyGroup: vi.fn(),
+      joinFamilyGroup: vi.fn(),
+      markFamilySafe: vi.fn(),
+      markNeedsCheckIn: vi.fn(),
+      retryFamilySync: vi.fn(),
+      leaveFamilyGroup: vi.fn(),
+    });
+    mockUseFamilySyncStatus.mockReturnValue({
+      mode: 'hybrid',
+      status: {
+        pendingCount: 0,
+        lastAttemptAt: null,
+        lastSuccessAt: '2026-03-26T08:00:00.000Z',
+        lastFailureAt: null,
+        lastError: null,
+      },
+    });
+    mockUseFamilyPushStatus.mockReturnValue({
+      permission: 'default',
+      state: 'needs_user_action',
+      environmentHint: 'ios_home_screen_required',
+      registeredGroupCode: null,
+      lastAttemptAt: null,
+      lastSuccessAt: null,
+      lastFailureAt: null,
+      lastError: 'ios_home_screen_required',
+    });
+
+    render(<FamilySafety presentation="section" />);
+
+    expect(await screen.findByText('family.push.homeScreenTitle')).toBeInTheDocument();
+    expect(screen.getByText('family.push.homeScreenBody')).toBeInTheDocument();
   });
 
   it('shows a paused sync state when hybrid sync is failing', async () => {

@@ -23,10 +23,42 @@ export function useFamilyPushSubscription(): void {
       void unregisterFamilyPushSubscription(previousGroupCode);
     }
 
-    if (!nextGroupCode || Notification.permission !== 'granted') {
-      return;
-    }
+    const syncCurrentGroup = () => {
+      if (!nextGroupCode || typeof document === 'undefined') {
+        return;
+      }
 
-    void syncFamilyPushSubscription(nextGroupCode);
+      if (document.hidden) {
+        return;
+      }
+
+      if (Notification.permission !== 'granted') {
+        return;
+      }
+
+      void syncFamilyPushSubscription(nextGroupCode);
+    };
+
+    syncCurrentGroup();
+
+    const handleFocus = () => {
+      syncCurrentGroup();
+    };
+    const handleOnline = () => {
+      syncCurrentGroup();
+    };
+    const handleVisibility = () => {
+      syncCurrentGroup();
+    };
+
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('online', handleOnline);
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('online', handleOnline);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
   }, [group?.groupCode]);
 }

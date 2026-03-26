@@ -6,6 +6,11 @@ import {
   getFamilyRemotePushSubscriptionUnregisterEndpoint,
 } from './familyRemoteHttpContract';
 import { getFamilyRemoteSession } from './familyRemoteSessionService';
+import {
+  patchFamilyPushStatus,
+  type FamilyPushEnvironmentHint,
+  type FamilyPushPermissionState,
+} from './familyPushStatusService';
 
 const FAMILY_PUSH_GROUP_KEY = 'shelter-route:family-push-group';
 const FAMILY_PUSH_ENDPOINT_KEY = 'shelter-route:family-push-endpoint';
@@ -26,6 +31,37 @@ export function isFamilyPushSupported(): boolean {
   );
 }
 
+export function getFamilyPushPermissionState(): FamilyPushPermissionState {
+  if (typeof window === 'undefined' || !('Notification' in window)) {
+    return 'unsupported';
+  }
+
+  if (Notification.permission === 'granted' || Notification.permission === 'denied') {
+    return Notification.permission;
+  }
+
+  return 'default';
+}
+
+export function getFamilyPushEnvironmentHint(): FamilyPushEnvironmentHint {
+  if (typeof window === 'undefined' || typeof navigator === 'undefined') {
+    return 'none';
+  }
+
+  const userAgent = navigator.userAgent || '';
+  const isAppleMobile = /iPhone|iPad|iPod/i.test(userAgent)
+    || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+  if (!isAppleMobile) {
+    return 'none';
+  }
+
+  const isStandalone = window.matchMedia?.('(display-mode: standalone)').matches
+    || Boolean((navigator as Navigator & { standalone?: boolean }).standalone);
+
+  return isStandalone ? 'none' : 'ios_home_screen_required';
+}
+
 export function isFamilyPushRegisteredForGroup(groupCode: string | null | undefined): boolean {
   if (!groupCode) {
     return false;
@@ -35,18 +71,65 @@ export function isFamilyPushRegisteredForGroup(groupCode: string | null | undefi
 }
 
 export async function syncFamilyPushSubscription(groupCode: string): Promise<boolean> {
+  const attemptedAt = new Date().toISOString();
+  const environmentHint = getFamilyPushEnvironmentHint();
+  const permission = getFamilyPushPermissionState();
+
+  patchFamilyPushStatus({
+    permission,
+    environmentHint,
+    lastAttemptAt: attemptedAt,
+  });
+
+  if (environmentHint === 'ios_home_screen_required') {
+    patchFamilyPushStatus({
+      permission,
+      environmentHint,
+      state: 'needs_user_action',
+      registeredGroupCode: null,
+      lastFailureAt: attemptedAt,
+      lastError: 'ios_home_screen_required',
+    });
+    clearFamilyPushRegistrationState(groupCode);
+    return false;
+  }
+
   if (!isFamilyPushSupported()) {
+    patchFamilyPushStatus({
+      permission,
+      environmentHint,
+      state: 'unsupported',
+      registeredGroupCode: null,
+      lastFailureAt: attemptedAt,
+      lastError: 'unsupported',
+    });
     clearFamilyPushRegistrationState();
     return false;
   }
 
   if (Notification.permission !== 'granted') {
+    patchFamilyPushStatus({
+      permission,
+      environmentHint,
+      state: 'needs_user_action',
+      registeredGroupCode: null,
+      lastFailureAt: attemptedAt,
+      lastError: Notification.permission === 'denied' ? 'permission_denied' : null,
+    });
     clearFamilyPushRegistrationState();
     return false;
   }
 
   const publicKey = await getFamilyPushPublicKey();
   if (!publicKey) {
+    patchFamilyPushStatus({
+      permission,
+      environmentHint,
+      state: 'error',
+      registeredGroupCode: null,
+      lastFailureAt: attemptedAt,
+      lastError: 'push_public_key_unavailable',
+    });
     clearFamilyPushRegistrationState();
     return false;
   }
@@ -60,6 +143,14 @@ export async function syncFamilyPushSubscription(groupCode: string): Promise<boo
       applicationServerKey: urlBase64ToArrayBuffer(publicKey),
     });
   } catch {
+    patchFamilyPushStatus({
+      permission,
+      environmentHint,
+      state: 'error',
+      registeredGroupCode: null,
+      lastFailureAt: attemptedAt,
+      lastError: 'push_subscribe_failed',
+    });
     clearFamilyPushRegistrationState(groupCode);
     return false;
   }
@@ -88,18 +179,39 @@ export async function syncFamilyPushSubscription(groupCode: string): Promise<boo
   });
 
   if (!result.ok) {
+    patchFamilyPushStatus({
+      permission,
+      environmentHint,
+      state: 'error',
+      registeredGroupCode: null,
+      lastFailureAt: attemptedAt,
+      lastError: result.error.message,
+    });
     clearFamilyPushRegistrationState(groupCode);
     return false;
   }
 
   localStorage.setItem(FAMILY_PUSH_GROUP_KEY, groupCode.toUpperCase());
   localStorage.setItem(FAMILY_PUSH_ENDPOINT_KEY, subscription.endpoint);
+  patchFamilyPushStatus({
+    permission,
+    environmentHint,
+    state: 'active',
+    registeredGroupCode: groupCode.toUpperCase(),
+    lastSuccessAt: attemptedAt,
+    lastError: null,
+  });
   return true;
 }
 
 export async function unregisterFamilyPushSubscription(groupCode: string): Promise<void> {
   const storedEndpoint = localStorage.getItem(FAMILY_PUSH_ENDPOINT_KEY);
   clearFamilyPushRegistrationState(groupCode);
+  patchFamilyPushStatus({
+    registeredGroupCode: null,
+    state: 'idle',
+    lastError: null,
+  });
 
   if (!isFamilyPushSupported()) {
     return;

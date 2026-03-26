@@ -1,5 +1,11 @@
 import { useState, useCallback } from 'react';
 import { useLanguage } from '../i18n';
+import {
+  getFamilyPushEnvironmentHint,
+  getFamilyPushPermissionState,
+  isFamilyPushSupported,
+} from '../services/familyPushNotificationService';
+import { requestNotificationPermission } from '../services/pushNotificationService';
 
 const ONBOARDING_STORAGE_KEY = 'shelter-route:onboarding-completed';
 
@@ -11,7 +17,9 @@ export function Onboarding({ onComplete }: OnboardingProps) {
   const { t, language } = useLanguage();
   const [step, setStep] = useState(0);
   const [locationGranted, setLocationGranted] = useState(false);
-  const totalSteps = 3;
+  const [notificationPermission, setNotificationPermission] = useState(() => getFamilyPushPermissionState());
+  const notificationHint = getFamilyPushEnvironmentHint();
+  const totalSteps = 4;
 
   const handleGrantLocation = useCallback(() => {
     navigator.geolocation.getCurrentPosition(
@@ -28,6 +36,12 @@ export function Onboarding({ onComplete }: OnboardingProps) {
     localStorage.setItem(ONBOARDING_STORAGE_KEY, 'true');
     onComplete();
   }, [onComplete]);
+
+  const handleGrantNotifications = useCallback(() => {
+    void requestNotificationPermission().then(() => {
+      setNotificationPermission(getFamilyPushPermissionState());
+    });
+  }, []);
 
   const handleNext = useCallback(() => {
     if (step < totalSteps - 1) {
@@ -104,6 +118,46 @@ export function Onboarding({ onComplete }: OnboardingProps) {
           )}
 
           {step === 2 && (
+            <div className="onboarding-step">
+              <div className="onboarding-icon onboarding-icon-notifications">
+                <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#1565C0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 1 0-12 0v3.2a2 2 0 0 1-.6 1.4L4 17h5" />
+                  <path d="M10 17a2 2 0 0 0 4 0" />
+                </svg>
+              </div>
+              <h2 className="onboarding-title">{t('onboarding.notificationTitle')}</h2>
+              <p className="onboarding-desc">
+                {notificationHint === 'ios_home_screen_required'
+                  ? t('onboarding.notificationHomeScreenHint')
+                  : notificationPermission === 'denied'
+                    ? t('onboarding.notificationBlocked')
+                    : !isFamilyPushSupported()
+                      ? t('onboarding.notificationUnsupported')
+                      : t('onboarding.notificationDesc')}
+              </p>
+              {notificationHint === 'none' && isFamilyPushSupported() && (
+                <button
+                  className={`onboarding-location-btn${notificationPermission === 'granted' ? ' onboarding-location-granted' : ''}`}
+                  onClick={handleGrantNotifications}
+                  disabled={notificationPermission === 'granted'}
+                  type="button"
+                >
+                  {notificationPermission === 'granted' ? (
+                    <>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                      {t('onboarding.notificationsGranted')}
+                    </>
+                  ) : (
+                    t('onboarding.grantNotifications')
+                  )}
+                </button>
+              )}
+            </div>
+          )}
+
+          {step === 3 && (
             <div className="onboarding-step">
               <div className="onboarding-icon onboarding-icon-emergency">
                 <svg width="56" height="56" viewBox="0 0 24 24" fill="#E53935">
