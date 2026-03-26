@@ -155,4 +155,24 @@ describe('familyRemoteSessionService', () => {
 
     unsubscribe();
   });
+
+  it('reacts to cross-tab storage updates for the built-in auth bridge', () => {
+    const listener = vi.fn();
+    const unsubscribe = subscribeToFamilyRemoteAuthChanges(listener);
+
+    localStorage.setItem(FAMILY_REMOTE_AUTH_STATE_STORAGE_KEY, 'authenticated');
+    localStorage.setItem(FAMILY_REMOTE_USER_ID_STORAGE_KEY, 'storage-user');
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: FAMILY_REMOTE_USER_ID_STORAGE_KEY,
+      newValue: 'storage-user',
+    }));
+
+    const session = getFamilyRemoteSession();
+
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(session.authState).toBe('authenticated');
+    expect(session.userId).toBe('storage-user');
+
+    unsubscribe();
+  });
 });

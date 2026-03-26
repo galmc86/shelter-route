@@ -20,6 +20,7 @@ export const FAMILY_REMOTE_USER_ID_QUERY_PARAM = 'familyRemoteUserId';
 
 let familyRemoteAuthProvider: FamilyRemoteAuthProvider | null = null;
 let familyRemoteAuthProviderUnsubscribe: (() => void) | null = null;
+let familyRemoteAuthStorageUnsubscribe: (() => void) | null = null;
 let builtInFamilyRemoteSessionConfig: FamilyRemoteSessionConfig | null = null;
 const familyRemoteAuthListeners = new Set<() => void>();
 
@@ -62,10 +63,12 @@ export function registerFamilyRemoteAuthProvider(provider: FamilyRemoteAuthProvi
 export function subscribeToFamilyRemoteAuthChanges(listener: () => void): () => void {
   familyRemoteAuthListeners.add(listener);
   syncFamilyRemoteAuthProviderSubscription();
+  syncFamilyRemoteAuthStorageSubscription();
 
   return () => {
     familyRemoteAuthListeners.delete(listener);
     syncFamilyRemoteAuthProviderSubscription();
+    syncFamilyRemoteAuthStorageSubscription();
   };
 }
 
@@ -231,4 +234,35 @@ function syncFamilyRemoteAuthProviderSubscription(): void {
   familyRemoteAuthProviderUnsubscribe = familyRemoteAuthProvider.subscribe(() => {
     notifyFamilyRemoteAuthListeners();
   });
+}
+
+function syncFamilyRemoteAuthStorageSubscription(): void {
+  familyRemoteAuthStorageUnsubscribe?.();
+  familyRemoteAuthStorageUnsubscribe = null;
+
+  if (familyRemoteAuthListeners.size === 0 || typeof window === 'undefined') {
+    return;
+  }
+
+  const handleStorage = (event: StorageEvent) => {
+    if (event.storageArea && event.storageArea !== window.localStorage) {
+      return;
+    }
+
+    if (
+      event.key !== null
+      && event.key !== FAMILY_REMOTE_AUTH_STATE_STORAGE_KEY
+      && event.key !== FAMILY_REMOTE_USER_ID_STORAGE_KEY
+    ) {
+      return;
+    }
+
+    builtInFamilyRemoteSessionConfig = getFamilyRemoteSessionConfigFromStorage();
+    notifyFamilyRemoteAuthListeners();
+  };
+
+  window.addEventListener('storage', handleStorage);
+  familyRemoteAuthStorageUnsubscribe = () => {
+    window.removeEventListener('storage', handleStorage);
+  };
 }

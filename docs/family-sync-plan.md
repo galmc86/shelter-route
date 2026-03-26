@@ -223,6 +223,7 @@ The remote gateway should accept an explicit remote session object instead of re
 - swap query/env bootstrap for a real auth provider through the remote session seam, without recreating the repository or transport stack when auth state changes
 - have the hybrid repository react to auth-provider session changes by resubscribing and rehydrating, so newly authenticated family sync can take effect without a manual app restart
 - expose a concrete built-in auth bridge API for family sync, so future sign-in code can set, clear, or reset remote family identity without manually registering a provider first
+- keep that built-in auth bridge synchronized across tabs via storage events, so a sign-in or sign-out flow in one tab can rehydrate family sync identity in another without a full reload
 
 ## Migration Steps
 
