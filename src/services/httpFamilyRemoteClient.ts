@@ -12,6 +12,11 @@ import type { FamilyRemoteSession } from './familyRemoteSessionService';
 const STORAGE_KEY_PREFIX = 'shelter-route:family-remote-http-cache:';
 const REMOTE_CACHE_UPDATED_EVENT = 'family-remote-http-cache-updated';
 export const FAMILY_REMOTE_HTTP_POLL_INTERVAL_MS = 15000;
+const activePollingSubscriptions = new Map<string, {
+  refCount: number;
+  intervalId: number;
+  refreshIfInteractive: () => void;
+}>();
 
 function getStorageKey(groupCode: string): string {
   return `${STORAGE_KEY_PREFIX}${groupCode.toUpperCase()}`;
@@ -82,6 +87,15 @@ function shouldPollRemoteGroup(): boolean {
   return true;
 }
 
+function getPollingSubscriptionKey(groupCode: string, session: FamilyRemoteSession): string {
+  return [
+    groupCode.toUpperCase(),
+    session.deviceId,
+    session.userId ?? '',
+    session.authState,
+  ].join('::');
+}
+
 async function refreshGroup(groupCode: string, session: FamilyRemoteSession): Promise<void> {
   const resolvedEndpoint = getFamilyRemoteGroupEndpoint(groupCode);
   if (!resolvedEndpoint) {
@@ -144,6 +158,54 @@ async function deleteGroup(groupCode: string, session: FamilyRemoteSession): Pro
   });
 }
 
+function acquirePollingSubscription(groupCode: string, session: FamilyRemoteSession): () => void {
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    return () => {};
+  }
+
+  const normalizedCode = groupCode.toUpperCase();
+  const subscriptionKey = getPollingSubscriptionKey(normalizedCode, session);
+  const existingSubscription = activePollingSubscriptions.get(subscriptionKey);
+  if (existingSubscription) {
+    existingSubscription.refCount += 1;
+    return () => releasePollingSubscription(subscriptionKey);
+  }
+
+  const refreshIfInteractive = () => {
+    if (shouldPollRemoteGroup()) {
+      void refreshGroup(normalizedCode, session);
+    }
+  };
+
+  const intervalId = window.setInterval(refreshIfInteractive, FAMILY_REMOTE_HTTP_POLL_INTERVAL_MS);
+  window.addEventListener('online', refreshIfInteractive);
+  document.addEventListener('visibilitychange', refreshIfInteractive);
+  activePollingSubscriptions.set(subscriptionKey, {
+    refCount: 1,
+    intervalId,
+    refreshIfInteractive,
+  });
+
+  return () => releasePollingSubscription(subscriptionKey);
+}
+
+function releasePollingSubscription(subscriptionKey: string): void {
+  const activeSubscription = activePollingSubscriptions.get(subscriptionKey);
+  if (!activeSubscription) {
+    return;
+  }
+
+  activeSubscription.refCount -= 1;
+  if (activeSubscription.refCount > 0) {
+    return;
+  }
+
+  window.clearInterval(activeSubscription.intervalId);
+  window.removeEventListener('online', activeSubscription.refreshIfInteractive);
+  document.removeEventListener('visibilitychange', activeSubscription.refreshIfInteractive);
+  activePollingSubscriptions.delete(subscriptionKey);
+}
+
 class HttpFamilyRemoteClient implements FamilyRemoteClient {
   fetchGroup(groupCode: string, session: FamilyRemoteSession): FamilyRemoteGroupRecord | null {
     void refreshGroup(groupCode, session);
@@ -172,17 +234,7 @@ class HttpFamilyRemoteClient implements FamilyRemoteClient {
 
     const normalizedCode = groupCode.toUpperCase();
     const key = getStorageKey(normalizedCode);
-    const intervalId = window.setInterval(() => {
-      if (shouldPollRemoteGroup()) {
-        void refreshGroup(normalizedCode, _session);
-      }
-    }, FAMILY_REMOTE_HTTP_POLL_INTERVAL_MS);
-
-    const refreshIfInteractive = () => {
-      if (shouldPollRemoteGroup()) {
-        void refreshGroup(normalizedCode, _session);
-      }
-    };
+    const releasePollingSubscriptionForListener = acquirePollingSubscription(normalizedCode, _session);
 
     const handleCustomUpdate = (event: Event) => {
       const customEvent = event as CustomEvent<Partial<FamilyRemoteChangeEvent>>;
@@ -205,15 +257,11 @@ class HttpFamilyRemoteClient implements FamilyRemoteClient {
 
     window.addEventListener(REMOTE_CACHE_UPDATED_EVENT, handleCustomUpdate as EventListener);
     window.addEventListener('storage', handleStorage);
-    window.addEventListener('online', refreshIfInteractive);
-    document.addEventListener('visibilitychange', refreshIfInteractive);
 
     return () => {
-      window.clearInterval(intervalId);
+      releasePollingSubscriptionForListener();
       window.removeEventListener(REMOTE_CACHE_UPDATED_EVENT, handleCustomUpdate as EventListener);
       window.removeEventListener('storage', handleStorage);
-      window.removeEventListener('online', refreshIfInteractive);
-      document.removeEventListener('visibilitychange', refreshIfInteractive);
     };
   }
 }

@@ -185,6 +185,7 @@ Notes:
 - Remote family subscriptions now emit typed change events, which lets the hybrid repository clear stale local family state and drop queued mutations when another device deletes the group.
 - The HTTP family client now polls subscribed groups and treats `404` as a clear event, which gives the hybrid repository a real cross-device update/delete path before a websocket or push channel exists.
 - The HTTP family poller now defers background polling when the tab is hidden or offline and refreshes immediately on visibility/online recovery, which is closer to a production-friendly sync loop than blind fixed-interval polling.
+- Duplicate subscriptions for the same family group/session now share one HTTP poller, so adding more UI listeners no longer multiplies backend polling load.
 
 ### Epic 10: Saved Places to Safety Profiles
 Objective: turn saved locations into reusable routines.

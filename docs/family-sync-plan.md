@@ -46,6 +46,7 @@ Introduce a repository boundary with a gateway seam:
    - should use typed endpoint builders and request/response codecs so transport contracts are explicit and testable
    - should own polling or realtime subscription strategy so the repository only sees typed remote change events
    - should respect visibility/connectivity so remote refresh happens promptly on focus/reconnect without assuming background polling is always available
+   - should deduplicate transport-level subscriptions per remote group/session so extra UI listeners do not multiply backend polling load
 
 3. `RemoteFamilyRepository`
    - composes local state with the remote gateway
