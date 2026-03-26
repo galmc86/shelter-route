@@ -202,11 +202,14 @@ async function pushGroup(
     return;
   }
 
-  if (result.error.code === 'HTTP' && result.error.statusCode === 403 && !previousCachedRecord) {
+  if (result.error.code === 'HTTP' && result.error.statusCode === 403) {
     queueFamilySyncMutation(queuedMutation);
     if (await refreshGroup(record.inviteCode, session) === 'success') {
       notifyCacheChanged(record.inviteCode, 'updated');
+      return;
     }
+
+    recordFamilySyncFailure(attemptedAt, result.error.message);
     return;
   }
 

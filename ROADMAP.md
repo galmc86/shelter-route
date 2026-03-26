@@ -217,6 +217,7 @@ Notes:
 - Family hydration now subscribes before its effect-time refresh and only preserves an unsynced current local member during remote merges, so reloads pick up remote membership changes and stale departed members do not reappear after a confirmed backend update.
 - Family sync mode now implicitly switches to `hybrid` when `VITE_FAMILY_REMOTE_URL` is configured and upgrades stale stored `local` mode on boot, so deployed backend activation no longer depends on a second manual sync-mode flag.
 - The Family setup and alert copy now distinguish local-only storage from backend-enabled sync, which removes the stale “server in the future” messaging after the real family backend is turned on.
+- Rejected `403` family writes now force a remote refresh even when a stale local cache already exists, so legacy local-only family groups can rebase onto the live backend instead of staying stuck in a paused retry loop forever.
 
 ### Epic 10: Saved Places to Safety Profiles
 Objective: turn saved locations into reusable routines.
@@ -250,6 +251,7 @@ Notes:
 - The desktop search rail now separates the task composer from the scrollable results area, so route setup and nearby controls stay stable while shelter results and route options can grow independently.
 - Larger screens now surface the selected or recommended shelter in a dedicated detail card above the results list, so the rail starts behaving more like list-detail instead of only a widened mobile stack.
 - Tablet-width layouts now switch into a compact rail at 900px and above, instead of staying on the full mobile sheet until desktop width.
+- Section-sheet content on mobile now uses the sheet body as the real scroll container, and the Family sheet no longer clips its own content with an internal `overflow: hidden`, so long family groups can actually scroll to the bottom actions.
 - Pre-search route mode now uses a neutral idle-state panel instead of a false “no shelters found” warning, so the larger-screen rail reads as intentional before the first query.
 - Responsive breakpoint behavior now has automated coverage in both Vitest and Playwright, including the 900px rail threshold plus desktop, tablet, and phone shell expectations.
 - On larger screens, the active route summary or recommended shelter detail now stays primary while the alternatives/results list scrolls underneath it, pushing the rail closer to a real list-detail workspace.

@@ -125,7 +125,12 @@ describe('httpFamilyRemoteClient', () => {
     const { getHttpFamilyRemoteClient: getClient } = await import('../httpFamilyRemoteClient');
     const client = getClient();
     const session = getFamilyRemoteSession();
-    localStorage.setItem(CACHE_KEY, JSON.stringify(groupFixture));
+    const rejectedGroup = {
+      ...groupFixture,
+      inviteCode: 'FOR403',
+      id: 'family:FOR403',
+    };
+    localStorage.setItem('shelter-route:family-remote-http-cache:FOR403', JSON.stringify(rejectedGroup));
     vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response(JSON.stringify({
       error: 'Family sync write is not authorized for this session',
     }), {
@@ -134,19 +139,85 @@ describe('httpFamilyRemoteClient', () => {
       headers: { 'Content-Type': 'application/json' },
     }));
 
-    client.upsertGroup(groupFixture, session);
+    client.upsertGroup(rejectedGroup, session);
 
     await waitFor(() => {
-      expect(getPendingFamilySyncMutation('ABC123')).toEqual({
+      expect(getPendingFamilySyncMutation('FOR403')).toEqual({
         kind: 'upsert',
-        groupCode: 'ABC123',
+        groupCode: 'FOR403',
         queuedAt: expect.any(String),
-        record: groupFixture,
+        record: rejectedGroup,
         removedMemberIds: undefined,
         removedDeviceIds: undefined,
       });
       expect(getFamilySyncStatus().lastError)
         .toBe('Family sync write is not authorized for this session');
+    });
+  });
+
+  it('refreshes cached groups after a forbidden write when a stale local cache already exists', async () => {
+    vi.stubEnv('VITE_FAMILY_REMOTE_URL', 'https://family.example.com/api');
+    const { getHttpFamilyRemoteClient: getClient } = await import('../httpFamilyRemoteClient');
+    const client = getClient();
+    const session = getFamilyRemoteSession();
+    const staleLocalGroup = {
+      ...groupFixture,
+      inviteCode: 'LEG403',
+      id: 'family:LEG403',
+      version: 0,
+      members: [
+        {
+          id: 'member-local',
+          deviceId: 'device-local',
+          name: 'Gal',
+          role: 'owner' as const,
+          status: 'needs_check_in' as const,
+          joinedAt: '2026-03-26T00:00:00.000Z',
+        },
+      ],
+    };
+
+    localStorage.setItem('shelter-route:family-remote-http-cache:LEG403', JSON.stringify(staleLocalGroup));
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        error: 'Family sync write is not authorized for this session',
+      }), {
+        status: 403,
+        statusText: 'Forbidden',
+        headers: { 'Content-Type': 'application/json' },
+      }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        ...groupFixture,
+        inviteCode: 'LEG403',
+        id: 'family:LEG403',
+        version: 1,
+        members: [
+          {
+            id: 'member-remote',
+            deviceId: 'device-remote',
+            name: 'Dana',
+            role: 'owner',
+            status: 'unknown',
+            joinedAt: '2026-03-26T00:00:00.000Z',
+          },
+        ],
+      }), { status: 200 }));
+
+    client.upsertGroup(staleLocalGroup, session);
+
+    await waitFor(() => {
+      const cached = localStorage.getItem('shelter-route:family-remote-http-cache:LEG403');
+      expect(cached).not.toBeNull();
+      expect(JSON.parse(cached as string).members[0].name).toBe('Dana');
+    });
+
+    expect(getPendingFamilySyncMutation('LEG403')).toEqual({
+      kind: 'upsert',
+      groupCode: 'LEG403',
+      queuedAt: expect.any(String),
+      record: staleLocalGroup,
+      removedMemberIds: undefined,
+      removedDeviceIds: undefined,
     });
   });
 

@@ -5,6 +5,7 @@ import { createFamilyRepository } from '../familyRepository';
 import type { FamilyRemoteGroupRecord } from '../familyRemoteModel';
 import {
   clearPendingFamilySyncMutations,
+  getPendingFamilySyncMutation,
 } from '../familySyncQueueService';
 import type { FamilyRemoteSession } from '../familyRemoteSessionService';
 import {
@@ -184,6 +185,83 @@ describe('familyRepository worker integration', () => {
 
       await waitFor(() => {
         expect(rejoinRepository.getSnapshot()?.currentMemberId).toBe(ownerMember?.id);
+      });
+    } finally {
+      unsubscribe();
+    }
+  });
+
+  it('recovers a legacy local-only group by rebasing onto the remote family after a rejected write', async () => {
+    vi.stubEnv('VITE_FAMILY_REMOTE_URL', 'https://family-sync.example');
+    const env = createEnv();
+    installWorkerFetch(env);
+
+    const remoteGateway = createBackendFamilyRemoteGateway();
+    const ownerSession: FamilyRemoteSession = {
+      deviceId: 'device-owner',
+      userId: null,
+      authState: 'anonymous',
+    };
+    const legacySession: FamilyRemoteSession = {
+      deviceId: 'device-legacy',
+      userId: null,
+      authState: 'anonymous',
+    };
+
+    const ownerRepository = createFamilyRepository({
+      mode: 'hybrid',
+      remoteGateway,
+      remoteSession: ownerSession,
+    });
+
+    const ownerGroup = ownerRepository.createGroup('Dana');
+
+    await waitFor(async () => {
+      expect((await readRemoteGroup(env, ownerGroup.groupCode))?.members).toHaveLength(1);
+    });
+
+    localStorage.setItem('shelter-route:family-group', JSON.stringify({
+      version: 2,
+      group: {
+        groupCode: ownerGroup.groupCode,
+        memberName: 'Gal',
+        currentMemberId: 'legacy-member',
+        members: [
+          {
+            id: 'legacy-member',
+            name: 'Gal',
+            deviceId: 'device-legacy',
+            lastSeen: '2026-03-26T00:05:00.000Z',
+            isSafe: false,
+          },
+        ],
+      },
+    }));
+    clearPendingFamilySyncMutations();
+
+    const legacyRepository = createFamilyRepository({
+      mode: 'hybrid',
+      remoteGateway,
+      remoteSession: legacySession,
+    });
+    const unsubscribe = legacyRepository.subscribe(() => {});
+
+    try {
+      legacyRepository.markCurrentMemberNeedsCheckIn();
+
+      await waitFor(async () => {
+        const remoteGroup = await readRemoteGroup(env, ownerGroup.groupCode);
+        expect(remoteGroup?.members.map((member) => member.name)).toEqual(
+          expect.arrayContaining(['Dana', 'Gal'])
+        );
+      });
+
+      await waitFor(() => {
+        const snapshot = legacyRepository.getSnapshot();
+        expect(snapshot?.members.map((member) => member.name)).toEqual(
+          expect.arrayContaining(['Dana', 'Gal'])
+        );
+        expect(getPendingFamilySyncMutation(ownerGroup.groupCode)).toBeNull();
       });
     } finally {
       unsubscribe();
