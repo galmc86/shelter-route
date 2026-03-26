@@ -65,9 +65,12 @@ export function FamilySafety({
     createFamilyGroup,
     joinFamilyGroup,
     markFamilySafe,
+    markNeedsCheckIn,
     retryFamilySync,
     leaveFamilyGroup,
   } = useFamilyGroupState();
+
+  const isSafe = isCurrentMemberSafe;
 
   // Prefill the join state when the app was opened from a family invite link.
   useEffect(() => {
@@ -115,8 +118,13 @@ export function FamilySafety({
   }, [codeInput, joinFamilyGroup, nameInput]);
 
   const handleImSafe = useCallback(() => {
+    if (isSafe) {
+      markNeedsCheckIn();
+      return;
+    }
+
     markFamilySafe();
-  }, [markFamilySafe]);
+  }, [isSafe, markFamilySafe, markNeedsCheckIn]);
 
   const handleLeave = useCallback(() => {
     leaveFamilyGroup();
@@ -180,7 +188,6 @@ export function FamilySafety({
     }
   }, [group]);
 
-  const isSafe = isCurrentMemberSafe;
   const syncTimeLabel = formatSyncTime(syncStatus.lastSuccessAt, language);
   const syncState = (() => {
     if (syncMode === 'local') {
@@ -474,7 +481,7 @@ export function FamilySafety({
                 className={`family-safety-btn-imsafe ${isSafe ? 'is-safe' : ''}`}
                 onClick={handleImSafe}
               >
-                {isSafe ? t('family.markedSafe') : t('family.imSafe')}
+                {isSafe ? t('family.clearSafeStatus') : t('family.imSafe')}
               </button>
 
               <div className="family-safety-group-actions">

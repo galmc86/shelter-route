@@ -74,6 +74,7 @@ interface FamilyPushNotificationEvent {
   type: 'member_joined' | 'member_left' | 'member_safe' | 'member_needs_check_in';
   memberId: string;
   memberName: string;
+  notificationKey: string;
 }
 
 const FAMILY_GROUP_RECORD_STORAGE_KEY = 'family-group-record';
@@ -614,6 +615,12 @@ function getFamilyPushNotificationEvents(
         type: 'member_joined',
         memberId: nextMember.id,
         memberName: nextMember.name,
+        notificationKey: buildFamilyPushNotificationKey(
+          'member_joined',
+          nextRecord.inviteCode,
+          nextMember.id,
+          nextMember.joinedAt || nextRecord.updatedAt
+        ),
       });
       continue;
     }
@@ -624,12 +631,24 @@ function getFamilyPushNotificationEvents(
           type: 'member_safe',
           memberId: nextMember.id,
           memberName: nextMember.name,
+          notificationKey: buildFamilyPushNotificationKey(
+            'member_safe',
+            nextRecord.inviteCode,
+            nextMember.id,
+            nextMember.lastStatusAt || nextRecord.updatedAt
+          ),
         });
       } else if (previousMember.status === 'safe' && nextMember.status === 'needs_check_in') {
         events.push({
           type: 'member_needs_check_in',
           memberId: nextMember.id,
           memberName: nextMember.name,
+          notificationKey: buildFamilyPushNotificationKey(
+            'member_needs_check_in',
+            nextRecord.inviteCode,
+            nextMember.id,
+            nextMember.lastStatusAt || nextRecord.updatedAt
+          ),
         });
       }
     }
@@ -641,11 +660,27 @@ function getFamilyPushNotificationEvents(
         type: 'member_left',
         memberId: previousMember.id,
         memberName: previousMember.name,
+        notificationKey: buildFamilyPushNotificationKey(
+          'member_left',
+          nextRecord.inviteCode,
+          previousMember.id,
+          nextRecord.updatedAt
+        ),
       });
     }
   }
 
   return events;
+}
+
+function buildFamilyPushNotificationKey(
+  type: FamilyPushNotificationEvent['type'],
+  groupCode: string,
+  memberId: string,
+  timestamp: string
+): string {
+  const normalizedTimestamp = String(Date.parse(timestamp) || timestamp);
+  return `family-${type}-${groupCode}-${memberId}-${normalizedTimestamp}`;
 }
 
 function buildFamilyPushPayload(
@@ -657,35 +692,35 @@ function buildFamilyPushPayload(
       return {
         title: 'Family Update',
         body: `${event.memberName} joined your family group.`,
-        tag: `family-joined-${groupCode}-${event.memberId}`,
+        tag: event.notificationKey,
         url: `/?familyGroup=${encodeURIComponent(groupCode)}`,
       };
     case 'member_left':
       return {
         title: 'Family Update',
         body: `${event.memberName} left your family group.`,
-        tag: `family-left-${groupCode}-${event.memberId}`,
+        tag: event.notificationKey,
         url: `/?familyGroup=${encodeURIComponent(groupCode)}`,
       };
     case 'member_safe':
       return {
         title: 'Family Safety Check-In',
         body: `${event.memberName} marked themselves safe.`,
-        tag: `family-safe-${groupCode}-${event.memberId}`,
+        tag: event.notificationKey,
         url: `/?familyGroup=${encodeURIComponent(groupCode)}`,
       };
     case 'member_needs_check_in':
       return {
         title: 'Family Safety Check-In',
         body: `${event.memberName} needs a check-in.`,
-        tag: `family-checkin-${groupCode}-${event.memberId}`,
+        tag: event.notificationKey,
         url: `/?familyGroup=${encodeURIComponent(groupCode)}`,
       };
     default:
       return {
         title: 'Family Update',
         body: event.memberName,
-        tag: `family-${groupCode}-${event.memberId}`,
+        tag: event.notificationKey,
         url: `/?familyGroup=${encodeURIComponent(groupCode)}`,
       };
   }

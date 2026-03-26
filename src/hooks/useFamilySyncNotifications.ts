@@ -28,7 +28,7 @@ export function useFamilySyncNotifications(): void {
       void showLocalNotification(
         t('family.notifications.title'),
         getNotificationBody(event, t),
-        `family-${event.type}-${event.memberId}`
+        event.notificationKey
       );
     }
   }, [group, t]);

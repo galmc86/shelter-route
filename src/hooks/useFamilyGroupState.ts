@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useFamilyRepositoryContext } from '../contexts/FamilyRepositoryContext';
+import { unregisterFamilyPushSubscription } from '../services/familyPushNotificationService';
 import {
   type FamilyGroup,
   type FamilyMember,
@@ -78,9 +79,13 @@ export function useFamilyGroupState(): UseFamilyGroupStateResult {
   }, [repository]);
 
   const leaveFamilyGroup = useCallback(() => {
+    const groupCode = repository.getSnapshot()?.groupCode ?? group?.groupCode ?? null;
     repository.leaveGroup();
     setGroup(null);
-  }, [repository]);
+    if (groupCode) {
+      void unregisterFamilyPushSubscription(groupCode);
+    }
+  }, [group?.groupCode, repository]);
 
   const currentMember = useMemo(() => (
     group?.members.find((member) => member.id === group.currentMemberId) ?? null

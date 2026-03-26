@@ -10,6 +10,7 @@ export interface FamilySyncNotificationEvent {
   type: FamilySyncNotificationEventType;
   memberName: string;
   memberId: string;
+  notificationKey: string;
 }
 
 export function getFamilySyncNotificationEvents(
@@ -32,6 +33,7 @@ export function getFamilySyncNotificationEvents(
         type: 'member_joined',
         memberName: nextMember.name,
         memberId: nextMember.id,
+        notificationKey: buildNotificationKey('member_joined', nextMember.id, nextMember.lastSeen),
       });
       continue;
     }
@@ -42,12 +44,14 @@ export function getFamilySyncNotificationEvents(
           type: 'member_safe',
           memberName: nextMember.name,
           memberId: nextMember.id,
+          notificationKey: buildNotificationKey('member_safe', nextMember.id, nextMember.lastSeen),
         });
       } else if (nextMember.isSafe === false && previousMember.isSafe === true) {
         events.push({
           type: 'member_needs_check_in',
           memberName: nextMember.name,
           memberId: nextMember.id,
+          notificationKey: buildNotificationKey('member_needs_check_in', nextMember.id, nextMember.lastSeen),
         });
       }
     }
@@ -59,11 +63,24 @@ export function getFamilySyncNotificationEvents(
         type: 'member_left',
         memberName: previousMember.name,
         memberId: previousMember.id,
+        notificationKey: buildNotificationKey('member_left', previousMember.id, nextGroup.members.find((member) => member.id === nextGroup.currentMemberId)?.lastSeen),
       });
     }
   }
 
   return events;
+}
+
+function buildNotificationKey(
+  type: FamilySyncNotificationEventType,
+  memberId: string,
+  timestamp: string | undefined
+): string {
+  const normalizedTimestamp = timestamp
+    ? String(Date.parse(timestamp) || timestamp)
+    : String(Date.now());
+
+  return `family-${type}-${memberId}-${normalizedTimestamp}`;
 }
 
 function resolveLocalCurrentMember(

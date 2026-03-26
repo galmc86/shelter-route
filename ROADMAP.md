@@ -226,6 +226,8 @@ Notes:
 - Family sync now also has a real web-push path: the app registers browser push subscriptions per family group, the family worker stores those subscriptions beside the Durable Object record, and join/leave/safe/check-in events now fan out through the worker so notifications can arrive while the app is closed.
 - Onboarding now includes a dedicated notifications-permission step before the emergency explainer, so the app can ask for family-alert delivery from an explicit user gesture instead of relying only on later Family interactions.
 - The Family surface now exposes push-health states for enable, blocked, retry, and iPhone Home Screen requirements, which makes notification setup and recovery visible instead of silent when mobile push registration cannot complete.
+- Family push subscriptions are now only torn down on an explicit leave action, not on transient family-state drops during sync/hydration, and family event notifications now use per-event keys so repeated safe/check-in updates do not collapse into stale reused notifications.
+- The Family safety action now behaves as a real toggle: users can mark themselves safe and later clear that safe state back to `needs_check_in` with one tap.
 
 ### Epic 10: Saved Places to Safety Profiles
 Objective: turn saved locations into reusable routines.

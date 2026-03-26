@@ -5,9 +5,16 @@ import { FamilyRepositoryProvider } from '../../contexts/FamilyRepositoryContext
 import type { FamilyRepository } from '../../services/familyRepository';
 import { useFamilyGroupState } from '../useFamilyGroupState';
 
+const mockUnregisterFamilyPushSubscription = vi.fn();
+
+vi.mock('../../services/familyPushNotificationService', () => ({
+  unregisterFamilyPushSubscription: (...args: unknown[]) => mockUnregisterFamilyPushSubscription(...args),
+}));
+
 describe('useFamilyGroupState', () => {
   beforeEach(() => {
     localStorage.clear();
+    mockUnregisterFamilyPushSubscription.mockReset();
   });
 
   it('creates a group and exposes derived member counts', () => {
@@ -133,5 +140,38 @@ describe('useFamilyGroupState', () => {
     renderHook(() => useFamilyGroupState(), { wrapper });
 
     expect(callOrder).toEqual(['getSnapshot', 'subscribe', 'getSnapshot']);
+  });
+
+  it('unregisters the current family push subscription when leaving a group', () => {
+    const repository: FamilyRepository = {
+      getSnapshot: vi.fn(() => ({
+        groupCode: 'ABC123',
+        memberName: 'Dana',
+        currentMemberId: 'member-1',
+        members: [
+          { id: 'member-1', name: 'Dana', isSafe: false, lastSeen: '2026-03-25T19:00:00.000Z' },
+        ],
+      })),
+      subscribe: vi.fn(() => () => {}),
+      createGroup: vi.fn(),
+      joinGroup: vi.fn(),
+      markCurrentMemberSafe: vi.fn(),
+      markCurrentMemberNeedsCheckIn: vi.fn(),
+      retrySync: vi.fn(),
+      leaveGroup: vi.fn(),
+      getShareLink: vi.fn(() => null),
+    };
+
+    const wrapper = ({ children }: { children: ReactNode }) =>
+      createElement(FamilyRepositoryProvider, { value: repository, children });
+
+    const { result } = renderHook(() => useFamilyGroupState(), { wrapper });
+
+    act(() => {
+      result.current.leaveFamilyGroup();
+    });
+
+    expect(repository.leaveGroup).toHaveBeenCalledTimes(1);
+    expect(mockUnregisterFamilyPushSubscription).toHaveBeenCalledWith('ABC123');
   });
 });

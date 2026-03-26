@@ -27,11 +27,12 @@ describe('familySyncNotificationService', () => {
     };
 
     expect(getFamilySyncNotificationEvents(baseGroup, nextGroup)).toEqual([
-      {
+      expect.objectContaining({
         type: 'member_joined',
         memberName: 'Noam',
         memberId: 'member-2',
-      },
+        notificationKey: expect.stringContaining('family-member_joined-member-2'),
+      }),
     ]);
   });
 
@@ -54,16 +55,18 @@ describe('familySyncNotificationService', () => {
     };
 
     expect(getFamilySyncNotificationEvents(previousGroup, nextGroup)).toEqual([
-      {
+      expect.objectContaining({
         type: 'member_safe',
         memberName: 'Noam',
         memberId: 'member-2',
-      },
-      {
+        notificationKey: expect.stringContaining('family-member_safe-member-2'),
+      }),
+      expect.objectContaining({
         type: 'member_needs_check_in',
         memberName: 'Yael',
         memberId: 'member-3',
-      },
+        notificationKey: expect.stringContaining('family-member_needs_check_in-member-3'),
+      }),
     ]);
   });
 
@@ -83,11 +86,12 @@ describe('familySyncNotificationService', () => {
     };
 
     expect(getFamilySyncNotificationEvents(previousGroup, nextGroup)).toEqual([
-      {
+      expect.objectContaining({
         type: 'member_left',
         memberName: 'Noam',
         memberId: 'member-2',
-      },
+        notificationKey: expect.stringContaining('family-member_left-member-2'),
+      }),
     ]);
   });
 });

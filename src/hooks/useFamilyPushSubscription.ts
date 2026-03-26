@@ -19,7 +19,7 @@ export function useFamilyPushSubscription(): void {
     const nextGroupCode = group?.groupCode ?? null;
     previousGroupCodeRef.current = nextGroupCode;
 
-    if (previousGroupCode && previousGroupCode !== nextGroupCode) {
+    if (previousGroupCode && nextGroupCode && previousGroupCode !== nextGroupCode) {
       void unregisterFamilyPushSubscription(previousGroupCode);
     }
 

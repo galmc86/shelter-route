@@ -162,6 +162,41 @@ describe('FamilySafety', () => {
     expect(screen.getByText('family.sync.localBody')).toBeInTheDocument();
   });
 
+  it('toggles the current member safe status back to needs check-in', async () => {
+    const markFamilySafe = vi.fn();
+    const markNeedsCheckIn = vi.fn();
+    const existingGroup: FamilyGroup = {
+      groupCode: 'ABC123',
+      memberName: 'Dana',
+      currentMemberId: '1',
+      members: [
+        { id: '1', name: 'Dana', isSafe: true },
+      ],
+    };
+    mockUseFamilyGroupState.mockReturnValue({
+      group: existingGroup,
+      currentMember: existingGroup.members[0],
+      hasGroup: true,
+      isCurrentMemberSafe: true,
+      safeMembersCount: 1,
+      waitingMembersCount: 0,
+      shareLink: 'https://example.com/?familyGroup=ABC123',
+      createFamilyGroup: vi.fn(),
+      joinFamilyGroup: vi.fn(),
+      markFamilySafe,
+      markNeedsCheckIn,
+      retryFamilySync: vi.fn(),
+      leaveFamilyGroup: vi.fn(),
+    });
+
+    render(<FamilySafety presentation="section" />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'family.clearSafeStatus' }));
+
+    expect(markNeedsCheckIn).toHaveBeenCalledTimes(1);
+    expect(markFamilySafe).not.toHaveBeenCalled();
+  });
+
   it('shows a pending sync state when hybrid updates are queued', async () => {
     const existingGroup: FamilyGroup = {
       groupCode: 'ABC123',
