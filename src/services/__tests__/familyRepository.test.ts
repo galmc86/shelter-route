@@ -248,6 +248,70 @@ describe('familyRepository', () => {
     expect(storedRecord?.members.find((member) => member.id === 'member-2')?.deviceId).toBe('device-new');
   });
 
+  it('drops stale non-current local members when the remote group no longer contains them', () => {
+    replaceStoredGroup({
+      groupCode: 'ABC123',
+      memberName: 'Dana',
+      currentMemberId: 'member-1',
+      members: [
+        {
+          id: 'member-1',
+          name: 'Dana',
+          deviceId: 'device-owner',
+          isSafe: false,
+          lastSeen: '2026-03-25T20:00:00.000Z',
+        },
+        {
+          id: 'member-2',
+          name: 'Noam',
+          deviceId: 'device-joiner',
+          isSafe: false,
+          lastSeen: '2026-03-25T21:00:00.000Z',
+        },
+      ],
+    });
+
+    const remoteRecord: FamilyRemoteGroupRecord = {
+      id: 'family:ABC123',
+      inviteCode: 'ABC123',
+      version: 3,
+      createdAt: '2026-03-25T20:00:00.000Z',
+      updatedAt: '2026-03-25T22:00:00.000Z',
+      createdByMemberId: 'member-1',
+      members: [
+        {
+          id: 'member-1',
+          name: 'Dana',
+          deviceId: 'device-owner',
+          role: 'owner',
+          status: 'needs_check_in',
+          joinedAt: '2026-03-25T20:00:00.000Z',
+          lastStatusAt: '2026-03-25T22:00:00.000Z',
+          lastSeenAt: '2026-03-25T22:00:00.000Z',
+        },
+      ],
+    };
+
+    const remoteGateway: FamilyRemoteGateway = {
+      getGroup: vi.fn(() => remoteRecord),
+      upsertGroup: vi.fn((record) => record),
+      clearGroup: vi.fn(),
+      subscribe: vi.fn(() => () => {}),
+    };
+
+    const repository = createFamilyRepository({
+      mode: 'hybrid',
+      remoteGateway,
+      remoteSession: { deviceId: 'device-owner', userId: null, authState: 'anonymous' },
+    });
+
+    const hydrated = repository.getSnapshot();
+
+    expect(hydrated?.members).toHaveLength(1);
+    expect(hydrated?.members[0].id).toBe('member-1');
+    expect(hydrated?.currentMemberId).toBe('member-1');
+  });
+
   it('uses the latest remote session from the session source for subscriptions and writes', () => {
     let currentSession: FamilyRemoteSession = {
       deviceId: 'device-1',

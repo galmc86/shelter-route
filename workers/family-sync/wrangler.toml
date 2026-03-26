@@ -4,11 +4,11 @@ compatibility_date = "2024-01-01"
 
 [[kv_namespaces]]
 binding = "FAMILY_GROUPS"
-id = "replace-with-your-production-kv-id"
-preview_id = "replace-with-your-preview-kv-id"
+id = "106bbafd50b045fdae143b114d94c014"
+preview_id = "a8a951ee4e67422c9975901455ac9b1a"
 
 [vars]
-ALLOWED_ORIGINS = "https://shelter-route.pages.dev"
+ALLOWED_ORIGINS = "https://shelter-route.pages.dev,http://localhost:5174"
 
 [env.dev.vars]
 ALLOWED_ORIGINS = "http://localhost:5173,http://localhost:5174,http://localhost:4173,http://127.0.0.1:4174"

@@ -31,10 +31,11 @@ export function useFamilyGroupState(): UseFamilyGroupStateResult {
   const [group, setGroup] = useState<FamilyGroup | null>(() => repository.getSnapshot());
 
   useEffect(() => {
-    setGroup(repository.getSnapshot());
-    return repository.subscribe(() => {
+    const unsubscribe = repository.subscribe(() => {
       setGroup(repository.getSnapshot());
     });
+    setGroup(repository.getSnapshot());
+    return unsubscribe;
   }, [repository]);
 
   const createFamilyGroup = useCallback((name: string) => {

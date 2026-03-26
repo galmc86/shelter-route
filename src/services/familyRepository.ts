@@ -106,6 +106,7 @@ export class HybridFamilyRepository implements FamilyRepository {
   private authUnsubscribe: (() => void) | null = null;
   private subscribedGroupCode: string | null = null;
   private subscribedSessionKey: string | null = null;
+  private isFlushingPendingMutations = false;
 
   constructor(
     localRepository: MutableFamilyRepository,
@@ -243,6 +244,10 @@ export class HybridFamilyRepository implements FamilyRepository {
       this.flushPendingMutations();
       this.hydrateFromRemote(event.groupCode);
     });
+
+    // Kick a fresh remote read once the subscription is attached so reloads
+    // can hydrate from backend state even when this context has no cached copy yet.
+    this.hydrateFromRemote(groupCode);
   }
 
   private ensureOnlineRetry(listener: () => void): void {
@@ -389,25 +394,34 @@ export class HybridFamilyRepository implements FamilyRepository {
   }
 
   private flushPendingMutations(): void {
+    if (this.isFlushingPendingMutations) {
+      return;
+    }
+
     const pendingMutations = getPendingFamilySyncMutations();
     if (pendingMutations.length === 0) {
       return;
     }
 
-    const remainingMutations: FamilySyncMutation[] = [];
-    for (const mutation of pendingMutations) {
-      const nextMutation = this.prepareMutationForApply(mutation);
-      if (!this.applyMutation(nextMutation)) {
-        remainingMutations.push(nextMutation);
+    this.isFlushingPendingMutations = true;
+    try {
+      const remainingMutations: FamilySyncMutation[] = [];
+      for (const mutation of pendingMutations) {
+        const nextMutation = this.prepareMutationForApply(mutation);
+        if (!this.applyMutation(nextMutation)) {
+          remainingMutations.push(nextMutation);
+        }
       }
-    }
 
-    if (remainingMutations.length === 0) {
-      clearPendingFamilySyncMutations();
-      return;
-    }
+      if (remainingMutations.length === 0) {
+        clearPendingFamilySyncMutations();
+        return;
+      }
 
-    savePendingFamilySyncMutations(remainingMutations);
+      savePendingFamilySyncMutations(remainingMutations);
+    } finally {
+      this.isFlushingPendingMutations = false;
+    }
   }
 
   private prepareMutationForApply(mutation: FamilySyncMutation): FamilySyncMutation {
@@ -474,22 +488,22 @@ function mergeFamilyGroups(localGroup: FamilyGroup | null, remoteGroup: FamilyGr
     return mergeFamilyMembers(matchedLocalMember, remoteMember);
   });
 
-  for (const localMember of localGroup.members) {
-    const alreadyMerged = mergedMembers.some((member) => (
-      member.id === localMember.id
+  const localCurrentMember = localGroup.members.find((member) => member.id === localGroup.currentMemberId);
+  const currentMemberAlreadyMerged = localCurrentMember
+    ? mergedMembers.some((member) => (
+      member.id === localCurrentMember.id
       || (
         member.deviceId
-        && localMember.deviceId
-        && member.deviceId === localMember.deviceId
+        && localCurrentMember.deviceId
+        && member.deviceId === localCurrentMember.deviceId
       )
-    ));
+    ))
+    : false;
 
-    if (!alreadyMerged && !matchedLocalMemberIds.has(localMember.id)) {
-      mergedMembers.push(localMember);
-    }
+  if (localCurrentMember && !currentMemberAlreadyMerged && !matchedLocalMemberIds.has(localCurrentMember.id)) {
+    mergedMembers.push(localCurrentMember);
   }
 
-  const localCurrentMember = localGroup.members.find((member) => member.id === localGroup.currentMemberId);
   const mergedCurrentMember = mergedMembers.find((member) => (
     member.id === localGroup.currentMemberId
     || (

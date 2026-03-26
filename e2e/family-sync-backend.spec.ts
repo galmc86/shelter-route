@@ -18,7 +18,8 @@ async function openApp(page: Page, path = '/?familySyncMode=hybrid'): Promise<vo
 
 async function openFamilySection(page: Page): Promise<void> {
   await page.locator('.app-section-nav').getByRole('button', { name: 'Family' }).click();
-  await expect(page.getByText('Family Safety Network')).toBeVisible();
+  await expect(page.locator('.app-section-panel[aria-label="Family"]')).toBeVisible();
+  await expect(page.locator('.family-safety-content')).toBeVisible();
 }
 
 async function expectRemoteMemberCount(
@@ -184,7 +185,11 @@ test.describe('family sync backend', () => {
       await expect(rejoinPage.getByText('Invite family')).toBeVisible();
 
       await expectRemoteMemberCount(request, groupCode as string, 1);
-      const rebasedMember = await expectRemoteMember(request, groupCode as string, (member) => member.userId === 'user-123');
+      const rebasedMember = await expectRemoteMember(
+        request,
+        groupCode as string,
+        (member) => member.userId === 'user-123' && member.deviceId !== ownerMember.deviceId
+      );
       expect(rebasedMember.id).toBe(ownerMember.id);
       expect(rebasedMember.deviceId).toBeTruthy();
       expect(rebasedMember.deviceId).not.toBe(ownerMember.deviceId);

@@ -125,6 +125,7 @@ describe('httpFamilyRemoteClient', () => {
     const { getHttpFamilyRemoteClient: getClient } = await import('../httpFamilyRemoteClient');
     const client = getClient();
     const session = getFamilyRemoteSession();
+    localStorage.setItem(CACHE_KEY, JSON.stringify(groupFixture));
     vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response(JSON.stringify({
       error: 'Family sync write is not authorized for this session',
     }), {
@@ -228,6 +229,35 @@ describe('httpFamilyRemoteClient', () => {
     });
 
     unsubscribe();
+  });
+
+  it('keeps optimistic version-0 cached groups when an early 404 races before first create confirmation', async () => {
+    vi.stubEnv('VITE_FAMILY_REMOTE_URL', 'https://family.example.com/api');
+    const { getHttpFamilyRemoteClient: getClient } = await import('../httpFamilyRemoteClient');
+    const client = getClient();
+    const session = getFamilyRemoteSession();
+    const optimisticGroup = {
+      ...groupFixture,
+      version: 0,
+    };
+
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        message: 'not found',
+      }), {
+        status: 404,
+        statusText: 'Not Found',
+        headers: { 'Content-Type': 'application/json' },
+      }))
+      .mockRejectedValue(new Error('offline'));
+
+    client.upsertGroup(optimisticGroup, session);
+
+    expect(client.fetchGroup('ABC123', session)).toEqual(optimisticGroup);
+
+    await waitFor(() => {
+      expect(client.fetchGroup('ABC123', session)).toEqual(optimisticGroup);
+    });
   });
 
   it('waits for visibility before polling and refreshes when the tab becomes visible again', async () => {

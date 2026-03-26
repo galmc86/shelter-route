@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   createBackendFamilyRemoteClient,
   FamilyRemoteClientNotConfiguredError,
@@ -9,6 +9,8 @@ import { getFamilyRemoteSession } from '../familyRemoteSessionService';
 describe('backendFamilyRemoteClient', () => {
   beforeEach(() => {
     localStorage.clear();
+    vi.unstubAllEnvs();
+    vi.stubEnv('VITE_FAMILY_REMOTE_URL', '');
   });
 
   it('returns no group by default and throws for mutating operations', () => {

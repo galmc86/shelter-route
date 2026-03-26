@@ -8,6 +8,7 @@ import {
 describe('familyRemoteHttpContract', () => {
   beforeEach(() => {
     vi.unstubAllEnvs();
+    vi.stubEnv('VITE_FAMILY_REMOTE_URL', '');
   });
 
   it('builds the group endpoint from the configured base URL', async () => {

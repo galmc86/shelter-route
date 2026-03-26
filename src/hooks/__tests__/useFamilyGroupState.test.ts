@@ -105,4 +105,33 @@ describe('useFamilyGroupState', () => {
     expect(retrySync).toHaveBeenCalledTimes(1);
     expect(result.current.group?.groupCode).toBe('ABC123');
   });
+
+  it('subscribes before performing the effect-time snapshot refresh', () => {
+    const callOrder: string[] = [];
+
+    const repository: FamilyRepository = {
+      getSnapshot: vi.fn(() => {
+        callOrder.push('getSnapshot');
+        return null;
+      }),
+      subscribe: vi.fn(() => {
+        callOrder.push('subscribe');
+        return () => {};
+      }),
+      createGroup: vi.fn(),
+      joinGroup: vi.fn(),
+      markCurrentMemberSafe: vi.fn(),
+      markCurrentMemberNeedsCheckIn: vi.fn(),
+      retrySync: vi.fn(),
+      leaveGroup: vi.fn(),
+      getShareLink: vi.fn(() => null),
+    };
+
+    const wrapper = ({ children }: { children: ReactNode }) =>
+      createElement(FamilyRepositoryProvider, { value: repository, children });
+
+    renderHook(() => useFamilyGroupState(), { wrapper });
+
+    expect(callOrder).toEqual(['getSnapshot', 'subscribe', 'getSnapshot']);
+  });
 });

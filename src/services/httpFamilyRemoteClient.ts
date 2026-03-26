@@ -132,7 +132,8 @@ async function refreshGroup(groupCode: string, session: FamilyRemoteSession): Pr
 
   if (!result.ok) {
     if (result.error.code === 'HTTP' && result.error.statusCode === 404) {
-      if (readCachedGroup(groupCode)) {
+      const cachedRecord = readCachedGroup(groupCode);
+      if (cachedRecord && cachedRecord.version > 0) {
         clearCachedGroup(groupCode);
       }
       return 'success';
@@ -195,7 +196,17 @@ async function pushGroup(
 
   if (result.error.code === 'HTTP' && result.error.statusCode === 409) {
     queueFamilySyncMutation(queuedMutation);
-    await refreshGroup(record.inviteCode, session);
+    if (await refreshGroup(record.inviteCode, session) === 'success') {
+      notifyCacheChanged(record.inviteCode, 'updated');
+    }
+    return;
+  }
+
+  if (result.error.code === 'HTTP' && result.error.statusCode === 403 && !previousCachedRecord) {
+    queueFamilySyncMutation(queuedMutation);
+    if (await refreshGroup(record.inviteCode, session) === 'success') {
+      notifyCacheChanged(record.inviteCode, 'updated');
+    }
     return;
   }
 
