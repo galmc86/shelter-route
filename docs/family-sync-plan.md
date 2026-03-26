@@ -209,6 +209,7 @@ The remote gateway should accept an explicit remote session object instead of re
 - the HTTP client should re-queue backend-rejected writes and clears and record sync failures when the backend returns auth or transport errors, so optimistic local cache updates do not silently mask a rejected remote mutation
 - the transport layer should also have worker-backed integration coverage for create/join/leave/delete flows across simulated device sessions, so the real backend contract is exercised end-to-end before a production deployment
 - backend rejection reasons should survive the transport layer as readable error strings, so sync diagnostics and retry UX can explain why a mutation is pending instead of only showing generic HTTP status text
+- the backend rollout should include an explicit deployment guide plus a smoke test against `VITE_FAMILY_REMOTE_URL`, so the worker can be validated in a real environment before the first cross-device E2E path depends on it
 
 ### Phase 3
 

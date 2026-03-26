@@ -56,6 +56,7 @@ npm run test:run   # run tests once
 npm run lint       # lint with ESLint
 npm run build      # type-check + production build
 npm run preview    # preview production build locally
+npm run test:family:backend-smoke # smoke-test a deployed family-sync worker
 npm run data:verify # verify public/shelters.json and raw KMZ source integrity
 npm run data:rebuild -- --dry-run data/miklat-isr.kmz # validate rebuild behavior without writing
 ```
@@ -99,6 +100,20 @@ The app is deployed to **Cloudflare Pages** at `https://shelter-route.pages.dev`
 - The OREF alert proxy worker is deployed separately via `wrangler` from `workers/oref-proxy/`.
 - The family sync worker is deployed separately via `wrangler` from `workers/family-sync/`.
 - Shelter data (`public/shelters.json`) is cache-busted at build time using a content hash injected via `__SHELTER_DATA_VERSION__`.
+
+### Family Sync Worker
+
+The family sync backend now has a concrete deployment path:
+
+1. Follow [workers/family-sync/README.md](/Users/gal.machluf/projects/shelter-finder/workers/family-sync/README.md) to create the KV namespaces and deploy the worker.
+2. Set `VITE_FAMILY_REMOTE_URL` in the app environment to the deployed worker URL.
+3. Run:
+
+```bash
+VITE_FAMILY_REMOTE_URL=https://family-sync.<your-subdomain>.workers.dev npm run test:family:backend-smoke
+```
+
+That smoke test exercises create, join, member-scoped leave, and final delete across two simulated device sessions against the deployed backend.
 
 ## License
 
