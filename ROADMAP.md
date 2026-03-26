@@ -215,6 +215,8 @@ Notes:
 - Cloudflare KV is now provisioned for the family worker, the deployed backend is live at `family-sync.galmc1986.workers.dev`, and both the backend smoke path and backend-backed Playwright family flow have passed against the real service.
 - The HTTP family client now keeps optimistic version-0 records through transient `404` reads and explicitly refreshes/retries uncached join recovery after `403`/`409`, so first-create and first-join races no longer wipe the local family or strand a pending join outside the browser test path.
 - Family hydration now subscribes before its effect-time refresh and only preserves an unsynced current local member during remote merges, so reloads pick up remote membership changes and stale departed members do not reappear after a confirmed backend update.
+- Family sync mode now implicitly switches to `hybrid` when `VITE_FAMILY_REMOTE_URL` is configured and upgrades stale stored `local` mode on boot, so deployed backend activation no longer depends on a second manual sync-mode flag.
+- The Family setup and alert copy now distinguish local-only storage from backend-enabled sync, which removes the stale “server in the future” messaging after the real family backend is turned on.
 
 ### Epic 10: Saved Places to Safety Profiles
 Objective: turn saved locations into reusable routines.

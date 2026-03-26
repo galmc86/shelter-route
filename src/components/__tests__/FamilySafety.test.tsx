@@ -58,6 +58,25 @@ describe('FamilySafety', () => {
     expect(screen.getByPlaceholderText('family.namePlaceholder')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'family.title' })).not.toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'family.mode.create' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByText('family.localNote')).toBeInTheDocument();
+  });
+
+  it('shows the hybrid setup note when cross-device sync is enabled', () => {
+    mockUseFamilySyncStatus.mockReturnValue({
+      mode: 'hybrid',
+      status: {
+        pendingCount: 0,
+        lastAttemptAt: null,
+        lastSuccessAt: null,
+        lastFailureAt: null,
+        lastError: null,
+      },
+    });
+
+    render(<FamilySafety presentation="section" />);
+
+    expect(screen.getByText('family.hybridNote')).toBeInTheDocument();
+    expect(screen.queryByText('family.localNote')).not.toBeInTheDocument();
   });
 
   it('keeps accordion presentation collapsed by default', () => {

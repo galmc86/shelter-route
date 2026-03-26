@@ -186,13 +186,14 @@ export function FamilySafety({
       body: t('family.sync.preparingBody'),
     };
   })();
+  const setupNoteKey = syncMode === 'hybrid' ? 'family.hybridNote' : 'family.localNote';
 
   const content = (
     <div className="family-safety-content">
           {!group ? (
             <div className="family-safety-setup">
               <p className="family-safety-desc">{t('family.description')}</p>
-              <p className="family-safety-local-note">{t('family.localNote')}</p>
+              <p className="family-safety-local-note">{t(setupNoteKey)}</p>
 
               <div className="family-safety-setup-modes" role="tablist" aria-label={t('family.title')}>
                 <button

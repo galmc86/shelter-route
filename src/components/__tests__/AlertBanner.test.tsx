@@ -32,7 +32,7 @@ vi.mock('../../i18n', () => ({
         'alert.fire': 'Fire',
         'alert.homeFrontCommand': 'Home Front Command',
         'family.alertCheckInNeeded': 'Check in with your family once you reach shelter.',
-        'family.alertSafeShared': 'Your safe status was shared with the local family group.',
+        'family.alertSafeShared': 'Your safe status was shared with your family group.',
         'family.markedSafe': 'Marked as Safe',
       };
       return translations[key] ?? key;

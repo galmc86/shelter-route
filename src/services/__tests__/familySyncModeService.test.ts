@@ -9,6 +9,8 @@ describe('familySyncModeService', () => {
   beforeEach(() => {
     localStorage.clear();
     vi.unstubAllEnvs();
+    vi.stubEnv('VITE_FAMILY_REMOTE_URL', '');
+    vi.stubEnv('VITE_FAMILY_SYNC_MODE', '');
   });
 
   it('defaults to local mode', () => {
@@ -25,5 +27,25 @@ describe('familySyncModeService', () => {
 
     expect(getFamilySyncMode()).toBe('hybrid');
   });
-});
 
+  it('implicitly enables hybrid mode when a family backend URL is configured', () => {
+    vi.stubEnv('VITE_FAMILY_REMOTE_URL', 'https://family-sync.example');
+
+    expect(getFamilySyncMode()).toBe('hybrid');
+  });
+
+  it('migrates stale local storage to hybrid when a family backend URL is configured', () => {
+    vi.stubEnv('VITE_FAMILY_REMOTE_URL', 'https://family-sync.example');
+    localStorage.setItem(FAMILY_SYNC_MODE_STORAGE_KEY, 'local');
+
+    expect(initializeFamilySyncModeFromUrl()).toBe('hybrid');
+    expect(localStorage.getItem(FAMILY_SYNC_MODE_STORAGE_KEY)).toBe('hybrid');
+  });
+
+  it('still allows an explicit local query override even when a family backend URL is configured', () => {
+    vi.stubEnv('VITE_FAMILY_REMOTE_URL', 'https://family-sync.example');
+
+    expect(initializeFamilySyncModeFromUrl('?familySyncMode=local')).toBe('local');
+    expect(localStorage.getItem(FAMILY_SYNC_MODE_STORAGE_KEY)).toBe('local');
+  });
+});
