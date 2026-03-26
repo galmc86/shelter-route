@@ -116,7 +116,7 @@ The family sync backend now has a concrete deployment path:
 VITE_FAMILY_REMOTE_URL=https://family-sync.<your-subdomain>.workers.dev npm run test:family:backend-smoke
 ```
 
-That smoke test exercises create, join, member-scoped leave, and final delete across two simulated device sessions against the deployed backend.
+That smoke test exercises authenticated same-user rejoin, create, join, member-scoped leave, and final delete across simulated device sessions against the deployed backend.
 
 For a browser-level verification path, the repo also includes:
 

@@ -63,6 +63,8 @@ cd /Users/gal.machluf/projects/shelter-finder
 VITE_FAMILY_REMOTE_URL=https://family-sync.<your-subdomain>.workers.dev npm run test:family:backend-smoke
 ```
 
+That smoke path now covers authenticated same-user rejoin as well as create/join/leave/delete.
+
 4. Optionally run the browser-backed family E2E against the same worker:
 
 ```bash

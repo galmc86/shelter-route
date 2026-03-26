@@ -11,6 +11,7 @@ export interface FamilySyncSmokeSession {
 
 export interface FamilySyncSmokeMember {
   id: string;
+  userId?: string;
   name: string;
   deviceId: string;
   role: 'owner' | 'member';
@@ -35,6 +36,7 @@ export interface FamilySyncSmokeTestOptions {
   baseUrl: string;
   fetchImpl?: typeof fetch;
   ownerSession?: FamilySyncSmokeSession;
+  rejoinSession?: FamilySyncSmokeSession | null;
   joinerSession?: FamilySyncSmokeSession;
   groupCode?: string;
   log?: (message: string) => void;
@@ -101,6 +103,7 @@ function createOwnerRecord(groupCode: string, ownerNow: string, ownerSession: Fa
     members: [
       {
         id: 'member-1',
+        ...(ownerSession.userId ? { userId: ownerSession.userId } : {}),
         name: 'Smoke Owner',
         deviceId: ownerSession.deviceId,
         role: 'owner',
@@ -115,7 +118,12 @@ function createOwnerRecord(groupCode: string, ownerNow: string, ownerSession: Fa
 export async function runFamilySyncSmokeTest({
   baseUrl,
   fetchImpl = fetch,
-  ownerSession = { deviceId: 'smoke-device-owner', authState: 'anonymous' },
+  ownerSession = {
+    deviceId: 'smoke-device-owner',
+    authState: 'authenticated',
+    userId: 'smoke-owner-user',
+  },
+  rejoinSession = null,
   joinerSession = { deviceId: 'smoke-device-joiner', authState: 'anonymous' },
   groupCode = createGroupCode(),
   log = () => {},
@@ -124,6 +132,16 @@ export async function runFamilySyncSmokeTest({
   const normalizedBaseUrl = normalizeBaseUrl(baseUrl);
   const groupUrl = `${normalizedBaseUrl}/${groupCode}`;
   const createdAt = now();
+  const resolvedRejoinSession = rejoinSession ?? (
+    ownerSession.authState === 'authenticated' && ownerSession.userId
+      ? {
+          deviceId: `${ownerSession.deviceId}-rejoin`,
+          authState: 'authenticated',
+          userId: ownerSession.userId,
+        }
+      : null
+  );
+  const expectedOwnerDeviceId = resolvedRejoinSession?.deviceId ?? ownerSession.deviceId;
 
   log(`Creating group ${groupCode}`);
   const ownerRecord = createOwnerRecord(groupCode, createdAt, ownerSession);
@@ -135,6 +153,44 @@ export async function runFamilySyncSmokeTest({
   assert(createResponse.status === 200, `Owner create failed with status ${createResponse.status}`);
   const createdGroup = createResponse.data as FamilySyncSmokeGroupRecord;
   assert(createdGroup.version === 1, `Expected created version 1, got ${createdGroup.version}`);
+
+  if (resolvedRejoinSession?.userId) {
+    log(`Rejoining group ${groupCode} as the same authenticated user on another device`);
+    const rejoinFetchResponse = await requestJson<FamilySyncSmokeGroupRecord>(fetchImpl, groupUrl, {
+      method: 'GET',
+      headers: getHeaders(resolvedRejoinSession),
+    });
+    assert(rejoinFetchResponse.status === 200, `Authenticated rejoin fetch failed with status ${rejoinFetchResponse.status}`);
+    const rejoinFetchedGroup = rejoinFetchResponse.data as FamilySyncSmokeGroupRecord;
+    const currentOwner = rejoinFetchedGroup.members.find((member) => (
+      (ownerSession.userId && member.userId === ownerSession.userId)
+      || member.deviceId === ownerSession.deviceId
+    ));
+    assert(currentOwner, 'Expected to find the authenticated owner before rejoin');
+
+    const rejoinResponse = await requestJson<FamilySyncSmokeGroupRecord>(fetchImpl, groupUrl, {
+      method: 'PUT',
+      headers: getHeaders(resolvedRejoinSession),
+      body: JSON.stringify({
+        ...rejoinFetchedGroup,
+        members: rejoinFetchedGroup.members.map((member) => (
+          member.id === currentOwner.id
+            ? {
+                ...member,
+                userId: resolvedRejoinSession.userId ?? undefined,
+                deviceId: resolvedRejoinSession.deviceId,
+                lastSeenAt: now(),
+              }
+            : member
+        )),
+      } satisfies FamilySyncSmokeGroupRecord),
+    });
+    assert(rejoinResponse.status === 200, `Authenticated rejoin upsert failed with status ${rejoinResponse.status}`);
+    const rejoinedGroup = rejoinResponse.data as FamilySyncSmokeGroupRecord;
+    assert(rejoinedGroup.members.length === 1, `Expected 1 member after authenticated rejoin, got ${rejoinedGroup.members.length}`);
+    assert(rejoinedGroup.members[0].id === currentOwner.id, 'Authenticated rejoin changed the member identity instead of reusing it');
+    assert(rejoinedGroup.members[0].deviceId === resolvedRejoinSession.deviceId, 'Authenticated rejoin did not update the member device identity');
+  }
 
   log(`Fetching group ${groupCode} as joiner`);
   const joinerFetchResponse = await requestJson<FamilySyncSmokeGroupRecord>(fetchImpl, groupUrl, {
@@ -181,7 +237,7 @@ export async function runFamilySyncSmokeTest({
   assert(leaveResponse.status === 200, `Joiner leave failed with status ${leaveResponse.status}`);
   const afterLeaveGroup = leaveResponse.data as FamilySyncSmokeGroupRecord;
   assert(afterLeaveGroup.members.length === 1, `Expected 1 member after leave, got ${afterLeaveGroup.members.length}`);
-  assert(afterLeaveGroup.members[0].deviceId === ownerSession.deviceId, 'Owner was not preserved after joiner leave');
+  assert(afterLeaveGroup.members[0].deviceId === expectedOwnerDeviceId, 'Owner was not preserved after joiner leave');
 
   log(`Deleting final group ${groupCode} as owner`);
   const deleteResponse = await requestJson<{ deleted: boolean }>(fetchImpl, groupUrl, {
