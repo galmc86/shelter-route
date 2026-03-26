@@ -192,7 +192,7 @@ Notes:
 - Hybrid join/upsert now preserves existing remote members and owner role when another device joins the same family code, which removes a destructive overwrite path from the cross-device sync model.
 - Hybrid join/hydration now reconciles the current member by stable `deviceId`, so the same device can rejoin a remote family group without creating a duplicate member entry.
 - Hybrid leave semantics are now member-scoped: leaving removes the current member from the shared remote family and only clears the remote record when no members remain.
-- A first real family backend now exists as a Cloudflare Worker scaffold with KV-backed `GET`/`PUT`/`DELETE` group endpoints, which gives the current HTTP client an actual server contract to target.
+- A first real family backend now exists as a Cloudflare Worker scaffold with `GET`/`PUT`/`DELETE` group endpoints, and active group state now lives behind a Durable Object instead of KV so cross-device updates are strongly consistent.
 - When `VITE_FAMILY_REMOTE_URL` is configured, the app now defaults the family remote stack to `backend` + `http`, which removes most of the dev-only flag friction from turning the real sync path on.
 - The Pages CSP now allows Worker-hosted backend connections via `https://*.workers.dev`, so a deployed family sync worker can be reached without an additional shell change.
 - Family sync records now carry an explicit `version`, and the worker rejects stale `PUT`s with `409` instead of silently overwriting newer cross-device state.
@@ -213,6 +213,7 @@ Notes:
 - Family sync now also exposes a built-in auth bridge API for set/clear/reset session control, so future auth integration can drive remote identity without custom provider plumbing at each call site.
 - The built-in family auth bridge now also listens for cross-tab storage changes, so family sync identity can follow sign-in/sign-out across multiple open tabs without a manual refresh.
 - Cloudflare KV is now provisioned for the family worker, the deployed backend is live at `family-sync.galmc1986.workers.dev`, and both the backend smoke path and backend-backed Playwright family flow have passed against the real service.
+- The deployed family backend has now been migrated off KV and onto a Durable Object per invite code, which removes the tens-of-seconds cross-device lag that KV could introduce even when the client polled aggressively.
 - The HTTP family client now keeps optimistic version-0 records through transient `404` reads and explicitly refreshes/retries uncached join recovery after `403`/`409`, so first-create and first-join races no longer wipe the local family or strand a pending join outside the browser test path.
 - Family hydration now subscribes before its effect-time refresh and only preserves an unsynced current local member during remote merges, so reloads pick up remote membership changes and stale departed members do not reappear after a confirmed backend update.
 - Family sync mode now implicitly switches to `hybrid` when `VITE_FAMILY_REMOTE_URL` is configured and upgrades stale stored `local` mode on boot, so deployed backend activation no longer depends on a second manual sync-mode flag.

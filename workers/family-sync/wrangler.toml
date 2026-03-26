@@ -2,10 +2,13 @@ name = "family-sync"
 main = "src/index.ts"
 compatibility_date = "2024-01-01"
 
-[[kv_namespaces]]
-binding = "FAMILY_GROUPS"
-id = "106bbafd50b045fdae143b114d94c014"
-preview_id = "a8a951ee4e67422c9975901455ac9b1a"
+[[durable_objects.bindings]]
+name = "FAMILY_GROUPS_DO"
+class_name = "FamilyGroupDurableObject"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["FamilyGroupDurableObject"]
 
 [vars]
 ALLOWED_ORIGINS = "https://shelter-route.pages.dev,http://localhost:5174"

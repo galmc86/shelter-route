@@ -200,7 +200,7 @@ The remote gateway should accept an explicit remote session object instead of re
 - allow hybrid mode to be enabled in development with `?familySyncMode=hybrid` or `VITE_FAMILY_SYNC_MODE=hybrid`
 - allow remote gateway selection in development with `?familyRemoteGateway=backend` or `VITE_FAMILY_REMOTE_GATEWAY=backend`
 - allow backend client selection in development with `?familyRemoteClient=http` or `VITE_FAMILY_REMOTE_CLIENT=http`
-- a first KV-backed Cloudflare Worker now exists under [`workers/family-sync/`](/Users/gal.machluf/projects/shelter-finder/workers/family-sync), exposing the `GET`/`PUT`/`DELETE` group contract expected by the current HTTP client
+- the family sync worker now routes each invite code through a Durable Object instead of KV, preserving the `GET`/`PUT`/`DELETE` contract expected by the current HTTP client while removing cross-edge eventual-consistency lag
 - when `VITE_FAMILY_REMOTE_URL` is present, the app should implicitly prefer the backend gateway and HTTP client unless an explicit mode override is supplied
 - the deployed app CSP also needs to allow Worker-hosted connect targets, otherwise the browser will block the family sync worker even when the backend is configured correctly
 - remote writes should use explicit record versions so the backend can reject stale updates with `409` instead of treating concurrent device writes as accidental last-write-wins

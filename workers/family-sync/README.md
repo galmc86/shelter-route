@@ -10,7 +10,7 @@ This worker backs cross-device family sync for the main app.
 
 ## Prerequisites
 
-- Cloudflare account with Workers + KV access
+- Cloudflare account with Workers + Durable Objects access
 - Wrangler installed via this package's dev dependencies
 
 ## First-Time Setup
@@ -22,19 +22,7 @@ cd workers/family-sync
 npm install
 ```
 
-2. Create the KV namespaces:
-
-```bash
-npx wrangler kv:namespace create FAMILY_GROUPS
-npx wrangler kv:namespace create FAMILY_GROUPS --preview
-```
-
-3. Copy the returned IDs into [wrangler.toml](/Users/gal.machluf/projects/shelter-finder/workers/family-sync/wrangler.toml):
-
-- `[[kv_namespaces]].id`
-- `[[kv_namespaces]].preview_id`
-
-4. Update `ALLOWED_ORIGINS` so the deployed frontend origin is allowed.
+2. Update `ALLOWED_ORIGINS` so the deployed frontend origin is allowed.
 
 ## Local Development
 

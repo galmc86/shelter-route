@@ -1,34 +1,80 @@
 import { describe, expect, it } from 'vitest';
 import worker, {
+  FamilyGroupDurableObject,
   decodeFamilyRemoteGroupRecord,
+  type DurableObjectNamespaceLike,
+  type DurableObjectStateLike,
+  type DurableObjectStorageLike,
   getCorsHeaders,
   normalizeGroupCode,
   type Env,
   type FamilyRemoteGroupRecord,
-  type KeyValueStore,
 } from './index';
 
-class MemoryStore implements KeyValueStore {
-  private readonly store = new Map<string, string>();
+class MemoryDurableObjectStorage implements DurableObjectStorageLike {
+  private readonly store = new Map<string, unknown>();
 
-  async get(key: string): Promise<string | null> {
-    return this.store.get(key) ?? null;
+  async get<T>(key: string): Promise<T | undefined> {
+    return this.store.get(key) as T | undefined;
   }
 
-  async put(key: string, value: string): Promise<void> {
+  async put<T>(key: string, value: T): Promise<void> {
     this.store.set(key, value);
   }
 
-  async delete(key: string): Promise<void> {
-    this.store.delete(key);
+  async delete(key: string): Promise<boolean> {
+    return this.store.delete(key);
+  }
+}
+
+class MemoryDurableObjectState implements DurableObjectStateLike {
+  storage = new MemoryDurableObjectStorage();
+}
+
+class MemoryDurableObjectNamespace implements DurableObjectNamespaceLike {
+  private readonly states = new Map<string, MemoryDurableObjectState>();
+  private env: Env | null = null;
+
+  attachEnv(env: Env): void {
+    this.env = env;
+  }
+
+  idFromName(name: string): string {
+    return name.toUpperCase();
+  }
+
+  get(id: unknown) {
+    const key = String(id);
+    let state = this.states.get(key);
+    if (!state) {
+      state = new MemoryDurableObjectState();
+      this.states.set(key, state);
+    }
+
+    return {
+      fetch: (input: Request | string, init?: RequestInit) => {
+        if (!this.env) {
+          throw new Error('Memory durable object namespace is not attached to an env');
+        }
+
+        const request = input instanceof Request
+          ? new Request(input, init)
+          : new Request(input, init);
+        const object = new FamilyGroupDurableObject(state, this.env);
+        return object.fetch(request);
+      },
+    };
   }
 }
 
 function createEnv(): Env {
-  return {
-    FAMILY_GROUPS: new MemoryStore(),
+  const namespace = new MemoryDurableObjectNamespace();
+  const env: Env = {
+    FAMILY_GROUPS_DO: namespace,
     ALLOWED_ORIGINS: 'https://shelter-route.pages.dev,http://localhost:5174',
   };
+  namespace.attachEnv(env);
+  return env;
 }
 
 function createSessionHeaders({

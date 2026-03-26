@@ -21,14 +21,27 @@ export interface FamilyRemoteGroupRecord {
   members: FamilyRemoteMemberRecord[];
 }
 
-export interface KeyValueStore {
-  get(key: string): Promise<string | null>;
-  put(key: string, value: string): Promise<void>;
-  delete(key: string): Promise<void>;
+export interface DurableObjectStorageLike {
+  get<T>(key: string): Promise<T | undefined>;
+  put<T>(key: string, value: T): Promise<void>;
+  delete(key: string): Promise<boolean | void>;
+}
+
+export interface DurableObjectStateLike {
+  storage: DurableObjectStorageLike;
+}
+
+export interface DurableObjectStubLike {
+  fetch(input: Request | string, init?: RequestInit): Promise<Response>;
+}
+
+export interface DurableObjectNamespaceLike {
+  idFromName(name: string): unknown;
+  get(id: unknown): DurableObjectStubLike;
 }
 
 export interface Env {
-  FAMILY_GROUPS: KeyValueStore;
+  FAMILY_GROUPS_DO: DurableObjectNamespaceLike;
   ALLOWED_ORIGINS?: string;
   ALLOWED_ORIGIN?: string;
 }
@@ -38,6 +51,8 @@ interface FamilySyncRequestSession {
   userId: string | null;
   authState: 'anonymous' | 'authenticated';
 }
+
+const FAMILY_GROUP_RECORD_STORAGE_KEY = 'family-group-record';
 
 export function parseAllowedOrigins(env: Env): string[] {
   const raw = env.ALLOWED_ORIGINS || env.ALLOWED_ORIGIN || '';
@@ -284,26 +299,21 @@ function textResponse(
 
 async function handleGetGroup(
   groupCode: string,
-  env: Env,
+  state: DurableObjectStateLike,
   corsHeaders: Record<string, string>
 ): Promise<Response> {
-  const raw = await env.FAMILY_GROUPS.get(groupCode);
-  if (!raw) {
+  const decoded = await readStoredGroup(state, groupCode);
+  if (!decoded) {
     return jsonResponse({ error: 'Not found' }, 404, corsHeaders);
   }
 
-  try {
-    const decoded = decodeFamilyRemoteGroupRecord(JSON.parse(raw), groupCode);
-    return jsonResponse(decoded, 200, corsHeaders);
-  } catch {
-    return jsonResponse({ error: 'Stored family record is malformed' }, 500, corsHeaders);
-  }
+  return jsonResponse(decoded, 200, corsHeaders);
 }
 
 async function handlePutGroup(
   request: Request,
   groupCode: string,
-  env: Env,
+  state: DurableObjectStateLike,
   corsHeaders: Record<string, string>
 ): Promise<Response> {
   try {
@@ -314,10 +324,7 @@ async function handlePutGroup(
 
     const decoded = decodeFamilyRemoteGroupRecord(await request.json(), groupCode);
     const now = new Date().toISOString();
-    const existingRaw = await env.FAMILY_GROUPS.get(groupCode);
-    const existingRecord = existingRaw
-      ? decodeFamilyRemoteGroupRecord(JSON.parse(existingRaw), groupCode)
-      : null;
+    const existingRecord = await readStoredGroup(state, groupCode);
 
     if (!canWriteGroup(decoded, existingRecord, session)) {
       return jsonResponse({ error: 'Family sync write is not authorized for this session' }, 403, corsHeaders);
@@ -344,7 +351,7 @@ async function handlePutGroup(
           updatedAt: now,
         };
 
-    await env.FAMILY_GROUPS.put(groupCode, JSON.stringify(nextRecord));
+    await state.storage.put(FAMILY_GROUP_RECORD_STORAGE_KEY, nextRecord);
     return jsonResponse(nextRecord, 200, corsHeaders);
   } catch (error) {
     return jsonResponse(
@@ -358,7 +365,7 @@ async function handlePutGroup(
 async function handleDeleteGroup(
   request: Request,
   groupCode: string,
-  env: Env,
+  state: DurableObjectStateLike,
   corsHeaders: Record<string, string>
 ): Promise<Response> {
   const session = getRequestSession(request);
@@ -366,30 +373,48 @@ async function handleDeleteGroup(
     return jsonResponse({ error: 'Family sync session is missing device identity' }, 401, corsHeaders);
   }
 
-  const existingRaw = await env.FAMILY_GROUPS.get(groupCode);
-  if (!existingRaw) {
+  const existingRecord = await readStoredGroup(state, groupCode);
+  if (!existingRecord) {
     return jsonResponse({ deleted: true }, 200, corsHeaders);
-  }
-
-  let existingRecord: FamilyRemoteGroupRecord;
-  try {
-    existingRecord = decodeFamilyRemoteGroupRecord(JSON.parse(existingRaw), groupCode);
-  } catch {
-    return jsonResponse({ error: 'Stored family record is malformed' }, 500, corsHeaders);
   }
 
   if (!canDeleteGroup(existingRecord, session)) {
     return jsonResponse({ error: 'Family sync delete is not authorized for this session' }, 403, corsHeaders);
   }
 
-  await env.FAMILY_GROUPS.delete(groupCode);
+  await state.storage.delete(FAMILY_GROUP_RECORD_STORAGE_KEY);
   return jsonResponse({ deleted: true }, 200, corsHeaders);
 }
 
-export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+async function readStoredGroup(
+  state: DurableObjectStateLike,
+  groupCode: string
+): Promise<FamilyRemoteGroupRecord | null> {
+  const stored = await state.storage.get<unknown>(FAMILY_GROUP_RECORD_STORAGE_KEY);
+  if (!stored) {
+    return null;
+  }
+
+  try {
+    const rawValue = typeof stored === 'string' ? JSON.parse(stored) : stored;
+    return decodeFamilyRemoteGroupRecord(rawValue, groupCode);
+  } catch {
+    throw new Error('Stored family record is malformed');
+  }
+}
+
+export class FamilyGroupDurableObject {
+  private readonly state: DurableObjectStateLike;
+  private readonly env: Env;
+
+  constructor(state: DurableObjectStateLike, env: Env) {
+    this.state = state;
+    this.env = env;
+  }
+
+  async fetch(request: Request): Promise<Response> {
     const origin = request.headers.get('Origin') || '';
-    const corsHeaders = getCorsHeaders(origin, env);
+    const corsHeaders = getCorsHeaders(origin, this.env);
     const url = new URL(request.url);
 
     if (request.method === 'OPTIONS') {
@@ -406,17 +431,35 @@ export default {
     }
 
     if (request.method === 'GET') {
-      return handleGetGroup(groupCode, env, corsHeaders);
+      try {
+        return await handleGetGroup(groupCode, this.state, corsHeaders);
+      } catch {
+        return jsonResponse({ error: 'Stored family record is malformed' }, 500, corsHeaders);
+      }
     }
 
     if (request.method === 'PUT') {
-      return handlePutGroup(request, groupCode, env, corsHeaders);
+      return handlePutGroup(request, groupCode, this.state, corsHeaders);
     }
 
     if (request.method === 'DELETE') {
-      return handleDeleteGroup(request, groupCode, env, corsHeaders);
+      return handleDeleteGroup(request, groupCode, this.state, corsHeaders);
     }
 
     return textResponse('Method not allowed', 405, corsHeaders);
+  }
+}
+
+export default {
+  async fetch(request: Request, env: Env): Promise<Response> {
+    const url = new URL(request.url);
+    const groupCode = normalizeGroupCode(url.pathname.replace(/^\/+/, ''));
+    if (!groupCode) {
+      return jsonResponse({ error: 'Invalid family group code' }, 404, {});
+    }
+
+    const objectId = env.FAMILY_GROUPS_DO.idFromName(groupCode);
+    const stub = env.FAMILY_GROUPS_DO.get(objectId);
+    return stub.fetch(request);
   },
 };
