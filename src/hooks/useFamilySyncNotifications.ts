@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useLanguage, type TranslationKey } from '../i18n';
 import { type FamilyGroup } from '../services/familySafetyService';
 import { getFamilySyncNotificationEvents } from '../services/familySyncNotificationService';
+import { isFamilyPushRegisteredForGroup } from '../services/familyPushNotificationService';
 import { showLocalNotification } from '../services/pushNotificationService';
 import { useFamilyGroupState } from './useFamilyGroupState';
 
@@ -13,6 +14,10 @@ export function useFamilySyncNotifications(): void {
   useEffect(() => {
     const previousGroup = previousGroupRef.current;
     previousGroupRef.current = group;
+
+    if (isFamilyPushRegisteredForGroup(group?.groupCode)) {
+      return;
+    }
 
     const events = getFamilySyncNotificationEvents(previousGroup, group);
     if (events.length === 0) {

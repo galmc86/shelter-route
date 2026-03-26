@@ -5,9 +5,27 @@ import type {
   FamilyRemoteMemberStatus,
 } from './familyRemoteModel';
 
+export interface FamilyRemotePushSubscriptionRequest {
+  endpoint: string;
+  expirationTime?: number | null;
+  keys: {
+    p256dh: string;
+    auth: string;
+  };
+}
+
 function getFamilyRemoteBaseUrl(): string | null {
   const baseUrl = (import.meta.env.VITE_FAMILY_REMOTE_URL as string | undefined)?.trim();
   return baseUrl || null;
+}
+
+export function getFamilyRemotePushPublicKeyEndpoint(): string | null {
+  const baseUrl = getFamilyRemoteBaseUrl();
+  if (!baseUrl) {
+    return null;
+  }
+
+  return `${baseUrl.replace(/\/+$/, '')}/push/public-key`;
 }
 
 export function getFamilyRemoteGroupEndpoint(groupCode: string): string | null {
@@ -17,6 +35,34 @@ export function getFamilyRemoteGroupEndpoint(groupCode: string): string | null {
   }
 
   return `${baseUrl.replace(/\/+$/, '')}/${encodeURIComponent(groupCode.toUpperCase())}`;
+}
+
+export function getFamilyRemotePushSubscriptionRegisterEndpoint(groupCode: string): string | null {
+  const groupEndpoint = getFamilyRemoteGroupEndpoint(groupCode);
+  return groupEndpoint ? `${groupEndpoint}/push-subscriptions` : null;
+}
+
+export function getFamilyRemotePushSubscriptionUnregisterEndpoint(groupCode: string): string | null {
+  const groupEndpoint = getFamilyRemoteGroupEndpoint(groupCode);
+  return groupEndpoint ? `${groupEndpoint}/push-subscriptions/unregister` : null;
+}
+
+export function encodeFamilyRemotePushSubscriptionRequest(
+  subscription: PushSubscription | PushSubscriptionJSON
+): FamilyRemotePushSubscriptionRequest {
+  const value = 'toJSON' in subscription ? subscription.toJSON() : subscription;
+  if (!value.endpoint || !value.keys?.p256dh || !value.keys?.auth) {
+    throw new ServiceError('PARSE', 'Family push subscription payload is malformed');
+  }
+
+  return {
+    endpoint: value.endpoint,
+    expirationTime: value.expirationTime ?? null,
+    keys: {
+      p256dh: value.keys.p256dh,
+      auth: value.keys.auth,
+    },
+  };
 }
 
 export function encodeFamilyRemoteGroupRequest(record: FamilyRemoteGroupRecord): FamilyRemoteGroupRecord {

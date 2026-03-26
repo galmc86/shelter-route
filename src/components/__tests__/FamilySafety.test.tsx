@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FamilySafety } from '../FamilySafety';
 import type { FamilyGroup } from '../../services/familySafetyService';
@@ -6,6 +6,7 @@ import type { FamilyGroup } from '../../services/familySafetyService';
 const mockUseFamilyGroupState = vi.fn();
 const mockUseFamilySyncStatus = vi.fn();
 const mockRequestNotificationPermission = vi.fn();
+const mockSyncFamilyPushSubscription = vi.fn();
 
 vi.mock('../../i18n', () => ({
   useLanguage: () => ({
@@ -26,11 +27,18 @@ vi.mock('../../services/pushNotificationService', () => ({
   requestNotificationPermission: () => mockRequestNotificationPermission(),
 }));
 
+vi.mock('../../services/familyPushNotificationService', () => ({
+  syncFamilyPushSubscription: (...args: unknown[]) => mockSyncFamilyPushSubscription(...args),
+}));
+
 describe('FamilySafety', () => {
   beforeEach(() => {
     mockUseFamilyGroupState.mockReset();
     mockUseFamilySyncStatus.mockReset();
     mockRequestNotificationPermission.mockReset();
+    mockSyncFamilyPushSubscription.mockReset();
+    mockRequestNotificationPermission.mockResolvedValue(false);
+    mockSyncFamilyPushSubscription.mockResolvedValue(true);
     mockUseFamilyGroupState.mockReturnValue({
       group: null,
       currentMember: null,
@@ -224,7 +232,7 @@ describe('FamilySafety', () => {
     expect(retryFamilySync).toHaveBeenCalledTimes(1);
   });
 
-  it('requests notification permission after creating a group', () => {
+  it('requests notification permission after creating a group', async () => {
     const createFamilyGroup = vi.fn(() => ({
       groupCode: 'ABC123',
       memberName: 'Dana',
@@ -255,10 +263,48 @@ describe('FamilySafety', () => {
     fireEvent.click(screen.getByRole('button', { name: 'family.createGroup' }));
 
     expect(createFamilyGroup).toHaveBeenCalledWith('Dana');
-    expect(mockRequestNotificationPermission).toHaveBeenCalledTimes(1);
+    await waitFor(() => {
+      expect(mockRequestNotificationPermission).toHaveBeenCalledTimes(1);
+    });
   });
 
-  it('requests notification permission after joining a group', () => {
+  it('registers a family push subscription after creating a group when permission is granted', async () => {
+    mockRequestNotificationPermission.mockResolvedValue(true);
+    const createFamilyGroup = vi.fn(() => ({
+      groupCode: 'ABC123',
+      memberName: 'Dana',
+      currentMemberId: '1',
+      members: [{ id: '1', name: 'Dana', isSafe: false }],
+    }));
+    mockUseFamilyGroupState.mockReturnValue({
+      group: null,
+      currentMember: null,
+      hasGroup: false,
+      isCurrentMemberSafe: false,
+      safeMembersCount: 0,
+      waitingMembersCount: 0,
+      shareLink: 'https://example.com',
+      createFamilyGroup,
+      joinFamilyGroup: vi.fn(),
+      markFamilySafe: vi.fn(),
+      markNeedsCheckIn: vi.fn(),
+      retryFamilySync: vi.fn(),
+      leaveFamilyGroup: vi.fn(),
+    });
+
+    render(<FamilySafety presentation="section" />);
+
+    fireEvent.change(screen.getByPlaceholderText('family.namePlaceholder'), {
+      target: { value: 'Dana' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'family.createGroup' }));
+
+    await waitFor(() => {
+      expect(mockSyncFamilyPushSubscription).toHaveBeenCalledWith('ABC123');
+    });
+  });
+
+  it('requests notification permission after joining a group', async () => {
     const joinFamilyGroup = vi.fn(() => ({
       groupCode: 'ABC123',
       memberName: 'Dana',
@@ -293,6 +339,48 @@ describe('FamilySafety', () => {
     fireEvent.click(screen.getByRole('button', { name: 'family.join' }));
 
     expect(joinFamilyGroup).toHaveBeenCalledWith('ABC123', 'Dana');
-    expect(mockRequestNotificationPermission).toHaveBeenCalledTimes(1);
+    await waitFor(() => {
+      expect(mockRequestNotificationPermission).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it('registers a family push subscription after joining a group when permission is granted', async () => {
+    mockRequestNotificationPermission.mockResolvedValue(true);
+    const joinFamilyGroup = vi.fn(() => ({
+      groupCode: 'ABC123',
+      memberName: 'Dana',
+      currentMemberId: '1',
+      members: [{ id: '1', name: 'Dana', isSafe: false }],
+    }));
+    mockUseFamilyGroupState.mockReturnValue({
+      group: null,
+      currentMember: null,
+      hasGroup: false,
+      isCurrentMemberSafe: false,
+      safeMembersCount: 0,
+      waitingMembersCount: 0,
+      shareLink: 'https://example.com',
+      createFamilyGroup: vi.fn(),
+      joinFamilyGroup,
+      markFamilySafe: vi.fn(),
+      markNeedsCheckIn: vi.fn(),
+      retryFamilySync: vi.fn(),
+      leaveFamilyGroup: vi.fn(),
+    });
+
+    render(<FamilySafety presentation="section" />);
+
+    fireEvent.click(screen.getByRole('tab', { name: 'family.mode.join' }));
+    fireEvent.change(screen.getByPlaceholderText('family.namePlaceholder'), {
+      target: { value: 'Dana' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('family.codePlaceholder'), {
+      target: { value: 'ABC123' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'family.join' }));
+
+    await waitFor(() => {
+      expect(mockSyncFamilyPushSubscription).toHaveBeenCalledWith('ABC123');
+    });
   });
 });

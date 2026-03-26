@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useLanguage } from '../i18n';
 import { useFamilyGroupState } from '../hooks/useFamilyGroupState';
 import { useFamilySyncStatus } from '../hooks/useFamilySyncStatus';
+import { syncFamilyPushSubscription } from '../services/familyPushNotificationService';
 import { requestNotificationPermission } from '../services/pushNotificationService';
 
 type FamilySyncTone = 'local' | 'active' | 'pending' | 'error';
@@ -87,7 +88,11 @@ export function FamilySafety({
     const nextGroup = createFamilyGroup(nameInput.trim());
     if (nextGroup) {
       setNameInput('');
-      void requestNotificationPermission();
+      void requestNotificationPermission().then((granted) => {
+        if (granted) {
+          void syncFamilyPushSubscription(nextGroup.groupCode);
+        }
+      });
     }
   }, [createFamilyGroup, nameInput]);
 
@@ -98,7 +103,11 @@ export function FamilySafety({
       setNameInput('');
       setCodeInput('');
       setSetupMode('create');
-      void requestNotificationPermission();
+      void requestNotificationPermission().then((granted) => {
+        if (granted) {
+          void syncFamilyPushSubscription(nextGroup.groupCode);
+        }
+      });
     }
   }, [codeInput, joinFamilyGroup, nameInput]);
 

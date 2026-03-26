@@ -81,7 +81,9 @@ function App() {
     completeOnboarding,
     togglePanel,
   } = useAppController();
-  const [activeSection, setActiveSection] = useState<AppSection>('search');
+  const [activeSection, setActiveSection] = useState<AppSection>(() => (
+    familyGroupCode ? 'family' : 'search'
+  ));
   const [fabBottomOffset, setFabBottomOffset] = useState<number | null>(null);
   const [familyRepository] = useState(() => {
     initializeFamilyRemoteClientModeFromUrl();

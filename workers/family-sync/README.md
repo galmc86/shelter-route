@@ -7,6 +7,7 @@ This worker backs cross-device family sync for the main app.
 - family group records by invite code
 - member identity and safety status
 - record version numbers for optimistic concurrency
+- per-device web push subscriptions for family notifications
 
 ## Prerequisites
 
@@ -23,6 +24,19 @@ npm install
 ```
 
 2. Update `ALLOWED_ORIGINS` so the deployed frontend origin is allowed.
+3. Configure web push VAPID secrets on the worker:
+
+```bash
+cd workers/family-sync
+npx wrangler secret put WEB_PUSH_PUBLIC_KEY
+npx wrangler secret put WEB_PUSH_PRIVATE_KEY
+```
+
+Optional:
+
+```bash
+npx wrangler secret put WEB_PUSH_SUBJECT
+```
 
 ## Local Development
 
@@ -77,6 +91,9 @@ The worker currently exposes:
 - `GET /:groupCode`
 - `PUT /:groupCode`
 - `DELETE /:groupCode`
+- `GET /push/public-key`
+- `POST /:groupCode/push-subscriptions`
+- `POST /:groupCode/push-subscriptions/unregister`
 
 Write requests require session headers:
 
@@ -91,3 +108,5 @@ Write requests require session headers:
 - Joining can add only the requesting device/member without mutating existing members.
 - Existing members can update only their own membership state.
 - Deletion is allowed only for the last remaining member.
+- Browser push subscriptions are stored per family group and per device/session.
+- On iPhone, web push requires launching the app from an installed Home Screen web app.

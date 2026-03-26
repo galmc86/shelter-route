@@ -182,6 +182,73 @@ describe('family-sync worker', () => {
     expect(missingResponse.status).toBe(404);
   });
 
+  it('exposes the configured web push public key at the top-level endpoint', async () => {
+    const env = createEnv();
+    env.WEB_PUSH_PUBLIC_KEY = 'public-key-value';
+    env.WEB_PUSH_PRIVATE_KEY = 'private-key-value';
+
+    const response = await worker.fetch(new Request('https://family-sync.example/push/public-key', {
+      headers: { Origin: 'https://shelter-route.pages.dev' },
+    }), env);
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      enabled: true,
+      publicKey: 'public-key-value',
+    });
+  });
+
+  it('registers and unregisters family push subscriptions per group', async () => {
+    const env = createEnv();
+    const origin = 'https://shelter-route.pages.dev';
+
+    const putResponse = await worker.fetch(new Request('https://family-sync.example/ABC123', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...createSessionHeaders({ deviceId: 'device-1', origin }),
+      },
+      body: JSON.stringify(recordFixture),
+    }), env);
+
+    expect(putResponse.status).toBe(200);
+
+    const registerResponse = await worker.fetch(new Request('https://family-sync.example/ABC123/push-subscriptions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...createSessionHeaders({ deviceId: 'device-1', origin }),
+      },
+      body: JSON.stringify({
+        subscription: {
+          endpoint: 'https://push.example.com/subscription-1',
+          expirationTime: null,
+          keys: {
+            p256dh: 'p256dh-key',
+            auth: 'auth-key',
+          },
+        },
+      }),
+    }), env);
+
+    expect(registerResponse.status).toBe(200);
+    expect(await registerResponse.json()).toEqual({ registered: true });
+
+    const unregisterResponse = await worker.fetch(new Request('https://family-sync.example/ABC123/push-subscriptions/unregister', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...createSessionHeaders({ deviceId: 'device-1', origin }),
+      },
+      body: JSON.stringify({
+        endpoint: 'https://push.example.com/subscription-1',
+      }),
+    }), env);
+
+    expect(unregisterResponse.status).toBe(200);
+    expect(await unregisterResponse.json()).toEqual({ unregistered: true });
+  });
+
   it('rejects stale writes with a 409 and returns the latest stored record', async () => {
     const env = createEnv();
     const origin = 'https://shelter-route.pages.dev';

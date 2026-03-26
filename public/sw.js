@@ -229,6 +229,9 @@ self.addEventListener('push', (event) => {
     tag: data.tag || 'shelter-route-alert',
     requireInteraction: true,
     silent: false,
+    data: {
+      url: data.url || '/',
+    },
   };
 
   event.waitUntil(self.registration.showNotification(title, options));
@@ -237,17 +240,21 @@ self.addEventListener('push', (event) => {
 // Handle notification click — focus or open the app
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
+  const targetUrl = event.notification?.data?.url || '/';
 
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
       // Focus an existing app window if one exists
       for (const client of clientList) {
         if (client.url.includes(self.location.origin) && 'focus' in client) {
+          if ('navigate' in client) {
+            return client.navigate(targetUrl).then(() => client.focus());
+          }
           return client.focus();
         }
       }
       // Otherwise open a new window
-      return self.clients.openWindow('/');
+      return self.clients.openWindow(targetUrl);
     })
   );
 });

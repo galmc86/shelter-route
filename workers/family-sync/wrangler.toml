@@ -1,6 +1,7 @@
 name = "family-sync"
 main = "src/index.ts"
-compatibility_date = "2024-01-01"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
 
 [[durable_objects.bindings]]
 name = "FAMILY_GROUPS_DO"

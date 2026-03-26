@@ -223,6 +223,7 @@ Notes:
 - Family sync now stays subscribed app-wide once a repository is mounted, and visible-tab backend polling now runs on a 5-second cadence instead of 15 seconds, which makes cross-browser family joins and safety updates surface much faster.
 - Family sync now keeps a slower 15-second backend poll even while the browser is backgrounded, and polling backoff is capped to that same window so cross-device updates do not stall indefinitely after transient failures.
 - Family sync now also emits local device notifications for remote member joins, departures, and safety-state changes, and the create/join flows request notification permission while the user is already in a family-related action.
+- Family sync now also has a real web-push path: the app registers browser push subscriptions per family group, the family worker stores those subscriptions beside the Durable Object record, and join/leave/safe/check-in events now fan out through the worker so notifications can arrive while the app is closed.
 
 ### Epic 10: Saved Places to Safety Profiles
 Objective: turn saved locations into reusable routines.

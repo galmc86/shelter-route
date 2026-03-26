@@ -1,3 +1,10 @@
+import {
+  isFamilyPushEnabled,
+  sendFamilyPushNotification,
+  type FamilyPushPayload,
+  type FamilyPushSubscriptionRecord,
+} from './familyPush';
+
 export interface FamilyRemoteMemberRecord {
   id: string;
   userId?: string;
@@ -44,6 +51,9 @@ export interface Env {
   FAMILY_GROUPS_DO: DurableObjectNamespaceLike;
   ALLOWED_ORIGINS?: string;
   ALLOWED_ORIGIN?: string;
+  WEB_PUSH_PUBLIC_KEY?: string;
+  WEB_PUSH_PRIVATE_KEY?: string;
+  WEB_PUSH_SUBJECT?: string;
 }
 
 interface FamilySyncRequestSession {
@@ -52,7 +62,22 @@ interface FamilySyncRequestSession {
   authState: 'anonymous' | 'authenticated';
 }
 
+interface FamilyPushSubscriptionRequest {
+  subscription: FamilyPushSubscriptionRecord;
+}
+
+interface FamilyPushUnregisterRequest {
+  endpoint: string;
+}
+
+interface FamilyPushNotificationEvent {
+  type: 'member_joined' | 'member_left' | 'member_safe' | 'member_needs_check_in';
+  memberId: string;
+  memberName: string;
+}
+
 const FAMILY_GROUP_RECORD_STORAGE_KEY = 'family-group-record';
+const FAMILY_PUSH_SUBSCRIPTIONS_STORAGE_KEY = 'family-push-subscriptions';
 
 export function parseAllowedOrigins(env: Env): string[] {
   const raw = env.ALLOWED_ORIGINS || env.ALLOWED_ORIGIN || '';
@@ -71,7 +96,7 @@ export function getCorsHeaders(origin: string, env: Env): Record<string, string>
 
   return {
     'Access-Control-Allow-Origin': origin,
-    'Access-Control-Allow-Methods': 'GET, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, PUT, POST, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, X-Family-Device-Id, X-Family-User-Id, X-Family-Auth-State',
     'Access-Control-Max-Age': '86400',
   };
@@ -152,6 +177,37 @@ function decodeFamilyRemoteMember(payload: unknown): FamilyRemoteMemberRecord {
 
 function normalizeMemberStatus(status: unknown): FamilyRemoteMemberRecord['status'] {
   return status === 'safe' || status === 'needs_check_in' ? status : 'unknown';
+}
+
+function decodeFamilyPushSubscriptionRecord(payload: unknown): FamilyPushSubscriptionRecord {
+  if (!payload || typeof payload !== 'object') {
+    throw new Error('Family push subscription payload is malformed');
+  }
+
+  const candidate = payload as Partial<FamilyPushSubscriptionRecord>;
+  if (
+    typeof candidate.endpoint !== 'string'
+    || !candidate.keys
+    || typeof candidate.keys !== 'object'
+    || typeof candidate.keys.p256dh !== 'string'
+    || typeof candidate.keys.auth !== 'string'
+  ) {
+    throw new Error('Family push subscription payload is malformed');
+  }
+
+  return {
+    endpoint: candidate.endpoint,
+    expirationTime: typeof candidate.expirationTime === 'number' ? candidate.expirationTime : null,
+    keys: {
+      p256dh: candidate.keys.p256dh,
+      auth: candidate.keys.auth,
+    },
+    deviceId: typeof candidate.deviceId === 'string' ? candidate.deviceId : undefined,
+    userId: typeof candidate.userId === 'string' ? candidate.userId : undefined,
+    authState: candidate.authState === 'authenticated' ? 'authenticated' : 'anonymous',
+    createdAt: typeof candidate.createdAt === 'string' ? candidate.createdAt : new Date().toISOString(),
+    updatedAt: typeof candidate.updatedAt === 'string' ? candidate.updatedAt : new Date().toISOString(),
+  };
 }
 
 function getRequestSession(request: Request): FamilySyncRequestSession {
@@ -271,6 +327,17 @@ function canDeleteGroup(
   return isSessionMember(existingRecord.members[0], session);
 }
 
+function isSubscriptionOwnedBySession(
+  subscription: Pick<FamilyPushSubscriptionRecord, 'deviceId' | 'userId'>,
+  session: FamilySyncRequestSession
+): boolean {
+  if (session.userId && subscription.userId === session.userId) {
+    return true;
+  }
+
+  return Boolean(session.deviceId) && subscription.deviceId === session.deviceId;
+}
+
 function jsonResponse(
   data: unknown,
   status: number,
@@ -297,6 +364,13 @@ function textResponse(
   });
 }
 
+function parsePathSegments(pathname: string): string[] {
+  return pathname
+    .replace(/^\/+|\/+$/g, '')
+    .split('/')
+    .filter((segment) => segment.length > 0);
+}
+
 async function handleGetGroup(
   groupCode: string,
   state: DurableObjectStateLike,
@@ -314,6 +388,7 @@ async function handlePutGroup(
   request: Request,
   groupCode: string,
   state: DurableObjectStateLike,
+  env: Env,
   corsHeaders: Record<string, string>
 ): Promise<Response> {
   try {
@@ -352,6 +427,7 @@ async function handlePutGroup(
         };
 
     await state.storage.put(FAMILY_GROUP_RECORD_STORAGE_KEY, nextRecord);
+    await notifyGroupSubscribers(existingRecord, nextRecord, session, state, groupCode, env);
     return jsonResponse(nextRecord, 200, corsHeaders);
   } catch (error) {
     return jsonResponse(
@@ -383,7 +459,97 @@ async function handleDeleteGroup(
   }
 
   await state.storage.delete(FAMILY_GROUP_RECORD_STORAGE_KEY);
+  await state.storage.delete(FAMILY_PUSH_SUBSCRIPTIONS_STORAGE_KEY);
   return jsonResponse({ deleted: true }, 200, corsHeaders);
+}
+
+async function handleGetPushPublicKey(
+  env: Env,
+  corsHeaders: Record<string, string>
+): Promise<Response> {
+  return jsonResponse({
+    enabled: isFamilyPushEnabled(env),
+    publicKey: env.WEB_PUSH_PUBLIC_KEY ?? null,
+  }, 200, corsHeaders);
+}
+
+async function handleRegisterPushSubscription(
+  request: Request,
+  groupCode: string,
+  state: DurableObjectStateLike,
+  corsHeaders: Record<string, string>
+): Promise<Response> {
+  const session = getRequestSession(request);
+  if (isSessionMissingIdentity(session)) {
+    return jsonResponse({ error: 'Family sync session is missing device identity' }, 401, corsHeaders);
+  }
+
+  const existingRecord = await readStoredGroup(state, groupCode);
+  if (!existingRecord) {
+    return jsonResponse({ error: 'Not found' }, 404, corsHeaders);
+  }
+
+  try {
+    const body = await request.json() as FamilyPushSubscriptionRequest;
+    const decoded = decodeFamilyPushSubscriptionRecord(body.subscription);
+    const subscriptions = await readStoredPushSubscriptions(state);
+    const now = new Date().toISOString();
+    const existingSubscription = subscriptions.find((entry) => entry.endpoint === decoded.endpoint);
+    const nextSubscription: FamilyPushSubscriptionRecord = {
+      ...decoded,
+      deviceId: session.deviceId ?? undefined,
+      userId: session.userId ?? undefined,
+      authState: session.authState,
+      createdAt: existingSubscription?.createdAt ?? now,
+      updatedAt: now,
+    };
+
+    await writeStoredPushSubscriptions(state, [
+      ...subscriptions.filter((entry) => entry.endpoint !== nextSubscription.endpoint),
+      nextSubscription,
+    ]);
+
+    return jsonResponse({ registered: true }, 200, corsHeaders);
+  } catch (error) {
+    return jsonResponse(
+      { error: error instanceof Error ? error.message : 'Invalid push subscription payload' },
+      400,
+      corsHeaders
+    );
+  }
+}
+
+async function handleUnregisterPushSubscription(
+  request: Request,
+  state: DurableObjectStateLike,
+  corsHeaders: Record<string, string>
+): Promise<Response> {
+  const session = getRequestSession(request);
+  if (isSessionMissingIdentity(session)) {
+    return jsonResponse({ error: 'Family sync session is missing device identity' }, 401, corsHeaders);
+  }
+
+  try {
+    const body = await request.json() as FamilyPushUnregisterRequest;
+    if (!body.endpoint || typeof body.endpoint !== 'string') {
+      return jsonResponse({ error: 'Invalid push unsubscribe payload' }, 400, corsHeaders);
+    }
+
+    const subscriptions = await readStoredPushSubscriptions(state);
+    await writeStoredPushSubscriptions(
+      state,
+      subscriptions.filter((entry) => !(
+        entry.endpoint === body.endpoint && isSubscriptionOwnedBySession(entry, session)
+      ))
+    );
+    return jsonResponse({ unregistered: true }, 200, corsHeaders);
+  } catch (error) {
+    return jsonResponse(
+      { error: error instanceof Error ? error.message : 'Invalid push unsubscribe payload' },
+      400,
+      corsHeaders
+    );
+  }
 }
 
 async function readStoredGroup(
@@ -403,6 +569,173 @@ async function readStoredGroup(
   }
 }
 
+async function readStoredPushSubscriptions(
+  state: DurableObjectStateLike
+): Promise<FamilyPushSubscriptionRecord[]> {
+  const stored = await state.storage.get<unknown>(FAMILY_PUSH_SUBSCRIPTIONS_STORAGE_KEY);
+  if (!stored) {
+    return [];
+  }
+
+  const rawValue = typeof stored === 'string' ? JSON.parse(stored) : stored;
+  if (!Array.isArray(rawValue)) {
+    throw new Error('Stored family push subscriptions are malformed');
+  }
+
+  return rawValue.map(decodeFamilyPushSubscriptionRecord);
+}
+
+async function writeStoredPushSubscriptions(
+  state: DurableObjectStateLike,
+  subscriptions: FamilyPushSubscriptionRecord[]
+): Promise<void> {
+  if (subscriptions.length === 0) {
+    await state.storage.delete(FAMILY_PUSH_SUBSCRIPTIONS_STORAGE_KEY);
+    return;
+  }
+
+  await state.storage.put(FAMILY_PUSH_SUBSCRIPTIONS_STORAGE_KEY, subscriptions);
+}
+
+function getFamilyPushNotificationEvents(
+  previousRecord: FamilyRemoteGroupRecord | null,
+  nextRecord: FamilyRemoteGroupRecord | null
+): FamilyPushNotificationEvent[] {
+  if (!previousRecord || !nextRecord || previousRecord.inviteCode !== nextRecord.inviteCode) {
+    return [];
+  }
+
+  const events: FamilyPushNotificationEvent[] = [];
+
+  for (const nextMember of nextRecord.members) {
+    const previousMember = previousRecord.members.find((member) => isSameMemberIdentity(member, nextMember));
+    if (!previousMember) {
+      events.push({
+        type: 'member_joined',
+        memberId: nextMember.id,
+        memberName: nextMember.name,
+      });
+      continue;
+    }
+
+    if (previousMember.status !== nextMember.status) {
+      if (nextMember.status === 'safe') {
+        events.push({
+          type: 'member_safe',
+          memberId: nextMember.id,
+          memberName: nextMember.name,
+        });
+      } else if (previousMember.status === 'safe' && nextMember.status === 'needs_check_in') {
+        events.push({
+          type: 'member_needs_check_in',
+          memberId: nextMember.id,
+          memberName: nextMember.name,
+        });
+      }
+    }
+  }
+
+  for (const previousMember of previousRecord.members) {
+    if (!nextRecord.members.some((member) => isSameMemberIdentity(member, previousMember))) {
+      events.push({
+        type: 'member_left',
+        memberId: previousMember.id,
+        memberName: previousMember.name,
+      });
+    }
+  }
+
+  return events;
+}
+
+function buildFamilyPushPayload(
+  groupCode: string,
+  event: FamilyPushNotificationEvent
+): FamilyPushPayload {
+  switch (event.type) {
+    case 'member_joined':
+      return {
+        title: 'Family Update',
+        body: `${event.memberName} joined your family group.`,
+        tag: `family-joined-${groupCode}-${event.memberId}`,
+        url: `/?familyGroup=${encodeURIComponent(groupCode)}`,
+      };
+    case 'member_left':
+      return {
+        title: 'Family Update',
+        body: `${event.memberName} left your family group.`,
+        tag: `family-left-${groupCode}-${event.memberId}`,
+        url: `/?familyGroup=${encodeURIComponent(groupCode)}`,
+      };
+    case 'member_safe':
+      return {
+        title: 'Family Safety Check-In',
+        body: `${event.memberName} marked themselves safe.`,
+        tag: `family-safe-${groupCode}-${event.memberId}`,
+        url: `/?familyGroup=${encodeURIComponent(groupCode)}`,
+      };
+    case 'member_needs_check_in':
+      return {
+        title: 'Family Safety Check-In',
+        body: `${event.memberName} needs a check-in.`,
+        tag: `family-checkin-${groupCode}-${event.memberId}`,
+        url: `/?familyGroup=${encodeURIComponent(groupCode)}`,
+      };
+    default:
+      return {
+        title: 'Family Update',
+        body: event.memberName,
+        tag: `family-${groupCode}-${event.memberId}`,
+        url: `/?familyGroup=${encodeURIComponent(groupCode)}`,
+      };
+  }
+}
+
+async function notifyGroupSubscribers(
+  previousRecord: FamilyRemoteGroupRecord | null,
+  nextRecord: FamilyRemoteGroupRecord,
+  session: FamilySyncRequestSession,
+  state: DurableObjectStateLike,
+  groupCode: string,
+  env: Env
+): Promise<void> {
+  if (!isFamilyPushEnabled(env)) {
+    return;
+  }
+
+  const events = getFamilyPushNotificationEvents(previousRecord, nextRecord);
+  if (events.length === 0) {
+    return;
+  }
+
+  const subscriptions = await readStoredPushSubscriptions(state);
+  const targetSubscriptions = subscriptions.filter((subscription) => !isSubscriptionOwnedBySession(subscription, session));
+  if (targetSubscriptions.length === 0) {
+    return;
+  }
+
+  const staleEndpoints = new Set<string>();
+  for (const event of events) {
+    const payload = buildFamilyPushPayload(groupCode, event);
+    const results = await Promise.all(
+      targetSubscriptions.map((subscription) => sendFamilyPushNotification(subscription, payload, env))
+    );
+
+    results.forEach((result, index) => {
+      if (result === 'stale') {
+        staleEndpoints.add(targetSubscriptions[index].endpoint);
+      }
+    });
+  }
+
+  if (staleEndpoints.size > 0) {
+    await writeStoredPushSubscriptions(
+      state,
+      subscriptions.filter((subscription) => !staleEndpoints.has(subscription.endpoint))
+    );
+  }
+}
+
 export class FamilyGroupDurableObject {
   private readonly state: DurableObjectStateLike;
   private readonly env: Env;
@@ -416,6 +749,9 @@ export class FamilyGroupDurableObject {
     const origin = request.headers.get('Origin') || '';
     const corsHeaders = getCorsHeaders(origin, this.env);
     const url = new URL(request.url);
+    const segments = parsePathSegments(url.pathname);
+    const groupCode = normalizeGroupCode(segments[0] ?? '');
+    const subPath = segments.slice(1).join('/');
 
     if (request.method === 'OPTIONS') {
       if (origin && !corsHeaders['Access-Control-Allow-Origin']) {
@@ -425,25 +761,34 @@ export class FamilyGroupDurableObject {
       return new Response(null, { status: 204, headers: corsHeaders });
     }
 
-    const groupCode = normalizeGroupCode(url.pathname.replace(/^\/+/, ''));
     if (!groupCode) {
       return jsonResponse({ error: 'Invalid family group code' }, 404, corsHeaders);
     }
 
-    if (request.method === 'GET') {
-      try {
-        return await handleGetGroup(groupCode, this.state, corsHeaders);
-      } catch {
-        return jsonResponse({ error: 'Stored family record is malformed' }, 500, corsHeaders);
+    if (!subPath) {
+      if (request.method === 'GET') {
+        try {
+          return await handleGetGroup(groupCode, this.state, corsHeaders);
+        } catch {
+          return jsonResponse({ error: 'Stored family record is malformed' }, 500, corsHeaders);
+        }
+      }
+
+      if (request.method === 'PUT') {
+        return handlePutGroup(request, groupCode, this.state, this.env, corsHeaders);
+      }
+
+      if (request.method === 'DELETE') {
+        return handleDeleteGroup(request, groupCode, this.state, corsHeaders);
       }
     }
 
-    if (request.method === 'PUT') {
-      return handlePutGroup(request, groupCode, this.state, corsHeaders);
+    if (request.method === 'POST' && subPath === 'push-subscriptions') {
+      return handleRegisterPushSubscription(request, groupCode, this.state, corsHeaders);
     }
 
-    if (request.method === 'DELETE') {
-      return handleDeleteGroup(request, groupCode, this.state, corsHeaders);
+    if (request.method === 'POST' && subPath === 'push-subscriptions/unregister') {
+      return handleUnregisterPushSubscription(request, this.state, corsHeaders);
     }
 
     return textResponse('Method not allowed', 405, corsHeaders);
@@ -452,10 +797,18 @@ export class FamilyGroupDurableObject {
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
+    const origin = request.headers.get('Origin') || '';
+    const corsHeaders = getCorsHeaders(origin, env);
     const url = new URL(request.url);
-    const groupCode = normalizeGroupCode(url.pathname.replace(/^\/+/, ''));
+    const segments = parsePathSegments(url.pathname);
+
+    if (segments[0] === 'push' && segments[1] === 'public-key') {
+      return handleGetPushPublicKey(env, corsHeaders);
+    }
+
+    const groupCode = normalizeGroupCode(segments[0] ?? '');
     if (!groupCode) {
-      return jsonResponse({ error: 'Invalid family group code' }, 404, {});
+      return jsonResponse({ error: 'Invalid family group code' }, 404, corsHeaders);
     }
 
     const objectId = env.FAMILY_GROUPS_DO.idFromName(groupCode);

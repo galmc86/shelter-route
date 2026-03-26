@@ -75,7 +75,7 @@ src/
   sw/            # Service worker request classifiers and caching logic
 workers/
   oref-proxy/    # Cloudflare Worker that proxies OREF Home Front Command alert API
-  family-sync/   # Cloudflare Worker that stores family sync group records in KV
+  family-sync/   # Cloudflare Worker that stores family sync group records in Durable Objects and sends family web push
 public/
   shelters.json  # Shelter coordinate dataset served as a static asset
   sw.js          # Service worker entry point
@@ -108,7 +108,7 @@ The app is deployed to **Cloudflare Pages** at `https://shelter-route.pages.dev`
 
 The family sync backend now has a concrete deployment path:
 
-1. Follow [workers/family-sync/README.md](/Users/gal.machluf/projects/shelter-finder/workers/family-sync/README.md) to create the KV namespaces and deploy the worker.
+1. Follow [workers/family-sync/README.md](/Users/gal.machluf/projects/shelter-finder/workers/family-sync/README.md) to deploy the worker and configure web push VAPID keys.
 2. Set `VITE_FAMILY_REMOTE_URL` in the app environment to the deployed worker URL.
 3. Run:
 
@@ -128,6 +128,8 @@ VITE_FAMILY_REMOTE_URL=https://family-sync.<your-subdomain>.workers.dev npm run 
 That Playwright flow uses two real browser contexts and verifies UI-driven create, join, "I'm Safe", member-scoped leave, and final remote clear against the configured backend.
 
 It also includes an authenticated-session rejoin path, so the same `familyRemoteUserId` can rejoin from a second device context without creating a duplicate family member.
+
+For background family notifications, the worker also needs `WEB_PUSH_PUBLIC_KEY` and `WEB_PUSH_PRIVATE_KEY` secrets. The app fetches the public key from the worker and registers browser push subscriptions per family group; on iPhone this requires launching the app from a Home Screen icon.
 
 ## License
 

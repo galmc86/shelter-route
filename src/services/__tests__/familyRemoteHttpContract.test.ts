@@ -1,8 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   decodeFamilyRemoteGroupResponse,
+  encodeFamilyRemotePushSubscriptionRequest,
   encodeFamilyRemoteGroupRequest,
   getFamilyRemoteGroupEndpoint,
+  getFamilyRemotePushPublicKeyEndpoint,
+  getFamilyRemotePushSubscriptionRegisterEndpoint,
+  getFamilyRemotePushSubscriptionUnregisterEndpoint,
 } from '../familyRemoteHttpContract';
 
 describe('familyRemoteHttpContract', () => {
@@ -13,9 +17,17 @@ describe('familyRemoteHttpContract', () => {
 
   it('builds the group endpoint from the configured base URL', async () => {
     vi.stubEnv('VITE_FAMILY_REMOTE_URL', 'https://family.example.com/api');
-    const { getFamilyRemoteGroupEndpoint: getEndpoint } = await import('../familyRemoteHttpContract');
+    const {
+      getFamilyRemoteGroupEndpoint: getEndpoint,
+      getFamilyRemotePushPublicKeyEndpoint: getPublicKeyEndpoint,
+      getFamilyRemotePushSubscriptionRegisterEndpoint: getRegisterEndpoint,
+      getFamilyRemotePushSubscriptionUnregisterEndpoint: getUnregisterEndpoint,
+    } = await import('../familyRemoteHttpContract');
 
     expect(getEndpoint('abc123')).toBe('https://family.example.com/api/ABC123');
+    expect(getPublicKeyEndpoint()).toBe('https://family.example.com/api/push/public-key');
+    expect(getRegisterEndpoint('abc123')).toBe('https://family.example.com/api/ABC123/push-subscriptions');
+    expect(getUnregisterEndpoint('abc123')).toBe('https://family.example.com/api/ABC123/push-subscriptions/unregister');
   });
 
   it('encodes and decodes the remote group payload shape', () => {
@@ -60,5 +72,26 @@ describe('familyRemoteHttpContract', () => {
 
   it('returns null endpoint when the base URL is missing', () => {
     expect(getFamilyRemoteGroupEndpoint('ABC123')).toBeNull();
+    expect(getFamilyRemotePushPublicKeyEndpoint()).toBeNull();
+    expect(getFamilyRemotePushSubscriptionRegisterEndpoint('ABC123')).toBeNull();
+    expect(getFamilyRemotePushSubscriptionUnregisterEndpoint('ABC123')).toBeNull();
+  });
+
+  it('encodes browser push subscriptions for the backend contract', () => {
+    expect(encodeFamilyRemotePushSubscriptionRequest({
+      endpoint: 'https://push.example.com/subscription',
+      expirationTime: null,
+      keys: {
+        p256dh: 'p256dh-key',
+        auth: 'auth-key',
+      },
+    })).toEqual({
+      endpoint: 'https://push.example.com/subscription',
+      expirationTime: null,
+      keys: {
+        p256dh: 'p256dh-key',
+        auth: 'auth-key',
+      },
+    });
   });
 });

@@ -216,6 +216,8 @@ The remote gateway should accept an explicit remote session object instead of re
 - the remote session seam should be bootstrapable from query/env/storage before real auth exists, so authenticated family identity can be exercised in QA and eventually swapped to a proper auth provider without rewiring repository/client code
 - the worker-backed transport tests should also prove the alert coordination loop end to end: a member transitions to `needs_check_in`, other devices observe that state, and the later safe confirmation propagates back through the real backend/client path
 - the backend-backed browser E2E should also prove authenticated same-user rejoin, so the same remote `userId` can move across devices without creating duplicate family members in the shared group
+- once the backend is live, family notifications should move from client-only local diff notifications to real web push subscriptions stored on the worker, so member joins/safe/check-in updates can arrive while the app is closed
+- that web push path should expose a public VAPID key endpoint, register/unregister subscriptions per family group, and send push only to non-originating devices when membership or safety state changes
 
 ### Phase 3
 
