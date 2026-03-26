@@ -229,6 +229,7 @@ Notes:
 - Family push subscriptions are now only torn down on an explicit leave action, not on transient family-state drops during sync/hydration, and family event notifications now use per-event keys so repeated safe/check-in updates do not collapse into stale reused notifications.
 - The Family safety action now behaves as a real toggle: users can mark themselves safe and later clear that safe state back to `needs_check_in` with one tap.
 - Family web push now also drives live sync for open tabs: the service worker broadcasts family push events to visible clients so the app can retry family sync immediately instead of waiting for the next polling window, while backend GET polling now explicitly bypasses browser cache as a fallback.
+- Family HTTP polling now fails fast and interactive refreshes can interrupt a stuck in-flight poll, which prevents one slow backend request from blocking family sync updates for 20-30 seconds on an otherwise focused desktop tab.
 
 ### Epic 10: Saved Places to Safety Profiles
 Objective: turn saved locations into reusable routines.

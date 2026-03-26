@@ -2,7 +2,9 @@ import { waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   FAMILY_REMOTE_HTTP_BACKGROUND_POLL_INTERVAL_MS,
+  FAMILY_REMOTE_HTTP_MAX_POLL_INTERVAL_MS,
   FAMILY_REMOTE_HTTP_POLL_INTERVAL_MS,
+  FAMILY_REMOTE_HTTP_REQUEST_TIMEOUT_MS,
   getHttpFamilyRemoteClient,
 } from '../httpFamilyRemoteClient';
 import { getFamilyRemoteSession } from '../familyRemoteSessionService';
@@ -457,10 +459,13 @@ describe('httpFamilyRemoteClient', () => {
     await vi.advanceTimersByTimeAsync(FAMILY_REMOTE_HTTP_POLL_INTERVAL_MS);
     expect(fetchSpy).toHaveBeenCalledTimes(1);
 
-    await vi.advanceTimersByTimeAsync(500);
+    await vi.advanceTimersByTimeAsync((FAMILY_REMOTE_HTTP_POLL_INTERVAL_MS * 2) - 1);
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+
+    await vi.advanceTimersByTimeAsync(1);
     expect(fetchSpy).toHaveBeenCalledTimes(2);
 
-    await vi.advanceTimersByTimeAsync((FAMILY_REMOTE_HTTP_POLL_INTERVAL_MS * 2) - 1);
+    await vi.advanceTimersByTimeAsync(FAMILY_REMOTE_HTTP_MAX_POLL_INTERVAL_MS - 1);
     expect(fetchSpy).toHaveBeenCalledTimes(2);
 
     await vi.advanceTimersByTimeAsync(1);
@@ -473,5 +478,74 @@ describe('httpFamilyRemoteClient', () => {
     expect(fetchSpy).toHaveBeenCalledTimes(4);
 
     unsubscribe();
+  });
+
+  it('interrupts a stuck poll and refreshes immediately when the tab regains focus', async () => {
+    vi.useFakeTimers();
+    vi.stubEnv('VITE_FAMILY_REMOTE_URL', 'https://family.example.com/api');
+    const { getHttpFamilyRemoteClient: getClient } = await import('../httpFamilyRemoteClient');
+    const client = getClient();
+    const session = getFamilyRemoteSession();
+
+    const fetchSpy = vi.spyOn(globalThis, 'fetch')
+      .mockImplementationOnce((_input, init) => new Promise<Response>((resolve, reject) => {
+        const signal = init?.signal as AbortSignal | undefined;
+        signal?.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')));
+      }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        ...groupFixture,
+        updatedAt: '2026-03-26T02:00:00.000Z',
+      }), { status: 200 }));
+
+    const unsubscribe = client.subscribe('ABC123', session, vi.fn());
+
+    await vi.advanceTimersByTimeAsync(FAMILY_REMOTE_HTTP_POLL_INTERVAL_MS);
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+
+    window.dispatchEvent(new Event('focus'));
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(fetchSpy.mock.calls.length).toBeGreaterThanOrEqual(2);
+
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const cached = localStorage.getItem(CACHE_KEY);
+    expect(cached).not.toBeNull();
+    expect(JSON.parse(cached as string).updatedAt).toBe('2026-03-26T02:00:00.000Z');
+
+    unsubscribe();
+  });
+
+  it('fails slow family refreshes fast instead of holding the poller for a long retry window', async () => {
+    vi.useFakeTimers();
+    vi.stubEnv('VITE_FAMILY_REMOTE_URL', 'https://family.example.com/api');
+    vi.spyOn(Math, 'random').mockReturnValue(0.5);
+    const { getHttpFamilyRemoteClient: getClient } = await import('../httpFamilyRemoteClient');
+    const client = getClient();
+    const session = getFamilyRemoteSession();
+
+    const fetchSpy = vi.spyOn(globalThis, 'fetch')
+      .mockImplementationOnce((_input, init) => new Promise<Response>((_resolve, reject) => {
+        const signal = init?.signal as AbortSignal | undefined;
+        signal?.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')));
+      }))
+      .mockResolvedValue(new Response(JSON.stringify({
+        ...groupFixture,
+        updatedAt: '2026-03-26T02:15:00.000Z',
+      }), { status: 200 }));
+
+    client.subscribe('ABC123', session, vi.fn());
+
+    const initialCallCount = fetchSpy.mock.calls.length;
+    await vi.advanceTimersByTimeAsync(FAMILY_REMOTE_HTTP_POLL_INTERVAL_MS);
+    expect(fetchSpy.mock.calls.length).toBeGreaterThan(initialCallCount);
+
+    const afterFirstWindowCallCount = fetchSpy.mock.calls.length;
+    await vi.advanceTimersByTimeAsync(FAMILY_REMOTE_HTTP_REQUEST_TIMEOUT_MS + (FAMILY_REMOTE_HTTP_POLL_INTERVAL_MS * 2) - 1);
+    expect(fetchSpy.mock.calls.length).toBe(afterFirstWindowCallCount);
+
+    await vi.advanceTimersByTimeAsync(1);
+    expect(fetchSpy.mock.calls.length).toBeGreaterThan(afterFirstWindowCallCount);
   });
 });

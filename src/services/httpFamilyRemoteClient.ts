@@ -16,12 +16,15 @@ const REMOTE_CACHE_UPDATED_EVENT = 'family-remote-http-cache-updated';
 export const FAMILY_REMOTE_HTTP_POLL_INTERVAL_MS = 5000;
 export const FAMILY_REMOTE_HTTP_BACKGROUND_POLL_INTERVAL_MS = 15000;
 export const FAMILY_REMOTE_HTTP_MAX_POLL_INTERVAL_MS = 15000;
+export const FAMILY_REMOTE_HTTP_REQUEST_TIMEOUT_MS = 3000;
 const activePollingSubscriptions = new Map<string, {
   refCount: number;
   timeoutId: number | null;
   refreshIfInteractive: () => void;
   consecutiveFailures: number;
   isRefreshing: boolean;
+  abortController: AbortController | null;
+  needsImmediateRefresh: boolean;
 }>();
 
 type FamilyRemotePollOutcome = 'success' | 'failure' | 'skipped';
@@ -117,18 +120,34 @@ function getNextPollingDelayMs(consecutiveFailures: number): number {
   return Math.round(backoffDelay * jitterFactor);
 }
 
-async function refreshGroup(groupCode: string, session: FamilyRemoteSession): Promise<FamilyRemotePollOutcome> {
+async function refreshGroup(
+  groupCode: string,
+  session: FamilyRemoteSession,
+  options: {
+    signal?: AbortSignal;
+    retries?: number;
+    timeout?: number;
+  } = {}
+): Promise<FamilyRemotePollOutcome> {
   const resolvedEndpoint = getFamilyRemoteGroupEndpoint(groupCode);
   if (!resolvedEndpoint) {
     return 'skipped';
   }
+
+  const {
+    signal,
+    retries = 0,
+    timeout = FAMILY_REMOTE_HTTP_REQUEST_TIMEOUT_MS,
+  } = options;
 
   const result = await resilientFetch<unknown>(resolvedEndpoint, {
     method: 'GET',
     cache: 'no-store',
     headers: getHeaders(session),
   }, {
-    retries: 1,
+    signal,
+    timeout,
+    retries,
     retryDelay: 500,
   });
 
@@ -262,10 +281,21 @@ function acquirePollingSubscription(groupCode: string, session: FamilyRemoteSess
   const refreshIfInteractive = () => {
     if (shouldPollRemoteGroup()) {
       const activeSubscription = activePollingSubscriptions.get(subscriptionKey);
-      if (activeSubscription && activeSubscription.timeoutId !== null) {
+      if (!activeSubscription) {
+        return;
+      }
+
+      if (activeSubscription.isRefreshing) {
+        activeSubscription.needsImmediateRefresh = true;
+        activeSubscription.abortController?.abort();
+        return;
+      }
+
+      if (activeSubscription.timeoutId !== null) {
         window.clearTimeout(activeSubscription.timeoutId);
         activeSubscription.timeoutId = null;
       }
+
       void runPollingRefreshCycle(subscriptionKey, normalizedCode, session);
     }
   };
@@ -276,6 +306,8 @@ function acquirePollingSubscription(groupCode: string, session: FamilyRemoteSess
     refreshIfInteractive,
     consecutiveFailures: 0,
     isRefreshing: false,
+    abortController: null,
+    needsImmediateRefresh: false,
   });
   scheduleNextPollingRefresh(subscriptionKey, normalizedCode, session);
   window.addEventListener('online', refreshIfInteractive);
@@ -322,20 +354,32 @@ async function runPollingRefreshCycle(
   }
 
   activeSubscription.isRefreshing = true;
+  const abortController = new AbortController();
+  activeSubscription.abortController = abortController;
   try {
-    const outcome = await refreshGroup(groupCode, session);
+    const outcome = await refreshGroup(groupCode, session, {
+      signal: abortController.signal,
+    });
     const currentSubscription = activePollingSubscriptions.get(subscriptionKey);
     if (!currentSubscription) {
       return;
     }
 
-    currentSubscription.consecutiveFailures = outcome === 'failure'
+    currentSubscription.consecutiveFailures = abortController.signal.aborted
+      ? 0
+      : outcome === 'failure'
       ? currentSubscription.consecutiveFailures + 1
       : 0;
   } finally {
     const currentSubscription = activePollingSubscriptions.get(subscriptionKey);
     if (currentSubscription) {
+      currentSubscription.abortController = null;
       currentSubscription.isRefreshing = false;
+      if (currentSubscription.needsImmediateRefresh) {
+        currentSubscription.needsImmediateRefresh = false;
+        void runPollingRefreshCycle(subscriptionKey, groupCode, session);
+        return;
+      }
       scheduleNextPollingRefresh(subscriptionKey, groupCode, session);
     }
   }
@@ -355,6 +399,7 @@ function releasePollingSubscription(subscriptionKey: string): void {
   if (activeSubscription.timeoutId !== null) {
     window.clearTimeout(activeSubscription.timeoutId);
   }
+  activeSubscription.abortController?.abort();
   window.removeEventListener('online', activeSubscription.refreshIfInteractive);
   window.removeEventListener('focus', activeSubscription.refreshIfInteractive);
   document.removeEventListener('visibilitychange', activeSubscription.refreshIfInteractive);
