@@ -6,6 +6,7 @@ import { SearchPanel } from './components/SearchPanel';
 import { MapView } from './components/MapView';
 import { EmergencyButton } from './components/EmergencyButton';
 import { FamilySafety } from './components/FamilySafety';
+import { FamilySyncKeepAlive } from './components/FamilySyncKeepAlive';
 import { SafetyDashboard } from './components/SafetyDashboard';
 import { OfflineIndicator } from './components/OfflineIndicator';
 import { AlertBanner } from './components/AlertBanner';
@@ -257,6 +258,7 @@ function App() {
     <EmergencyProvider value={emergencyContextValue}>
     <ShelterProvider value={shelterContextValue}>
     <FamilyRepositoryProvider value={familyRepository}>
+    <FamilySyncKeepAlive />
     <div className={`app${isAlertActive ? ' app-with-alert' : ''}`} dir={language === 'en' || language === 'ru' ? 'ltr' : 'rtl'} data-theme={theme}>
       {showOnboarding && (
         <Onboarding onComplete={completeOnboarding} />

@@ -101,6 +101,8 @@ export class HybridFamilyRepository implements FamilyRepository {
   private readonly localRepository: MutableFamilyRepository;
   private readonly remoteGateway: FamilyRemoteGateway;
   private readonly getRemoteSession: FamilyRemoteSessionSource;
+  private readonly listeners = new Set<() => void>();
+  private localUnsubscribe: (() => void) | null = null;
   private remoteUnsubscribe: (() => void) | null = null;
   private onlineUnsubscribe: (() => void) | null = null;
   private authUnsubscribe: (() => void) | null = null;
@@ -130,26 +132,34 @@ export class HybridFamilyRepository implements FamilyRepository {
 
   subscribe(listener: () => void): () => void {
     this.flushPendingMutations();
-    this.ensureRemoteSubscription();
-    this.ensureOnlineRetry(listener);
-    this.ensureAuthRetry(listener);
+    this.listeners.add(listener);
 
-    const unsubscribeLocal = this.localRepository.subscribe(() => {
-      this.flushPendingMutations();
-      this.ensureRemoteSubscription();
-      listener();
-    });
+    if (!this.localUnsubscribe) {
+      this.localUnsubscribe = this.localRepository.subscribe(() => {
+        this.flushPendingMutations();
+        this.ensureRemoteSubscription();
+        this.notifyListeners();
+      });
+    }
+
+    this.ensureRemoteSubscription();
+    this.ensureOnlineRetry();
+    this.ensureAuthRetry();
 
     return () => {
-      unsubscribeLocal();
-      this.remoteUnsubscribe?.();
-      this.onlineUnsubscribe?.();
-      this.authUnsubscribe?.();
-      this.remoteUnsubscribe = null;
-      this.onlineUnsubscribe = null;
-      this.authUnsubscribe = null;
-      this.subscribedGroupCode = null;
-      this.subscribedSessionKey = null;
+      this.listeners.delete(listener);
+      if (this.listeners.size === 0) {
+        this.localUnsubscribe?.();
+        this.localUnsubscribe = null;
+        this.remoteUnsubscribe?.();
+        this.onlineUnsubscribe?.();
+        this.authUnsubscribe?.();
+        this.remoteUnsubscribe = null;
+        this.onlineUnsubscribe = null;
+        this.authUnsubscribe = null;
+        this.subscribedGroupCode = null;
+        this.subscribedSessionKey = null;
+      }
     };
   }
 
@@ -250,7 +260,7 @@ export class HybridFamilyRepository implements FamilyRepository {
     this.hydrateFromRemote(groupCode);
   }
 
-  private ensureOnlineRetry(listener: () => void): void {
+  private ensureOnlineRetry(): void {
     if (this.onlineUnsubscribe || typeof window === 'undefined') {
       return;
     }
@@ -261,7 +271,7 @@ export class HybridFamilyRepository implements FamilyRepository {
       if (groupCode) {
         this.hydrateFromRemote(groupCode);
       }
-      listener();
+      this.notifyListeners();
     };
 
     window.addEventListener('online', handleOnline);
@@ -270,7 +280,7 @@ export class HybridFamilyRepository implements FamilyRepository {
     };
   }
 
-  private ensureAuthRetry(listener: () => void): void {
+  private ensureAuthRetry(): void {
     if (this.authUnsubscribe) {
       return;
     }
@@ -282,8 +292,14 @@ export class HybridFamilyRepository implements FamilyRepository {
       if (groupCode) {
         this.hydrateFromRemote(groupCode);
       }
-      listener();
+      this.notifyListeners();
     });
+  }
+
+  private notifyListeners(): void {
+    for (const listener of this.listeners) {
+      listener();
+    }
   }
 
   private hydrateFromRemote(groupCode: string): FamilyGroup | null {

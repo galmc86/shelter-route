@@ -13,7 +13,7 @@ import type { FamilyRemoteSession } from './familyRemoteSessionService';
 
 const STORAGE_KEY_PREFIX = 'shelter-route:family-remote-http-cache:';
 const REMOTE_CACHE_UPDATED_EVENT = 'family-remote-http-cache-updated';
-export const FAMILY_REMOTE_HTTP_POLL_INTERVAL_MS = 15000;
+export const FAMILY_REMOTE_HTTP_POLL_INTERVAL_MS = 5000;
 export const FAMILY_REMOTE_HTTP_MAX_POLL_INTERVAL_MS = 120000;
 const activePollingSubscriptions = new Map<string, {
   refCount: number;

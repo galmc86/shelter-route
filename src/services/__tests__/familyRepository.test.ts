@@ -55,6 +55,35 @@ describe('familyRepository', () => {
     expect(listener).toHaveBeenCalledTimes(1);
   });
 
+  it('keeps the hybrid remote subscription active until the last subscriber unsubscribes', () => {
+    const remoteUnsubscribe = vi.fn();
+    const remoteGateway: FamilyRemoteGateway = {
+      getGroup: vi.fn(() => null),
+      upsertGroup: vi.fn((record) => record),
+      clearGroup: vi.fn(),
+      subscribe: vi.fn(() => remoteUnsubscribe),
+    };
+
+    const repository = createFamilyRepository({
+      mode: 'hybrid',
+      remoteGateway,
+      remoteSession: { deviceId: 'device-1', userId: null, authState: 'anonymous' },
+    });
+
+    const unsubscribeKeepAlive = repository.subscribe(() => {});
+    const unsubscribePanel = repository.subscribe(() => {});
+
+    repository.createGroup('Dana');
+
+    expect(remoteGateway.subscribe).toHaveBeenCalledTimes(1);
+
+    unsubscribePanel();
+    expect(remoteUnsubscribe).not.toHaveBeenCalled();
+
+    unsubscribeKeepAlive();
+    expect(remoteUnsubscribe).toHaveBeenCalledTimes(1);
+  });
+
   it('can hydrate additional members from the mock remote adapter in hybrid mode', () => {
     localStorage.setItem(FAMILY_SYNC_MODE_STORAGE_KEY, 'hybrid');
     const repository = getFamilyRepository();
