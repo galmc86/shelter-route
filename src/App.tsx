@@ -18,6 +18,7 @@ import { useAppController } from './hooks/useAppController';
 import { getFamilyRepository } from './services/familyRepository';
 import { initializeFamilyRemoteClientModeFromUrl } from './services/familyRemoteClientModeService';
 import { initializeFamilyRemoteGatewayModeFromUrl } from './services/familyRemoteGatewayModeService';
+import { initializeFamilyRemoteSessionFromUrl } from './services/familyRemoteSessionService';
 import { initializeFamilySyncModeFromUrl } from './services/familySyncModeService';
 import './App.css';
 
@@ -84,6 +85,7 @@ function App() {
   const [familyRepository] = useState(() => {
     initializeFamilyRemoteClientModeFromUrl();
     initializeFamilyRemoteGatewayModeFromUrl();
+    initializeFamilyRemoteSessionFromUrl();
     initializeFamilySyncModeFromUrl();
     return getFamilyRepository();
   });

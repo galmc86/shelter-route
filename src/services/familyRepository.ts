@@ -277,7 +277,7 @@ export class HybridFamilyRepository implements FamilyRepository {
       kind: 'upsert',
       groupCode: group.groupCode,
       queuedAt: new Date().toISOString(),
-      record: mapFamilyGroupToRemoteRecord(group, previousRecord),
+      record: mapFamilyGroupToRemoteRecord(group, previousRecord, this.remoteSession),
     };
   }
 
@@ -332,7 +332,7 @@ export class HybridFamilyRepository implements FamilyRepository {
         ...group,
         currentMemberId: remainingMembers[0].id,
         members: remainingMembers,
-      }),
+      }, null, this.remoteSession),
       removedMemberIds: currentMember ? [currentMember.id] : undefined,
       removedDeviceIds: currentMember?.deviceId ? [currentMember.deviceId] : undefined,
     };

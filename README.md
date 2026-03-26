@@ -39,12 +39,15 @@ VITE_ORS_API_KEY=<your OpenRouteService API key>
 VITE_GOOGLE_MAPS_API_KEY=<your Google Maps API key for Places autocomplete>
 VITE_OREF_PROXY_URL=<URL of the deployed oref-proxy Cloudflare Worker>
 VITE_FAMILY_REMOTE_URL=<URL of the deployed family-sync Cloudflare Worker>
+VITE_FAMILY_REMOTE_AUTH_STATE=<optional: anonymous or authenticated>
+VITE_FAMILY_REMOTE_USER_ID=<optional: authenticated remote user id for family sync testing>
 ```
 
 - **VITE_ORS_API_KEY** -- required. Get a free key at https://openrouteservice.org/
 - **VITE_GOOGLE_MAPS_API_KEY** -- required for address autocomplete. Enable the Places API in Google Cloud Console.
 - **VITE_OREF_PROXY_URL** -- URL of the Cloudflare Worker that proxies OREF alert requests (avoids CORS issues).
 - **VITE_FAMILY_REMOTE_URL** -- URL of the Cloudflare Worker that stores and serves family group records for cross-device sync.
+- **VITE_FAMILY_REMOTE_AUTH_STATE** / **VITE_FAMILY_REMOTE_USER_ID** -- optional bootstrap for authenticated family-sync testing. These are primarily for local QA and backend integration work before a real auth provider is connected.
 
 ## Development
 

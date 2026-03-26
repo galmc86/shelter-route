@@ -179,6 +179,69 @@ describe('familyRepository', () => {
     expect(storedRecord?.members.find((member) => member.deviceId === 'device-joiner')?.id).toBe('member-2');
   });
 
+  it('reuses the remote member identity when the same authenticated user rejoins from a different device', () => {
+    localStorage.setItem('shelter-route:device-id', 'device-new');
+
+    let storedRecord: FamilyRemoteGroupRecord | null = {
+      id: 'family:ABC123',
+      inviteCode: 'ABC123',
+      version: 2,
+      createdAt: '2026-03-25T20:00:00.000Z',
+      updatedAt: '2026-03-25T20:00:00.000Z',
+      createdByMemberId: 'member-2',
+      members: [
+        {
+          id: 'member-1',
+          name: 'Dana',
+          userId: 'owner-user',
+          deviceId: 'device-owner',
+          role: 'member',
+          status: 'safe',
+          joinedAt: '2026-03-25T20:00:00.000Z',
+          lastStatusAt: '2026-03-25T20:00:00.000Z',
+          lastSeenAt: '2026-03-25T20:00:00.000Z',
+        },
+        {
+          id: 'member-2',
+          name: 'Noam',
+          userId: 'user-123',
+          deviceId: 'device-old',
+          role: 'owner',
+          status: 'needs_check_in',
+          joinedAt: '2026-03-25T21:00:00.000Z',
+          lastStatusAt: '2026-03-25T21:00:00.000Z',
+          lastSeenAt: '2026-03-25T21:00:00.000Z',
+        },
+      ],
+    };
+    const session: FamilyRemoteSession = {
+      deviceId: 'device-new',
+      userId: 'user-123',
+      authState: 'authenticated',
+    };
+
+    const remoteGateway: FamilyRemoteGateway = {
+      getGroup: vi.fn((groupCode: string, _session: FamilyRemoteSession) => (
+        storedRecord?.inviteCode === groupCode.toUpperCase() ? storedRecord : null
+      )),
+      upsertGroup: vi.fn((record, _session: FamilyRemoteSession) => {
+        storedRecord = record;
+        return record;
+      }),
+      clearGroup: vi.fn(),
+      subscribe: vi.fn((_groupCode: string, _session: FamilyRemoteSession) => () => {}),
+    };
+
+    const repository = createFamilyRepository({ mode: 'hybrid', remoteGateway, remoteSession: session });
+    const joined = repository.joinGroup('ABC123', 'Noam');
+
+    expect(joined.members).toHaveLength(2);
+    expect(joined.currentMemberId).toBe('member-2');
+    expect(storedRecord?.members).toHaveLength(2);
+    expect(storedRecord?.members.find((member) => member.userId === 'user-123')?.id).toBe('member-2');
+    expect(storedRecord?.members.find((member) => member.id === 'member-2')?.deviceId).toBe('device-new');
+  });
+
   it('can be created explicitly in hybrid mode without depending on storage flags', () => {
     const repository = createFamilyRepository({ mode: 'hybrid' });
 

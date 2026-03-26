@@ -211,6 +211,7 @@ The remote gateway should accept an explicit remote session object instead of re
 - backend rejection reasons should survive the transport layer as readable error strings, so sync diagnostics and retry UX can explain why a mutation is pending instead of only showing generic HTTP status text
 - the backend rollout should include an explicit deployment guide plus a smoke test against `VITE_FAMILY_REMOTE_URL`, so the worker can be validated in a real environment before the first cross-device E2E path depends on it
 - once the worker URL is configured, there should also be a backend-backed browser E2E that exercises the actual UI across two sessions, with the app dev server receiving `VITE_FAMILY_REMOTE_URL` and the worker allowing the local app origin for CORS
+- the remote session seam should be bootstrapable from query/env/storage before real auth exists, so authenticated family identity can be exercised in QA and eventually swapped to a proper auth provider without rewiring repository/client code
 
 ### Phase 3
 

@@ -1,4 +1,5 @@
 import type { FamilyGroup, FamilyMember } from './familySafetyService';
+import type { FamilyRemoteSession } from './familyRemoteSessionService';
 
 export type FamilyRemoteMemberStatus = 'safe' | 'needs_check_in' | 'unknown';
 
@@ -30,20 +31,30 @@ export interface FamilyRemoteRebaseOptions {
   removedDeviceIds?: string[];
 }
 
+type FamilyRemoteMappingSession = Pick<FamilyRemoteSession, 'authState' | 'userId'> & {
+  deviceId?: string;
+};
+
 export function mapFamilyGroupToRemoteRecord(
   group: FamilyGroup,
-  previousRecord: FamilyRemoteGroupRecord | null = null
+  previousRecord: FamilyRemoteGroupRecord | null = null,
+  session?: FamilyRemoteMappingSession
 ): FamilyRemoteGroupRecord {
   const now = new Date().toISOString();
   const previousMembers = new Map(previousRecord?.members.map((member) => [member.id, member]) ?? []);
   const mappedMembers = group.members.map((member) => {
-    const previousMember = resolvePreviousRemoteMember(previousMembers, member);
+    const previousMember = resolvePreviousRemoteMember(
+      previousMembers,
+      member,
+      member.id === group.currentMemberId ? session : undefined
+    );
     return mapFamilyMemberToRemoteRecord(
       member,
       group.currentMemberId,
       previousMember,
       now,
-      previousRecord
+      previousRecord,
+      session
     );
   });
 
@@ -135,14 +146,21 @@ function mapFamilyMemberToRemoteRecord(
   currentMemberId: string,
   previousMember: FamilyRemoteMemberRecord | undefined,
   now: string,
-  previousRecord: FamilyRemoteGroupRecord | null
+  previousRecord: FamilyRemoteGroupRecord | null,
+  session?: FamilyRemoteMappingSession
 ): FamilyRemoteMemberRecord {
+  const isCurrentMember = member.id === currentMemberId;
   return {
     id: previousMember?.id ?? member.id,
-    deviceId: member.deviceId,
+    userId: isCurrentMember
+      ? getCurrentMemberUserId(session)
+      : previousMember?.userId,
+    deviceId: isCurrentMember
+      ? session?.deviceId ?? member.deviceId
+      : member.deviceId,
     name: member.name,
     role: previousMember?.role ?? (
-      member.id === currentMemberId && !previousRecord ? 'owner' : 'member'
+      isCurrentMember && !previousRecord ? 'owner' : 'member'
     ),
     status: member.isSafe === true ? 'safe' : member.isSafe === false ? 'needs_check_in' : 'unknown',
     lastStatusAt: member.lastSeen ?? previousMember?.lastStatusAt,
@@ -188,12 +206,22 @@ function resolveCurrentMemberId(
 
 function resolvePreviousRemoteMember(
   previousMembers: Map<string, FamilyRemoteMemberRecord>,
-  member: FamilyMember
+  member: FamilyMember,
+  session?: FamilyRemoteMappingSession
 ): FamilyRemoteMemberRecord | undefined {
   const previousById = previousMembers.get(member.id);
   if (previousById) {
     previousMembers.delete(member.id);
     return previousById;
+  }
+
+  if (session?.authState === 'authenticated' && session.userId) {
+    for (const [previousMemberId, previousMember] of previousMembers.entries()) {
+      if (previousMember.userId === session.userId) {
+        previousMembers.delete(previousMemberId);
+        return previousMember;
+      }
+    }
   }
 
   if (!member.deviceId) {
@@ -218,10 +246,14 @@ function findMatchingRemoteMember(
 }
 
 function isSameRemoteIdentity(
-  left: Pick<FamilyRemoteMemberRecord, 'id' | 'deviceId'>,
-  right: Pick<FamilyRemoteMemberRecord, 'id' | 'deviceId'>
+  left: Pick<FamilyRemoteMemberRecord, 'id' | 'userId' | 'deviceId'>,
+  right: Pick<FamilyRemoteMemberRecord, 'id' | 'userId' | 'deviceId'>
 ): boolean {
   return left.id === right.id || (
+    Boolean(left.userId)
+    && Boolean(right.userId)
+    && left.userId === right.userId
+  ) || (
     Boolean(left.deviceId)
     && Boolean(right.deviceId)
     && left.deviceId === right.deviceId
@@ -243,4 +275,12 @@ function mergeRemoteMemberRecords(
     lastSeenAt: pendingMember.lastSeenAt ?? latestMember?.lastSeenAt,
     joinedAt: latestMember?.joinedAt ?? pendingMember.joinedAt,
   };
+}
+
+function getCurrentMemberUserId(
+  session: FamilyRemoteMappingSession | undefined
+): string | undefined {
+  return session?.authState === 'authenticated' && session.userId
+    ? session.userId
+    : undefined;
 }
