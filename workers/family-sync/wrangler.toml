@@ -1,0 +1,17 @@
+name = "family-sync"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+
+[[kv_namespaces]]
+binding = "FAMILY_GROUPS"
+id = "replace-with-your-production-kv-id"
+preview_id = "replace-with-your-preview-kv-id"
+
+[vars]
+ALLOWED_ORIGINS = "https://shelter-route.pages.dev"
+
+[env.dev.vars]
+ALLOWED_ORIGINS = "http://localhost:5173,http://localhost:5174,http://localhost:4173,http://127.0.0.1:4174"
+
+[env.production.vars]
+ALLOWED_ORIGINS = "https://shelter-route.pages.dev"

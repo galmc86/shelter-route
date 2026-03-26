@@ -200,6 +200,7 @@ The remote gateway should accept an explicit remote session object instead of re
 - allow hybrid mode to be enabled in development with `?familySyncMode=hybrid` or `VITE_FAMILY_SYNC_MODE=hybrid`
 - allow remote gateway selection in development with `?familyRemoteGateway=backend` or `VITE_FAMILY_REMOTE_GATEWAY=backend`
 - allow backend client selection in development with `?familyRemoteClient=http` or `VITE_FAMILY_REMOTE_CLIENT=http`
+- a first KV-backed Cloudflare Worker now exists under [`workers/family-sync/`](/Users/gal.machluf/projects/shelter-finder/workers/family-sync), exposing the `GET`/`PUT`/`DELETE` group contract expected by the current HTTP client
 
 ### Phase 3
 

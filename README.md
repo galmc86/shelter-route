@@ -22,6 +22,7 @@ A Progressive Web App (PWA) for finding nearby bomb shelters in Israel with rout
 | Routing | OpenRouteService API |
 | Places autocomplete | Google Maps Places API |
 | Alerts proxy | Cloudflare Worker (`workers/oref-proxy/`) |
+| Family sync backend | Cloudflare Worker + KV (`workers/family-sync/`) |
 | Testing | Vitest, Testing Library |
 
 ## Prerequisites
@@ -37,11 +38,13 @@ Create a `.env` file in the project root:
 VITE_ORS_API_KEY=<your OpenRouteService API key>
 VITE_GOOGLE_MAPS_API_KEY=<your Google Maps API key for Places autocomplete>
 VITE_OREF_PROXY_URL=<URL of the deployed oref-proxy Cloudflare Worker>
+VITE_FAMILY_REMOTE_URL=<URL of the deployed family-sync Cloudflare Worker>
 ```
 
 - **VITE_ORS_API_KEY** -- required. Get a free key at https://openrouteservice.org/
 - **VITE_GOOGLE_MAPS_API_KEY** -- required for address autocomplete. Enable the Places API in Google Cloud Console.
 - **VITE_OREF_PROXY_URL** -- URL of the Cloudflare Worker that proxies OREF alert requests (avoids CORS issues).
+- **VITE_FAMILY_REMOTE_URL** -- URL of the Cloudflare Worker that stores and serves family group records for cross-device sync.
 
 ## Development
 
@@ -68,6 +71,7 @@ src/
   sw/            # Service worker request classifiers and caching logic
 workers/
   oref-proxy/    # Cloudflare Worker that proxies OREF Home Front Command alert API
+  family-sync/   # Cloudflare Worker that stores family sync group records in KV
 public/
   shelters.json  # Shelter coordinate dataset served as a static asset
   sw.js          # Service worker entry point
@@ -93,6 +97,7 @@ data/
 The app is deployed to **Cloudflare Pages** at `https://shelter-route.pages.dev`.
 
 - The OREF alert proxy worker is deployed separately via `wrangler` from `workers/oref-proxy/`.
+- The family sync worker is deployed separately via `wrangler` from `workers/family-sync/`.
 - Shelter data (`public/shelters.json`) is cache-busted at build time using a content hash injected via `__SHELTER_DATA_VERSION__`.
 
 ## License

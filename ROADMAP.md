@@ -192,6 +192,7 @@ Notes:
 - Hybrid join/upsert now preserves existing remote members and owner role when another device joins the same family code, which removes a destructive overwrite path from the cross-device sync model.
 - Hybrid join/hydration now reconciles the current member by stable `deviceId`, so the same device can rejoin a remote family group without creating a duplicate member entry.
 - Hybrid leave semantics are now member-scoped: leaving removes the current member from the shared remote family and only clears the remote record when no members remain.
+- A first real family backend now exists as a Cloudflare Worker scaffold with KV-backed `GET`/`PUT`/`DELETE` group endpoints, which gives the current HTTP client an actual server contract to target.
 
 ### Epic 10: Saved Places to Safety Profiles
 Objective: turn saved locations into reusable routines.
