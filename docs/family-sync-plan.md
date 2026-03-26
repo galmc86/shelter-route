@@ -207,6 +207,7 @@ The remote gateway should accept an explicit remote session object instead of re
 - when a `409` does happen, the client should queue the local upsert and rebase it onto the latest remote record before retrying, so conflict recovery preserves both the remote winner and the local pending edit
 - the backend worker should enforce lightweight session-scoped write rules, so anonymous device sessions can create/join/update only their own membership and can delete a group only when they are the last remaining member
 - the HTTP client should re-queue backend-rejected writes and clears and record sync failures when the backend returns auth or transport errors, so optimistic local cache updates do not silently mask a rejected remote mutation
+- the transport layer should also have worker-backed integration coverage for create/join/leave/delete flows across simulated device sessions, so the real backend contract is exercised end-to-end before a production deployment
 
 ### Phase 3
 
