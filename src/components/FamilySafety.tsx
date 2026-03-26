@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useLanguage } from '../i18n';
 import { useFamilyGroupState } from '../hooks/useFamilyGroupState';
 import { useFamilySyncStatus } from '../hooks/useFamilySyncStatus';
+import { requestNotificationPermission } from '../services/pushNotificationService';
 
 type FamilySyncTone = 'local' | 'active' | 'pending' | 'error';
 
@@ -86,6 +87,7 @@ export function FamilySafety({
     const nextGroup = createFamilyGroup(nameInput.trim());
     if (nextGroup) {
       setNameInput('');
+      void requestNotificationPermission();
     }
   }, [createFamilyGroup, nameInput]);
 
@@ -96,6 +98,7 @@ export function FamilySafety({
       setNameInput('');
       setCodeInput('');
       setSetupMode('create');
+      void requestNotificationPermission();
     }
   }, [codeInput, joinFamilyGroup, nameInput]);
 
