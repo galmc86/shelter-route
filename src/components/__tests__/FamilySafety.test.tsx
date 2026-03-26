@@ -4,9 +4,11 @@ import { FamilySafety } from '../FamilySafety';
 import type { FamilyGroup } from '../../services/familySafetyService';
 
 const mockUseFamilyGroupState = vi.fn();
+const mockUseFamilySyncStatus = vi.fn();
 
 vi.mock('../../i18n', () => ({
   useLanguage: () => ({
+    language: 'en',
     t: (key: string) => key,
   }),
 }));
@@ -15,9 +17,14 @@ vi.mock('../../hooks/useFamilyGroupState', () => ({
   useFamilyGroupState: () => mockUseFamilyGroupState(),
 }));
 
+vi.mock('../../hooks/useFamilySyncStatus', () => ({
+  useFamilySyncStatus: () => mockUseFamilySyncStatus(),
+}));
+
 describe('FamilySafety', () => {
   beforeEach(() => {
     mockUseFamilyGroupState.mockReset();
+    mockUseFamilySyncStatus.mockReset();
     mockUseFamilyGroupState.mockReturnValue({
       group: null,
       currentMember: null,
@@ -31,6 +38,16 @@ describe('FamilySafety', () => {
       markFamilySafe: vi.fn(),
       markNeedsCheckIn: vi.fn(),
       leaveFamilyGroup: vi.fn(),
+    });
+    mockUseFamilySyncStatus.mockReturnValue({
+      mode: 'local',
+      status: {
+        pendingCount: 0,
+        lastAttemptAt: null,
+        lastSuccessAt: null,
+        lastFailureAt: null,
+        lastError: null,
+      },
     });
   });
 
@@ -90,5 +107,87 @@ describe('FamilySafety', () => {
     expect(screen.getByRole('button', { name: 'family.copyCode' })).toBeInTheDocument();
     expect(screen.getByText('family.safeCount')).toBeInTheDocument();
     expect(screen.getByText('family.awaitingCount')).toBeInTheDocument();
+    expect(screen.getByText('family.sync.localTitle')).toBeInTheDocument();
+    expect(screen.getByText('family.sync.localBody')).toBeInTheDocument();
+  });
+
+  it('shows a pending sync state when hybrid updates are queued', async () => {
+    const existingGroup: FamilyGroup = {
+      groupCode: 'ABC123',
+      memberName: 'Dana',
+      currentMemberId: '1',
+      members: [
+        { id: '1', name: 'Dana', isSafe: true },
+      ],
+    };
+    mockUseFamilyGroupState.mockReturnValue({
+      group: existingGroup,
+      currentMember: existingGroup.members[0],
+      hasGroup: true,
+      isCurrentMemberSafe: true,
+      safeMembersCount: 1,
+      waitingMembersCount: 0,
+      shareLink: 'https://example.com/?familyGroup=ABC123',
+      createFamilyGroup: vi.fn(),
+      joinFamilyGroup: vi.fn(),
+      markFamilySafe: vi.fn(),
+      markNeedsCheckIn: vi.fn(),
+      leaveFamilyGroup: vi.fn(),
+    });
+    mockUseFamilySyncStatus.mockReturnValue({
+      mode: 'hybrid',
+      status: {
+        pendingCount: 2,
+        lastAttemptAt: '2026-03-26T08:00:00.000Z',
+        lastSuccessAt: null,
+        lastFailureAt: null,
+        lastError: null,
+      },
+    });
+
+    render(<FamilySafety presentation="section" />);
+
+    expect(await screen.findByText('family.sync.pendingTitle')).toBeInTheDocument();
+    expect(screen.getByText('family.sync.pendingBody')).toBeInTheDocument();
+  });
+
+  it('shows a paused sync state when hybrid sync is failing', async () => {
+    const existingGroup: FamilyGroup = {
+      groupCode: 'ABC123',
+      memberName: 'Dana',
+      currentMemberId: '1',
+      members: [
+        { id: '1', name: 'Dana', isSafe: false },
+      ],
+    };
+    mockUseFamilyGroupState.mockReturnValue({
+      group: existingGroup,
+      currentMember: existingGroup.members[0],
+      hasGroup: true,
+      isCurrentMemberSafe: false,
+      safeMembersCount: 0,
+      waitingMembersCount: 1,
+      shareLink: 'https://example.com/?familyGroup=ABC123',
+      createFamilyGroup: vi.fn(),
+      joinFamilyGroup: vi.fn(),
+      markFamilySafe: vi.fn(),
+      markNeedsCheckIn: vi.fn(),
+      leaveFamilyGroup: vi.fn(),
+    });
+    mockUseFamilySyncStatus.mockReturnValue({
+      mode: 'hybrid',
+      status: {
+        pendingCount: 1,
+        lastAttemptAt: '2026-03-26T08:00:00.000Z',
+        lastSuccessAt: null,
+        lastFailureAt: '2026-03-26T08:00:00.000Z',
+        lastError: 'offline',
+      },
+    });
+
+    render(<FamilySafety presentation="section" />);
+
+    expect(await screen.findByText('family.sync.pausedTitle')).toBeInTheDocument();
+    expect(screen.getByText('family.sync.pausedBody')).toBeInTheDocument();
   });
 });

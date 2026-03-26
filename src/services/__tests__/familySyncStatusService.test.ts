@@ -1,10 +1,11 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   getFamilySyncStatus,
   recordFamilySyncFailure,
   recordFamilySyncSuccess,
   resetFamilySyncStatus,
   setFamilySyncPendingCount,
+  subscribeToFamilySyncStatusChanges,
 } from '../familySyncStatusService';
 
 describe('familySyncStatusService', () => {
@@ -50,5 +51,19 @@ describe('familySyncStatusService', () => {
       lastError: null,
     });
   });
-});
 
+  it('notifies listeners when sync status changes', () => {
+    const listener = vi.fn();
+    const unsubscribe = subscribeToFamilySyncStatusChanges(listener);
+
+    setFamilySyncPendingCount(1);
+    recordFamilySyncFailure('2026-03-25T22:02:00.000Z', 'failed');
+
+    expect(listener).toHaveBeenCalledTimes(2);
+
+    unsubscribe();
+    resetFamilySyncStatus();
+
+    expect(listener).toHaveBeenCalledTimes(2);
+  });
+});

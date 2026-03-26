@@ -1,4 +1,5 @@
 const STORAGE_KEY = 'shelter-route:family-sync-status';
+const FAMILY_SYNC_STATUS_UPDATED_EVENT = 'family-sync-status-updated';
 
 export interface FamilySyncStatus {
   pendingCount: number;
@@ -65,11 +66,34 @@ export function resetFamilySyncStatus(): void {
   saveFamilySyncStatus(DEFAULT_STATUS);
 }
 
+export function subscribeToFamilySyncStatusChanges(listener: () => void): () => void {
+  if (typeof window === 'undefined') {
+    return () => {};
+  }
+
+  const handleCustomUpdate = () => listener();
+  const handleStorage = (event: StorageEvent) => {
+    if (event.key === STORAGE_KEY || event.key === null) {
+      listener();
+    }
+  };
+
+  window.addEventListener(FAMILY_SYNC_STATUS_UPDATED_EVENT, handleCustomUpdate);
+  window.addEventListener('storage', handleStorage);
+
+  return () => {
+    window.removeEventListener(FAMILY_SYNC_STATUS_UPDATED_EVENT, handleCustomUpdate);
+    window.removeEventListener('storage', handleStorage);
+  };
+}
+
 function saveFamilySyncStatus(status: FamilySyncStatus): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(status));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent(FAMILY_SYNC_STATUS_UPDATED_EVENT));
+    }
   } catch {
     // ignore storage failures
   }
 }
-

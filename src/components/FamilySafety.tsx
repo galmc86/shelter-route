@@ -1,6 +1,38 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useLanguage } from '../i18n';
 import { useFamilyGroupState } from '../hooks/useFamilyGroupState';
+import { useFamilySyncStatus } from '../hooks/useFamilySyncStatus';
+
+type FamilySyncTone = 'local' | 'active' | 'pending' | 'error';
+
+function getLocale(language: 'he' | 'en' | 'ar' | 'ru'): string {
+  switch (language) {
+    case 'he':
+      return 'he-IL';
+    case 'ar':
+      return 'ar';
+    case 'ru':
+      return 'ru-RU';
+    default:
+      return 'en-US';
+  }
+}
+
+function formatSyncTime(timestamp: string | null, language: 'he' | 'en' | 'ar' | 'ru'): string | null {
+  if (!timestamp) {
+    return null;
+  }
+
+  const parsedDate = new Date(timestamp);
+  if (Number.isNaN(parsedDate.getTime())) {
+    return null;
+  }
+
+  return new Intl.DateTimeFormat(getLocale(language), {
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(parsedDate);
+}
 
 interface FamilySafetyProps {
   initialGroupCode?: string | null;
@@ -11,13 +43,14 @@ export function FamilySafety({
   initialGroupCode,
   presentation = 'accordion',
 }: FamilySafetyProps) {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const [nameInput, setNameInput] = useState('');
   const [codeInput, setCodeInput] = useState('');
   const [setupMode, setSetupMode] = useState<'create' | 'join'>(initialGroupCode ? 'join' : 'create');
   const [copied, setCopied] = useState(false);
   const [codeCopied, setCodeCopied] = useState(false);
   const [isExpanded, setIsExpanded] = useState(presentation === 'section');
+  const { mode: syncMode, status: syncStatus } = useFamilySyncStatus();
   const {
     group,
     isCurrentMemberSafe,
@@ -108,6 +141,46 @@ export function FamilySafety({
   }, [group]);
 
   const isSafe = isCurrentMemberSafe;
+  const syncTimeLabel = formatSyncTime(syncStatus.lastSuccessAt, language);
+  const syncState = (() => {
+    if (syncMode === 'local') {
+      return {
+        tone: 'local' as FamilySyncTone,
+        title: t('family.sync.localTitle'),
+        body: t('family.sync.localBody'),
+      };
+    }
+
+    if (syncStatus.pendingCount > 0 && syncStatus.lastError) {
+      return {
+        tone: 'error' as FamilySyncTone,
+        title: t('family.sync.pausedTitle'),
+        body: t('family.sync.pausedBody').replace('{{count}}', String(syncStatus.pendingCount)),
+      };
+    }
+
+    if (syncStatus.pendingCount > 0) {
+      return {
+        tone: 'pending' as FamilySyncTone,
+        title: t('family.sync.pendingTitle'),
+        body: t('family.sync.pendingBody').replace('{{count}}', String(syncStatus.pendingCount)),
+      };
+    }
+
+    if (syncTimeLabel) {
+      return {
+        tone: 'active' as FamilySyncTone,
+        title: t('family.sync.activeTitle'),
+        body: t('family.sync.activeBody').replace('{{time}}', syncTimeLabel),
+      };
+    }
+
+    return {
+      tone: 'active' as FamilySyncTone,
+      title: t('family.sync.preparingTitle'),
+      body: t('family.sync.preparingBody'),
+    };
+  })();
 
   const content = (
     <div className="family-safety-content">
@@ -205,6 +278,18 @@ export function FamilySafety({
                   >
                     {codeCopied ? t('family.codeCopied') : t('family.copyCode')}
                   </button>
+                </div>
+              </div>
+
+              <div
+                className={`family-safety-sync family-safety-sync--${syncState.tone}`}
+                role="status"
+                aria-live="polite"
+              >
+                <span className={`family-safety-sync-indicator family-safety-sync-indicator--${syncState.tone}`} />
+                <div className="family-safety-sync-copy">
+                  <span className="family-safety-sync-title">{syncState.title}</span>
+                  <span className="family-safety-sync-body">{syncState.body}</span>
                 </div>
               </div>
 
