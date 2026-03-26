@@ -218,6 +218,7 @@ Notes:
 - Family sync mode now implicitly switches to `hybrid` when `VITE_FAMILY_REMOTE_URL` is configured and upgrades stale stored `local` mode on boot, so deployed backend activation no longer depends on a second manual sync-mode flag.
 - The Family setup and alert copy now distinguish local-only storage from backend-enabled sync, which removes the stale “server in the future” messaging after the real family backend is turned on.
 - Rejected `403` family writes now force a remote refresh even when a stale local cache already exists, so legacy local-only family groups can rebase onto the live backend instead of staying stuck in a paused retry loop forever.
+- The service worker now bypasses HTTP cache for update checks, auto-activates new builds, and serves `/sw.js` with no-store caching, which reduces the chance that phones stay on stale family-sync client code after production fixes ship.
 
 ### Epic 10: Saved Places to Safety Profiles
 Objective: turn saved locations into reusable routines.

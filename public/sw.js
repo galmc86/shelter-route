@@ -1,7 +1,7 @@
 // Shelter Route — Service Worker
 // Cache-first for static assets, network-first for API calls
 
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 const STATIC_CACHE = `shelter-route-static-${CACHE_VERSION}`;
 const TILE_CACHE = `shelter-route-tiles-${CACHE_VERSION}`;
 const API_CACHE = `shelter-route-api-${CACHE_VERSION}`;
@@ -24,8 +24,7 @@ self.addEventListener('install', (event) => {
       return cache.addAll(APP_SHELL);
     })
   );
-  // Note: skipWaiting is NOT called here — activation is controlled
-  // via the SKIP_WAITING message handler so users can choose when to update.
+  self.skipWaiting();
 });
 
 // Activate: clean up old caches
