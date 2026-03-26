@@ -207,6 +207,7 @@ Notes:
 - Worker-backed family sync integration now explicitly covers the alert loop too: one session can move to `needs_check_in`, another session sees it through the real backend/client path, and the later safe confirmation propagates back to `safe`.
 - Backend-backed Playwright coverage now also proves authenticated same-user rejoin across two browser sessions, so `familyRemoteUserId` can move between devices without duplicating the shared family member.
 - Hybrid family sync now reads remote identity through a live session source instead of freezing a single boot-time session, which prepares the stack for a real auth provider without forcing repository recreation when auth changes.
+- Hybrid family sync now also listens for auth-provider session changes and resubscribes/rehydrates automatically, so a future sign-in flow can take effect without waiting for another manual family action.
 
 ### Epic 10: Saved Places to Safety Profiles
 Objective: turn saved locations into reusable routines.

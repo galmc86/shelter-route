@@ -5,6 +5,7 @@ import {
   getFamilyRemoteSession,
   initializeFamilyRemoteSessionFromUrl,
   registerFamilyRemoteAuthProvider,
+  subscribeToFamilyRemoteAuthChanges,
 } from '../familyRemoteSessionService';
 
 describe('familyRemoteSessionService', () => {
@@ -71,5 +72,27 @@ describe('familyRemoteSessionService', () => {
 
     expect(session.authState).toBe('authenticated');
     expect(session.userId).toBe('provider-user');
+  });
+
+  it('forwards auth-provider change subscriptions when a provider exposes them', () => {
+    const listeners = new Set<() => void>();
+    const listener = vi.fn();
+    registerFamilyRemoteAuthProvider({
+      getSessionConfig: () => null,
+      subscribe: (nextListener) => {
+        listeners.add(nextListener);
+        return () => listeners.delete(nextListener);
+      },
+    });
+
+    const unsubscribe = subscribeToFamilyRemoteAuthChanges(listener);
+    listeners.forEach((nextListener) => nextListener());
+
+    expect(listener).toHaveBeenCalledTimes(1);
+
+    unsubscribe();
+    listeners.forEach((nextListener) => nextListener());
+
+    expect(listener).toHaveBeenCalledTimes(1);
   });
 });

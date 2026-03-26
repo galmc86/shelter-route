@@ -221,6 +221,7 @@ The remote gateway should accept an explicit remote session object instead of re
 - support real cross-device membership
 - add reconciliation telemetry and error reporting
 - swap query/env bootstrap for a real auth provider through the remote session seam, without recreating the repository or transport stack when auth state changes
+- have the hybrid repository react to auth-provider session changes by resubscribing and rehydrating, so newly authenticated family sync can take effect without a manual app restart
 
 ## Migration Steps
 

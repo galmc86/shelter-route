@@ -18,6 +18,7 @@ import {
 } from './familyRemoteModel';
 import {
   getFamilyRemoteSession,
+  subscribeToFamilyRemoteAuthChanges,
   type FamilyRemoteSession,
 } from './familyRemoteSessionService';
 import {
@@ -102,6 +103,7 @@ export class HybridFamilyRepository implements FamilyRepository {
   private readonly getRemoteSession: FamilyRemoteSessionSource;
   private remoteUnsubscribe: (() => void) | null = null;
   private onlineUnsubscribe: (() => void) | null = null;
+  private authUnsubscribe: (() => void) | null = null;
   private subscribedGroupCode: string | null = null;
   private subscribedSessionKey: string | null = null;
 
@@ -129,6 +131,7 @@ export class HybridFamilyRepository implements FamilyRepository {
     this.flushPendingMutations();
     this.ensureRemoteSubscription();
     this.ensureOnlineRetry(listener);
+    this.ensureAuthRetry(listener);
 
     const unsubscribeLocal = this.localRepository.subscribe(() => {
       this.flushPendingMutations();
@@ -140,8 +143,10 @@ export class HybridFamilyRepository implements FamilyRepository {
       unsubscribeLocal();
       this.remoteUnsubscribe?.();
       this.onlineUnsubscribe?.();
+      this.authUnsubscribe?.();
       this.remoteUnsubscribe = null;
       this.onlineUnsubscribe = null;
+      this.authUnsubscribe = null;
       this.subscribedGroupCode = null;
       this.subscribedSessionKey = null;
     };
@@ -258,6 +263,22 @@ export class HybridFamilyRepository implements FamilyRepository {
     this.onlineUnsubscribe = () => {
       window.removeEventListener('online', handleOnline);
     };
+  }
+
+  private ensureAuthRetry(listener: () => void): void {
+    if (this.authUnsubscribe) {
+      return;
+    }
+
+    this.authUnsubscribe = subscribeToFamilyRemoteAuthChanges(() => {
+      this.flushPendingMutations();
+      this.ensureRemoteSubscription();
+      const groupCode = this.localRepository.getSnapshot()?.groupCode;
+      if (groupCode) {
+        this.hydrateFromRemote(groupCode);
+      }
+      listener();
+    });
   }
 
   private hydrateFromRemote(groupCode: string): FamilyGroup | null {

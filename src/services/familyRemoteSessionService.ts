@@ -10,6 +10,7 @@ export type FamilyRemoteSessionConfig = Pick<FamilyRemoteSession, 'authState' | 
 
 export interface FamilyRemoteAuthProvider {
   getSessionConfig(): FamilyRemoteSessionConfig | null;
+  subscribe?(listener: () => void): () => void;
 }
 
 export const FAMILY_REMOTE_AUTH_STATE_STORAGE_KEY = 'shelter-route:family-remote-auth-state';
@@ -21,6 +22,10 @@ let familyRemoteAuthProvider: FamilyRemoteAuthProvider | null = null;
 
 export function registerFamilyRemoteAuthProvider(provider: FamilyRemoteAuthProvider | null): void {
   familyRemoteAuthProvider = provider;
+}
+
+export function subscribeToFamilyRemoteAuthChanges(listener: () => void): () => void {
+  return familyRemoteAuthProvider?.subscribe?.(listener) ?? (() => {});
 }
 
 export function getFamilyRemoteSession(search: string | null = null): FamilyRemoteSession {

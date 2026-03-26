@@ -5,7 +5,10 @@ import { getFamilyRemoteGateway } from '../familyRemoteGateway';
 import type { FamilyRemoteGroupRecord } from '../familyRemoteModel';
 import { mapFamilyGroupToRemoteRecord } from '../familyRemoteModel';
 import type { FamilyRemoteGateway } from '../familyRemoteGateway';
-import type { FamilyRemoteSession } from '../familyRemoteSessionService';
+import {
+  registerFamilyRemoteAuthProvider,
+  type FamilyRemoteSession,
+} from '../familyRemoteSessionService';
 import { replaceStoredGroup } from '../familySafetyService';
 import { getFamilySyncStatus } from '../familySyncStatusService';
 import {
@@ -19,6 +22,7 @@ describe('familyRepository', () => {
   beforeEach(() => {
     localStorage.clear();
     clearPendingFamilySyncMutations();
+    registerFamilyRemoteAuthProvider(null);
   });
 
   it('wraps the current local family state and derives a share link only when a group exists', () => {
@@ -302,6 +306,63 @@ describe('familyRepository', () => {
       userId: 'user-123',
       authState: 'authenticated',
     });
+  });
+
+  it('resubscribes when the registered auth provider changes remote identity', () => {
+    localStorage.setItem('shelter-route:device-id', 'device-base');
+
+    let currentConfig: Pick<FamilyRemoteSession, 'authState' | 'userId'> = {
+      authState: 'anonymous',
+      userId: null,
+    };
+    const authListeners = new Set<() => void>();
+    const subscribeSessions: FamilyRemoteSession[] = [];
+    const listener = vi.fn();
+
+    registerFamilyRemoteAuthProvider({
+      getSessionConfig: () => currentConfig,
+      subscribe: (nextListener) => {
+        authListeners.add(nextListener);
+        return () => authListeners.delete(nextListener);
+      },
+    });
+
+    const remoteGateway: FamilyRemoteGateway = {
+      getGroup: vi.fn(() => null),
+      upsertGroup: vi.fn((record) => record),
+      clearGroup: vi.fn(),
+      subscribe: vi.fn((_groupCode: string, session: FamilyRemoteSession) => {
+        subscribeSessions.push(session);
+        return () => {};
+      }),
+    };
+
+    const repository = createFamilyRepository({ mode: 'hybrid', remoteGateway });
+    const unsubscribe = repository.subscribe(listener);
+    repository.createGroup('Dana');
+
+    expect(subscribeSessions).toHaveLength(1);
+    expect(subscribeSessions[0]).toEqual({
+      deviceId: 'device-base',
+      userId: null,
+      authState: 'anonymous',
+    });
+
+    currentConfig = {
+      authState: 'authenticated',
+      userId: 'user-123',
+    };
+    authListeners.forEach((nextListener) => nextListener());
+
+    expect(subscribeSessions).toHaveLength(2);
+    expect(subscribeSessions[1]).toEqual({
+      deviceId: 'device-base',
+      userId: 'user-123',
+      authState: 'authenticated',
+    });
+    expect(listener).toHaveBeenCalled();
+
+    unsubscribe();
   });
 
   it('can be created explicitly in hybrid mode without depending on storage flags', () => {
