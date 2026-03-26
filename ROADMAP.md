@@ -198,6 +198,7 @@ Notes:
 - Family sync records now carry an explicit `version`, and the worker rejects stale `PUT`s with `409` instead of silently overwriting newer cross-device state.
 - HTTP family sync now queues conflicted local upserts and the repository rebases them onto the latest remote record before retrying, so a cross-device race no longer drops the local edit after a `409`.
 - The family sync worker now enforces lightweight session-scoped writes: a device can only create a group if it is one of the submitted members, join by appending itself without mutating existing members, update its own member state, and delete only when it is the last remaining member.
+- The HTTP family client now re-queues backend-rejected writes and deletes and records sync failures when the real backend responds with an auth or transport error, so optimistic sync no longer hides server-side rejection behind a warm local cache.
 
 ### Epic 10: Saved Places to Safety Profiles
 Objective: turn saved locations into reusable routines.

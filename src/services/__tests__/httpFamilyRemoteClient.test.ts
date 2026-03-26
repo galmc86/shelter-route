@@ -10,6 +10,7 @@ import {
   clearPendingFamilySyncMutations,
   getPendingFamilySyncMutation,
 } from '../familySyncQueueService';
+import { getFamilySyncStatus } from '../familySyncStatusService';
 
 const groupFixture: FamilyRemoteGroupRecord = {
   id: 'family:ABC123',
@@ -116,6 +117,60 @@ describe('httpFamilyRemoteClient', () => {
       record: groupFixture,
       removedMemberIds: undefined,
       removedDeviceIds: undefined,
+    });
+  });
+
+  it('queues failed upserts and records sync failure when the backend rejects the write', async () => {
+    vi.stubEnv('VITE_FAMILY_REMOTE_URL', 'https://family.example.com/api');
+    const { getHttpFamilyRemoteClient: getClient } = await import('../httpFamilyRemoteClient');
+    const client = getClient();
+    const session = getFamilyRemoteSession();
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response(JSON.stringify({
+      error: 'Family sync write is not authorized for this session',
+    }), {
+      status: 403,
+      statusText: 'Forbidden',
+      headers: { 'Content-Type': 'application/json' },
+    }));
+
+    client.upsertGroup(groupFixture, session);
+
+    await waitFor(() => {
+      expect(getPendingFamilySyncMutation('ABC123')).toEqual({
+        kind: 'upsert',
+        groupCode: 'ABC123',
+        queuedAt: expect.any(String),
+        record: groupFixture,
+        removedMemberIds: undefined,
+        removedDeviceIds: undefined,
+      });
+      expect(getFamilySyncStatus().lastError).toContain('HTTP 403');
+    });
+  });
+
+  it('queues failed clears and records sync failure when the backend rejects deletion', async () => {
+    vi.stubEnv('VITE_FAMILY_REMOTE_URL', 'https://family.example.com/api');
+    const { getHttpFamilyRemoteClient: getClient } = await import('../httpFamilyRemoteClient');
+    const client = getClient();
+    const session = getFamilyRemoteSession();
+    localStorage.setItem(CACHE_KEY, JSON.stringify(groupFixture));
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response(JSON.stringify({
+      error: 'Family sync delete is not authorized for this session',
+    }), {
+      status: 403,
+      statusText: 'Forbidden',
+      headers: { 'Content-Type': 'application/json' },
+    }));
+
+    client.clearGroup('ABC123', session);
+
+    await waitFor(() => {
+      expect(getPendingFamilySyncMutation('ABC123')).toEqual({
+        kind: 'clear',
+        groupCode: 'ABC123',
+        queuedAt: expect.any(String),
+      });
+      expect(getFamilySyncStatus().lastError).toContain('HTTP 403');
     });
   });
 

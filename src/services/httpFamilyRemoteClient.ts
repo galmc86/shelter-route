@@ -3,6 +3,7 @@ import type { FamilyRemoteChangeEvent } from './familyRemoteChangeEvent';
 import type { FamilyRemoteClient } from './familyRemoteClient';
 import type { FamilyRemoteGroupRecord } from './familyRemoteModel';
 import { queueFamilySyncMutation } from './familySyncQueueService';
+import { recordFamilySyncFailure } from './familySyncStatusService';
 import {
   decodeFamilyRemoteGroupResponse,
   encodeFamilyRemoteGroupRequest,
@@ -174,25 +175,32 @@ async function pushGroup(
     return;
   }
 
+  const attemptedAt = new Date().toISOString();
+  const queuedMutation = {
+    kind: 'upsert' as const,
+    groupCode: record.inviteCode,
+    queuedAt: attemptedAt,
+    record,
+    removedMemberIds: previousCachedRecord
+      ? previousCachedRecord.members
+        .filter((member) => !record.members.some((candidate) => isSameRemoteIdentity(candidate, member)))
+        .map((member) => member.id)
+      : undefined,
+    removedDeviceIds: previousCachedRecord
+      ? previousCachedRecord.members
+        .filter((member) => !record.members.some((candidate) => isSameRemoteIdentity(candidate, member)))
+        .flatMap((member) => member.deviceId ? [member.deviceId] : [])
+      : undefined,
+  };
+
   if (result.error.code === 'HTTP' && result.error.statusCode === 409) {
-    queueFamilySyncMutation({
-      kind: 'upsert',
-      groupCode: record.inviteCode,
-      queuedAt: new Date().toISOString(),
-      record,
-      removedMemberIds: previousCachedRecord
-        ? previousCachedRecord.members
-          .filter((member) => !record.members.some((candidate) => isSameRemoteIdentity(candidate, member)))
-          .map((member) => member.id)
-        : undefined,
-      removedDeviceIds: previousCachedRecord
-        ? previousCachedRecord.members
-          .filter((member) => !record.members.some((candidate) => isSameRemoteIdentity(candidate, member)))
-          .flatMap((member) => member.deviceId ? [member.deviceId] : [])
-        : undefined,
-    });
+    queueFamilySyncMutation(queuedMutation);
     await refreshGroup(record.inviteCode, session);
+    return;
   }
+
+  queueFamilySyncMutation(queuedMutation);
+  recordFamilySyncFailure(attemptedAt, result.error.message);
 }
 
 async function deleteGroup(groupCode: string, session: FamilyRemoteSession): Promise<void> {
@@ -201,13 +209,25 @@ async function deleteGroup(groupCode: string, session: FamilyRemoteSession): Pro
     return;
   }
 
-  await resilientFetch<{ deleted?: boolean }>(endpoint, {
+  const result = await resilientFetch<{ deleted?: boolean }>(endpoint, {
     method: 'DELETE',
     headers: getHeaders(session),
   }, {
     retries: 1,
     retryDelay: 500,
   });
+
+  if (result.ok) {
+    return;
+  }
+
+  const attemptedAt = new Date().toISOString();
+  queueFamilySyncMutation({
+    kind: 'clear',
+    groupCode,
+    queuedAt: attemptedAt,
+  });
+  recordFamilySyncFailure(attemptedAt, result.error.message);
 }
 
 function acquirePollingSubscription(groupCode: string, session: FamilyRemoteSession): () => void {
