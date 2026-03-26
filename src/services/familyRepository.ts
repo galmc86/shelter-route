@@ -188,14 +188,11 @@ export class HybridFamilyRepository implements FamilyRepository {
   }
 
   leaveGroup(): void {
-    const groupCode = this.localRepository.getSnapshot()?.groupCode;
+    const localGroup = this.localRepository.getSnapshot();
+    const leaveMutation = localGroup ? this.createLeaveMutation(localGroup) : null;
     this.localRepository.leaveGroup();
-    if (groupCode) {
-      this.enqueueOrApplyMutation({
-        kind: 'clear',
-        groupCode,
-        queuedAt: new Date().toISOString(),
-      });
+    if (leaveMutation) {
+      this.enqueueOrApplyMutation(leaveMutation);
     }
     this.remoteUnsubscribe?.();
     this.remoteUnsubscribe = null;
@@ -280,6 +277,59 @@ export class HybridFamilyRepository implements FamilyRepository {
       groupCode: group.groupCode,
       queuedAt: new Date().toISOString(),
       record: mapFamilyGroupToRemoteRecord(group, previousRecord),
+    };
+  }
+
+  private createLeaveMutation(group: FamilyGroup): FamilySyncMutation {
+    const now = new Date().toISOString();
+    const currentMember = group.members.find((member) => member.id === group.currentMemberId);
+    const previousRecord =
+      this.safeGetRemoteRecord(group.groupCode)
+      ?? this.getQueuedRemoteRecord(group.groupCode);
+
+    if (previousRecord) {
+      const remainingMembers = previousRecord.members.filter((member) => !isSameFamilyIdentity(member, currentMember));
+      if (remainingMembers.length === 0) {
+        return {
+          kind: 'clear',
+          groupCode: group.groupCode,
+          queuedAt: now,
+        };
+      }
+
+      return {
+        kind: 'upsert',
+        groupCode: group.groupCode,
+        queuedAt: now,
+        record: {
+          ...previousRecord,
+          updatedAt: now,
+          createdByMemberId: remainingMembers.some((member) => member.id === previousRecord.createdByMemberId)
+            ? previousRecord.createdByMemberId
+            : remainingMembers[0].id,
+          members: remainingMembers,
+        },
+      };
+    }
+
+    const remainingMembers = group.members.filter((member) => !isSameFamilyIdentity(member, currentMember));
+    if (remainingMembers.length === 0) {
+      return {
+        kind: 'clear',
+        groupCode: group.groupCode,
+        queuedAt: now,
+      };
+    }
+
+    return {
+      kind: 'upsert',
+      groupCode: group.groupCode,
+      queuedAt: now,
+      record: mapFamilyGroupToRemoteRecord({
+        ...group,
+        currentMemberId: remainingMembers[0].id,
+        members: remainingMembers,
+      }),
     };
   }
 
@@ -438,6 +488,24 @@ function parseTimestamp(value: string | undefined): number {
 
   const parsed = Date.parse(value);
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function isSameFamilyIdentity(
+  candidate:
+    | FamilyGroup['members'][number]
+    | { id: string; deviceId?: string }
+    | undefined,
+  target: FamilyGroup['members'][number] | undefined
+): boolean {
+  if (!candidate || !target) {
+    return false;
+  }
+
+  return candidate.id === target.id || (
+    Boolean(candidate.deviceId)
+    && Boolean(target.deviceId)
+    && candidate.deviceId === target.deviceId
+  );
 }
 
 function areGroupsEqual(a: FamilyGroup | null, b: FamilyGroup | null): boolean {

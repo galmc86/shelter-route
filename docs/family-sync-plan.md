@@ -182,6 +182,7 @@ The remote gateway should accept an explicit remote session object instead of re
 - remote subscriptions should emit typed change events (`updated` vs `cleared`) so the repository can distinguish remote deletion from a transient null fetch result
 - remote upserts for hybrid join/update flows must preserve existing remote-only members and ownership metadata, so a second device joining the same invite code cannot overwrite the first device out of the shared group
 - remote hydration and join reconciliation should also prefer stable device identity when the local member ID has changed, so refresh/rejoin flows do not create duplicate remote members for the same device
+- leave semantics must be member-scoped on the remote side: a member leaving should remove only that member from the shared family, and remote group deletion should happen only when no members remain
 
 ## Rollout Plan
 

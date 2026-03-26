@@ -191,6 +191,7 @@ Notes:
 - The family sync capsule now exposes a direct retry action when hybrid sync is pending or paused, so users can force an immediate flush instead of waiting for the next automatic retry trigger.
 - Hybrid join/upsert now preserves existing remote members and owner role when another device joins the same family code, which removes a destructive overwrite path from the cross-device sync model.
 - Hybrid join/hydration now reconciles the current member by stable `deviceId`, so the same device can rejoin a remote family group without creating a duplicate member entry.
+- Hybrid leave semantics are now member-scoped: leaving removes the current member from the shared remote family and only clears the remote record when no members remain.
 
 ### Epic 10: Saved Places to Safety Profiles
 Objective: turn saved locations into reusable routines.

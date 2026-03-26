@@ -299,6 +299,103 @@ describe('familyRepository', () => {
     unsubscribe();
   });
 
+  it('removes only the current member from the remote group when leaving a shared hybrid family', () => {
+    localStorage.setItem('shelter-route:device-id', 'device-joiner');
+
+    let storedRecord: FamilyRemoteGroupRecord | null = {
+      id: 'family:ABC123',
+      inviteCode: 'ABC123',
+      createdAt: '2026-03-25T20:00:00.000Z',
+      updatedAt: '2026-03-25T20:00:00.000Z',
+      createdByMemberId: 'member-1',
+      members: [
+        {
+          id: 'member-1',
+          name: 'Dana',
+          deviceId: 'device-owner',
+          role: 'owner',
+          status: 'safe',
+          joinedAt: '2026-03-25T20:00:00.000Z',
+          lastStatusAt: '2026-03-25T20:00:00.000Z',
+          lastSeenAt: '2026-03-25T20:00:00.000Z',
+        },
+        {
+          id: 'member-2',
+          name: 'Noam',
+          deviceId: 'device-joiner',
+          role: 'member',
+          status: 'needs_check_in',
+          joinedAt: '2026-03-25T21:00:00.000Z',
+          lastStatusAt: '2026-03-25T21:00:00.000Z',
+          lastSeenAt: '2026-03-25T21:00:00.000Z',
+        },
+      ],
+    };
+    const remoteGateway: FamilyRemoteGateway = {
+      getGroup: vi.fn((groupCode: string) => (
+        storedRecord?.inviteCode === groupCode.toUpperCase() ? storedRecord : null
+      )),
+      upsertGroup: vi.fn((record) => {
+        storedRecord = record;
+        return record;
+      }),
+      clearGroup: vi.fn(() => {
+        storedRecord = null;
+      }),
+      subscribe: vi.fn(() => () => {}),
+    };
+
+    const repository = createFamilyRepository({
+      mode: 'hybrid',
+      remoteGateway,
+      remoteSession: { deviceId: 'device-joiner', userId: null, authState: 'anonymous' },
+    });
+
+    repository.joinGroup('ABC123', 'Noam');
+    repository.leaveGroup();
+
+    expect(repository.getSnapshot()).toBeNull();
+    expect(storedRecord?.members).toHaveLength(1);
+    expect(storedRecord?.members[0].id).toBe('member-1');
+    expect(remoteGateway.clearGroup).not.toHaveBeenCalled();
+  });
+
+  it('clears the remote group when the last member leaves a hybrid family', () => {
+    let storedRecord: FamilyRemoteGroupRecord | null = null;
+    const remoteGateway: FamilyRemoteGateway = {
+      getGroup: vi.fn((groupCode: string) => (
+        storedRecord?.inviteCode === groupCode.toUpperCase() ? storedRecord : null
+      )),
+      upsertGroup: vi.fn((record) => {
+        storedRecord = record;
+        return record;
+      }),
+      clearGroup: vi.fn(() => {
+        storedRecord = null;
+      }),
+      subscribe: vi.fn(() => () => {}),
+    };
+
+    const repository = createFamilyRepository({
+      mode: 'hybrid',
+      remoteGateway,
+      remoteSession: { deviceId: 'device-owner', userId: null, authState: 'anonymous' },
+    });
+
+    const group = repository.createGroup('Dana');
+    storedRecord = mapFamilyGroupToRemoteRecord(group);
+
+    repository.leaveGroup();
+
+    expect(repository.getSnapshot()).toBeNull();
+    expect(storedRecord).toBeNull();
+    expect(remoteGateway.clearGroup).toHaveBeenCalledWith(group.groupCode, {
+      deviceId: 'device-owner',
+      userId: null,
+      authState: 'anonymous',
+    });
+  });
+
   it('clears the local group when the subscribed remote group is cleared', () => {
     localStorage.setItem(FAMILY_SYNC_MODE_STORAGE_KEY, 'hybrid');
     const repository = getFamilyRepository();
