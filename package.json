@@ -13,6 +13,7 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "test:e2e:critical": "playwright test e2e/emergency-mode.spec.ts e2e/saved-places.spec.ts --project=chromium --project=chromium-mobile",
+    "test:e2e:family-backend": "playwright test e2e/family-sync-backend.spec.ts --project=chromium",
     "test:family:backend-smoke": "tsx scripts/family-sync-smoke.ts",
     "test:pr:safety": "npm run test:run && npm run build && npm run test:e2e:critical",
     "data:verify": "node scripts/verify-shelter-data.mjs",

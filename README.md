@@ -115,6 +115,14 @@ VITE_FAMILY_REMOTE_URL=https://family-sync.<your-subdomain>.workers.dev npm run 
 
 That smoke test exercises create, join, member-scoped leave, and final delete across two simulated device sessions against the deployed backend.
 
+For a browser-level verification path, the repo also includes:
+
+```bash
+VITE_FAMILY_REMOTE_URL=https://family-sync.<your-subdomain>.workers.dev npm run test:e2e:family-backend
+```
+
+That Playwright flow uses two real browser contexts and verifies UI-driven create, join, "I'm Safe", member-scoped leave, and final remote clear against the configured backend.
+
 ## License
 
 Private project.

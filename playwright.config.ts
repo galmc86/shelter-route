@@ -23,6 +23,7 @@ export default defineConfig({
     command: 'npm run dev -- --port 5174',
     env: {
       VITE_ORS_API_KEY: 'playwright-test-key',
+      VITE_FAMILY_REMOTE_URL: process.env.VITE_FAMILY_REMOTE_URL ?? '',
     },
     port: 5174,
     reuseExistingServer: true,

@@ -63,6 +63,15 @@ cd /Users/gal.machluf/projects/shelter-finder
 VITE_FAMILY_REMOTE_URL=https://family-sync.<your-subdomain>.workers.dev npm run test:family:backend-smoke
 ```
 
+4. Optionally run the browser-backed family E2E against the same worker:
+
+```bash
+cd /Users/gal.machluf/projects/shelter-finder
+VITE_FAMILY_REMOTE_URL=https://family-sync.<your-subdomain>.workers.dev npm run test:e2e:family-backend
+```
+
+If you run that Playwright flow against a deployed worker from local dev, make sure `ALLOWED_ORIGINS` includes your local app origin such as `http://localhost:5174`.
+
 ## Expected Contract
 
 The worker currently exposes:
