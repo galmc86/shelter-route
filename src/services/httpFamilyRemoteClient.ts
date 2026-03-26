@@ -333,12 +333,10 @@ async function runPollingRefreshCycle(
       : 0;
   } finally {
     const currentSubscription = activePollingSubscriptions.get(subscriptionKey);
-    if (!currentSubscription) {
-      return;
+    if (currentSubscription) {
+      currentSubscription.isRefreshing = false;
+      scheduleNextPollingRefresh(subscriptionKey, groupCode, session);
     }
-
-    currentSubscription.isRefreshing = false;
-    scheduleNextPollingRefresh(subscriptionKey, groupCode, session);
   }
 }
 

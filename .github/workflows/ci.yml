@@ -28,6 +28,7 @@ jobs:
           node-version: 20
           cache: 'npm'
       - run: npm ci
+      - run: npm ci --prefix workers/family-sync
       - run: npm run test:run -- --coverage
       - name: Upload coverage summary
         if: always()
