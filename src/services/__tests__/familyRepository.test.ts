@@ -6,10 +6,12 @@ import type { FamilyRemoteGroupRecord } from '../familyRemoteModel';
 import { mapFamilyGroupToRemoteRecord } from '../familyRemoteModel';
 import type { FamilyRemoteGateway } from '../familyRemoteGateway';
 import type { FamilyRemoteSession } from '../familyRemoteSessionService';
+import { replaceStoredGroup } from '../familySafetyService';
 import { getFamilySyncStatus } from '../familySyncStatusService';
 import {
   clearPendingFamilySyncMutations,
   getPendingFamilySyncMutations,
+  queueFamilySyncMutation,
 } from '../familySyncQueueService';
 import { FAMILY_SYNC_MODE_STORAGE_KEY } from '../familySyncModeService';
 
@@ -223,6 +225,99 @@ describe('familyRepository', () => {
     expect(syncedRecord?.inviteCode).toBe(group.groupCode);
     expect(getPendingFamilySyncMutations()).toEqual([]);
     expect(getFamilySyncStatus().lastError).toBeNull();
+  });
+
+  it('rebases a stale queued upsert mutation onto the latest remote record before retrying', () => {
+    const localGroup = {
+      groupCode: 'ABC123',
+      memberName: 'Dana',
+      currentMemberId: 'member-1',
+      members: [
+        {
+          id: 'member-1',
+          name: 'Dana',
+          deviceId: 'device-1',
+          isSafe: true,
+          lastSeen: '2026-03-25T21:30:00.000Z',
+        },
+      ],
+    };
+    replaceStoredGroup(localGroup);
+
+    let storedRecord: FamilyRemoteGroupRecord | null = {
+      id: 'family:ABC123',
+      inviteCode: 'ABC123',
+      version: 2,
+      createdAt: '2026-03-25T20:00:00.000Z',
+      updatedAt: '2026-03-25T21:00:00.000Z',
+      createdByMemberId: 'member-1',
+      members: [
+        {
+          id: 'member-1',
+          name: 'Dana',
+          deviceId: 'device-1',
+          role: 'owner',
+          status: 'needs_check_in',
+          joinedAt: '2026-03-25T20:00:00.000Z',
+          lastStatusAt: '2026-03-25T20:00:00.000Z',
+          lastSeenAt: '2026-03-25T20:00:00.000Z',
+        },
+        {
+          id: 'member-2',
+          name: 'Noam',
+          deviceId: 'device-2',
+          role: 'member',
+          status: 'safe',
+          joinedAt: '2026-03-25T21:00:00.000Z',
+          lastStatusAt: '2026-03-25T21:00:00.000Z',
+          lastSeenAt: '2026-03-25T21:00:00.000Z',
+        },
+      ],
+    };
+    const session: FamilyRemoteSession = { deviceId: 'device-1', userId: null, authState: 'anonymous' };
+    const remoteGateway: FamilyRemoteGateway = {
+      getGroup: vi.fn((groupCode: string, _session: FamilyRemoteSession) => (
+        storedRecord?.inviteCode === groupCode.toUpperCase() ? storedRecord : null
+      )),
+      upsertGroup: vi.fn((record, _session: FamilyRemoteSession) => {
+        const nextRecord: FamilyRemoteGroupRecord = {
+          ...record,
+          version: record.version + 1,
+        };
+        storedRecord = nextRecord;
+        return nextRecord;
+      }),
+      clearGroup: vi.fn(),
+      subscribe: vi.fn((_groupCode: string, _session: FamilyRemoteSession) => () => {}),
+    };
+
+    queueFamilySyncMutation({
+      kind: 'upsert',
+      groupCode: 'ABC123',
+      queuedAt: '2026-03-25T21:31:00.000Z',
+      record: {
+        ...storedRecord,
+        version: 1,
+        members: [
+          {
+            ...storedRecord.members[0],
+            status: 'safe',
+            lastStatusAt: '2026-03-25T21:30:00.000Z',
+            lastSeenAt: '2026-03-25T21:30:00.000Z',
+          },
+        ],
+      },
+    });
+
+    const repository = createFamilyRepository({ mode: 'hybrid', remoteGateway, remoteSession: session });
+    const hydrated = repository.getSnapshot();
+
+    expect(hydrated?.members).toHaveLength(2);
+    expect(storedRecord?.members).toHaveLength(2);
+    expect(storedRecord?.version).toBe(3);
+    expect(storedRecord?.members.find((member) => member.id === 'member-1')?.status).toBe('safe');
+    expect(storedRecord?.members.find((member) => member.id === 'member-2')?.status).toBe('safe');
+    expect(getPendingFamilySyncMutations()).toEqual([]);
   });
 
   it('retries queued remote writes when retrySync is requested explicitly', () => {

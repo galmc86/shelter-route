@@ -49,5 +49,40 @@ describe('familySyncQueueService', () => {
 
     expect(getPendingFamilySyncMutations()).toEqual([]);
   });
-});
 
+  it('preserves optional removal metadata for queued upsert mutations', () => {
+    queueFamilySyncMutation({
+      kind: 'upsert',
+      groupCode: 'abc123',
+      queuedAt: '2026-03-25T21:03:00.000Z',
+      record: {
+        id: 'family:ABC123',
+        inviteCode: 'abc123',
+        version: 2,
+        createdAt: '2026-03-25T21:00:00.000Z',
+        updatedAt: '2026-03-25T21:03:00.000Z',
+        createdByMemberId: 'member-1',
+        members: [],
+      },
+      removedMemberIds: ['member-2'],
+      removedDeviceIds: ['device-2'],
+    });
+
+    expect(getPendingFamilySyncMutation('ABC123')).toEqual({
+      kind: 'upsert',
+      groupCode: 'ABC123',
+      queuedAt: '2026-03-25T21:03:00.000Z',
+      record: {
+        id: 'family:ABC123',
+        inviteCode: 'ABC123',
+        version: 2,
+        createdAt: '2026-03-25T21:00:00.000Z',
+        updatedAt: '2026-03-25T21:03:00.000Z',
+        createdByMemberId: 'member-1',
+        members: [],
+      },
+      removedMemberIds: ['member-2'],
+      removedDeviceIds: ['device-2'],
+    });
+  });
+});

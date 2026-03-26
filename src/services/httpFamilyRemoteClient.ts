@@ -2,6 +2,7 @@ import { resilientFetch } from './fetchClient';
 import type { FamilyRemoteChangeEvent } from './familyRemoteChangeEvent';
 import type { FamilyRemoteClient } from './familyRemoteClient';
 import type { FamilyRemoteGroupRecord } from './familyRemoteModel';
+import { queueFamilySyncMutation } from './familySyncQueueService';
 import {
   decodeFamilyRemoteGroupResponse,
   encodeFamilyRemoteGroupRequest,
@@ -149,7 +150,11 @@ async function refreshGroup(groupCode: string, session: FamilyRemoteSession): Pr
   }
 }
 
-async function pushGroup(record: FamilyRemoteGroupRecord, session: FamilyRemoteSession): Promise<void> {
+async function pushGroup(
+  record: FamilyRemoteGroupRecord,
+  session: FamilyRemoteSession,
+  previousCachedRecord: FamilyRemoteGroupRecord | null
+): Promise<void> {
   const endpoint = getFamilyRemoteGroupEndpoint(record.inviteCode);
   if (!endpoint) {
     return;
@@ -170,6 +175,22 @@ async function pushGroup(record: FamilyRemoteGroupRecord, session: FamilyRemoteS
   }
 
   if (result.error.code === 'HTTP' && result.error.statusCode === 409) {
+    queueFamilySyncMutation({
+      kind: 'upsert',
+      groupCode: record.inviteCode,
+      queuedAt: new Date().toISOString(),
+      record,
+      removedMemberIds: previousCachedRecord
+        ? previousCachedRecord.members
+          .filter((member) => !record.members.some((candidate) => isSameRemoteIdentity(candidate, member)))
+          .map((member) => member.id)
+        : undefined,
+      removedDeviceIds: previousCachedRecord
+        ? previousCachedRecord.members
+          .filter((member) => !record.members.some((candidate) => isSameRemoteIdentity(candidate, member)))
+          .flatMap((member) => member.deviceId ? [member.deviceId] : [])
+        : undefined,
+    });
     await refreshGroup(record.inviteCode, session);
   }
 }
@@ -311,8 +332,9 @@ class HttpFamilyRemoteClient implements FamilyRemoteClient {
   }
 
   upsertGroup(group: FamilyRemoteGroupRecord, session: FamilyRemoteSession): FamilyRemoteGroupRecord {
+    const previousCachedRecord = readCachedGroup(group.inviteCode);
     writeCachedGroup(group);
-    void pushGroup(group, session);
+    void pushGroup(group, session, previousCachedRecord);
     return group;
   }
 
@@ -368,4 +390,15 @@ const httpFamilyRemoteClient = new HttpFamilyRemoteClient();
 
 export function getHttpFamilyRemoteClient(): FamilyRemoteClient {
   return httpFamilyRemoteClient;
+}
+
+function isSameRemoteIdentity(
+  left: Pick<FamilyRemoteGroupRecord['members'][number], 'id' | 'deviceId'>,
+  right: Pick<FamilyRemoteGroupRecord['members'][number], 'id' | 'deviceId'>
+): boolean {
+  return left.id === right.id || (
+    Boolean(left.deviceId)
+    && Boolean(right.deviceId)
+    && left.deviceId === right.deviceId
+  );
 }

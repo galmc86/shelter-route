@@ -14,6 +14,7 @@ import { getFamilyRemoteGateway, type FamilyRemoteGateway } from './familyRemote
 import {
   mapFamilyGroupToRemoteRecord,
   mapRemoteRecordToFamilyGroup,
+  rebaseFamilyRemoteGroupRecord,
 } from './familyRemoteModel';
 import {
   getFamilyRemoteSession,
@@ -309,6 +310,8 @@ export class HybridFamilyRepository implements FamilyRepository {
             : remainingMembers[0].id,
           members: remainingMembers,
         },
+        removedMemberIds: currentMember ? [currentMember.id] : undefined,
+        removedDeviceIds: currentMember?.deviceId ? [currentMember.deviceId] : undefined,
       };
     }
 
@@ -330,6 +333,8 @@ export class HybridFamilyRepository implements FamilyRepository {
         currentMemberId: remainingMembers[0].id,
         members: remainingMembers,
       }),
+      removedMemberIds: currentMember ? [currentMember.id] : undefined,
+      removedDeviceIds: currentMember?.deviceId ? [currentMember.deviceId] : undefined,
     };
   }
 
@@ -361,7 +366,13 @@ export class HybridFamilyRepository implements FamilyRepository {
       return;
     }
 
-    const remainingMutations = pendingMutations.filter((mutation) => !this.applyMutation(mutation));
+    const remainingMutations: FamilySyncMutation[] = [];
+    for (const mutation of pendingMutations) {
+      const nextMutation = this.prepareMutationForApply(mutation);
+      if (!this.applyMutation(nextMutation)) {
+        remainingMutations.push(nextMutation);
+      }
+    }
 
     if (remainingMutations.length === 0) {
       clearPendingFamilySyncMutations();
@@ -369,6 +380,29 @@ export class HybridFamilyRepository implements FamilyRepository {
     }
 
     savePendingFamilySyncMutations(remainingMutations);
+  }
+
+  private prepareMutationForApply(mutation: FamilySyncMutation): FamilySyncMutation {
+    if (mutation.kind !== 'upsert') {
+      return mutation;
+    }
+
+    const latestRecord = this.safeGetRemoteRecord(mutation.groupCode);
+    if (!latestRecord || latestRecord.version <= mutation.record.version) {
+      return mutation;
+    }
+
+    return {
+      ...mutation,
+      record: rebaseFamilyRemoteGroupRecord(
+        mutation.record,
+        latestRecord,
+        {
+          removedMemberIds: mutation.removedMemberIds,
+          removedDeviceIds: mutation.removedDeviceIds,
+        }
+      ),
+    };
   }
 
   private applyMutation(mutation: FamilySyncMutation): boolean {

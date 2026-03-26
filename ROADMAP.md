@@ -196,6 +196,7 @@ Notes:
 - When `VITE_FAMILY_REMOTE_URL` is configured, the app now defaults the family remote stack to `backend` + `http`, which removes most of the dev-only flag friction from turning the real sync path on.
 - The Pages CSP now allows Worker-hosted backend connections via `https://*.workers.dev`, so a deployed family sync worker can be reached without an additional shell change.
 - Family sync records now carry an explicit `version`, and the worker rejects stale `PUT`s with `409` instead of silently overwriting newer cross-device state.
+- HTTP family sync now queues conflicted local upserts and the repository rebases them onto the latest remote record before retrying, so a cross-device race no longer drops the local edit after a `409`.
 
 ### Epic 10: Saved Places to Safety Profiles
 Objective: turn saved locations into reusable routines.

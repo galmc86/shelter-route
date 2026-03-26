@@ -6,6 +6,10 @@ import {
 } from '../httpFamilyRemoteClient';
 import { getFamilyRemoteSession } from '../familyRemoteSessionService';
 import type { FamilyRemoteGroupRecord } from '../familyRemoteModel';
+import {
+  clearPendingFamilySyncMutations,
+  getPendingFamilySyncMutation,
+} from '../familySyncQueueService';
 
 const groupFixture: FamilyRemoteGroupRecord = {
   id: 'family:ABC123',
@@ -21,6 +25,7 @@ const CACHE_KEY = 'shelter-route:family-remote-http-cache:ABC123';
 describe('httpFamilyRemoteClient', () => {
   beforeEach(() => {
     localStorage.clear();
+    clearPendingFamilySyncMutations();
     vi.useRealTimers();
     vi.restoreAllMocks();
     vi.unstubAllEnvs();
@@ -102,6 +107,15 @@ describe('httpFamilyRemoteClient', () => {
       const cached = localStorage.getItem(CACHE_KEY);
       expect(cached).not.toBeNull();
       expect(JSON.parse(cached as string).version).toBe(2);
+    });
+
+    expect(getPendingFamilySyncMutation('ABC123')).toEqual({
+      kind: 'upsert',
+      groupCode: 'ABC123',
+      queuedAt: expect.any(String),
+      record: groupFixture,
+      removedMemberIds: undefined,
+      removedDeviceIds: undefined,
     });
   });
 

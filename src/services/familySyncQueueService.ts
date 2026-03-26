@@ -9,6 +9,8 @@ export type FamilySyncMutation =
       groupCode: string;
       queuedAt: string;
       record: FamilyRemoteGroupRecord;
+      removedMemberIds?: string[];
+      removedDeviceIds?: string[];
     }
   | {
       kind: 'clear';
@@ -124,6 +126,8 @@ function sanitizeMutation(raw: unknown): FamilySyncMutation | null {
       ...record,
       inviteCode: record.inviteCode.toUpperCase(),
     },
+    removedMemberIds: sanitizeStringArray(upsertCandidate.removedMemberIds),
+    removedDeviceIds: sanitizeStringArray(upsertCandidate.removedDeviceIds),
   };
 }
 
@@ -142,5 +146,16 @@ function normalizeMutation(mutation: FamilySyncMutation): FamilySyncMutation {
       ...mutation.record,
       inviteCode: mutation.record.inviteCode.toUpperCase(),
     },
+    removedMemberIds: mutation.removedMemberIds ? [...mutation.removedMemberIds] : undefined,
+    removedDeviceIds: mutation.removedDeviceIds ? [...mutation.removedDeviceIds] : undefined,
   };
+}
+
+function sanitizeStringArray(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) {
+    return undefined;
+  }
+
+  const sanitized = value.filter((entry): entry is string => typeof entry === 'string');
+  return sanitized.length > 0 ? sanitized : undefined;
 }

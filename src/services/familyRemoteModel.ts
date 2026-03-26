@@ -25,6 +25,11 @@ export interface FamilyRemoteGroupRecord {
   members: FamilyRemoteMemberRecord[];
 }
 
+export interface FamilyRemoteRebaseOptions {
+  removedMemberIds?: string[];
+  removedDeviceIds?: string[];
+}
+
 export function mapFamilyGroupToRemoteRecord(
   group: FamilyGroup,
   previousRecord: FamilyRemoteGroupRecord | null = null
@@ -73,6 +78,55 @@ export function mapRemoteRecordToFamilyGroup(
     memberName: previousGroup?.memberName ?? currentMember.name,
     currentMemberId: currentMember.id,
     members: record.members.map(mapRemoteMemberToFamilyMember),
+  };
+}
+
+export function rebaseFamilyRemoteGroupRecord(
+  pendingRecord: FamilyRemoteGroupRecord,
+  latestRecord: FamilyRemoteGroupRecord,
+  options: FamilyRemoteRebaseOptions = {}
+): FamilyRemoteGroupRecord {
+  const removedMemberIds = new Set(options.removedMemberIds ?? []);
+  const removedDeviceIds = new Set(options.removedDeviceIds ?? []);
+  const consumedLatestIds = new Set<string>();
+  const rebasedMembers = pendingRecord.members.map((pendingMember) => {
+    const latestMember = findMatchingRemoteMember(latestRecord.members, pendingMember);
+    if (latestMember) {
+      consumedLatestIds.add(latestMember.id);
+    }
+
+    return mergeRemoteMemberRecords(latestMember, pendingMember);
+  });
+
+  for (const latestMember of latestRecord.members) {
+    if (consumedLatestIds.has(latestMember.id)) {
+      continue;
+    }
+
+    if (removedMemberIds.has(latestMember.id)) {
+      continue;
+    }
+
+    if (latestMember.deviceId && removedDeviceIds.has(latestMember.deviceId)) {
+      continue;
+    }
+
+    if (rebasedMembers.some((member) => isSameRemoteIdentity(member, latestMember))) {
+      continue;
+    }
+
+    rebasedMembers.push(latestMember);
+  }
+
+  const createdByMemberId = rebasedMembers.some((member) => member.id === latestRecord.createdByMemberId)
+    ? latestRecord.createdByMemberId
+    : rebasedMembers[0]?.id ?? latestRecord.createdByMemberId;
+
+  return {
+    ...latestRecord,
+    displayName: pendingRecord.displayName ?? latestRecord.displayName,
+    createdByMemberId,
+    members: rebasedMembers,
   };
 }
 
@@ -154,4 +208,39 @@ function resolvePreviousRemoteMember(
   }
 
   return undefined;
+}
+
+function findMatchingRemoteMember(
+  members: FamilyRemoteMemberRecord[],
+  candidate: FamilyRemoteMemberRecord
+): FamilyRemoteMemberRecord | undefined {
+  return members.find((member) => isSameRemoteIdentity(member, candidate));
+}
+
+function isSameRemoteIdentity(
+  left: Pick<FamilyRemoteMemberRecord, 'id' | 'deviceId'>,
+  right: Pick<FamilyRemoteMemberRecord, 'id' | 'deviceId'>
+): boolean {
+  return left.id === right.id || (
+    Boolean(left.deviceId)
+    && Boolean(right.deviceId)
+    && left.deviceId === right.deviceId
+  );
+}
+
+function mergeRemoteMemberRecords(
+  latestMember: FamilyRemoteMemberRecord | undefined,
+  pendingMember: FamilyRemoteMemberRecord
+): FamilyRemoteMemberRecord {
+  return {
+    id: latestMember?.id ?? pendingMember.id,
+    userId: latestMember?.userId ?? pendingMember.userId,
+    deviceId: pendingMember.deviceId ?? latestMember?.deviceId,
+    name: pendingMember.name,
+    role: latestMember?.role ?? pendingMember.role,
+    status: pendingMember.status,
+    lastStatusAt: pendingMember.lastStatusAt ?? latestMember?.lastStatusAt,
+    lastSeenAt: pendingMember.lastSeenAt ?? latestMember?.lastSeenAt,
+    joinedAt: latestMember?.joinedAt ?? pendingMember.joinedAt,
+  };
 }

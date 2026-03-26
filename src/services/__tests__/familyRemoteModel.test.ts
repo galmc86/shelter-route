@@ -3,6 +3,7 @@ import type { FamilyGroup } from '../familySafetyService';
 import {
   mapFamilyGroupToRemoteRecord,
   mapRemoteRecordToFamilyGroup,
+  rebaseFamilyRemoteGroupRecord,
 } from '../familyRemoteModel';
 
 const groupFixture: FamilyGroup = {
@@ -126,5 +127,58 @@ describe('familyRemoteModel', () => {
     expect(record.members[0].id).toBe('member-2');
     expect(record.members[0].status).toBe('safe');
     expect(mappedGroup?.currentMemberId).toBe('member-2');
+  });
+
+  it('rebases a pending record onto the latest remote state while preserving remote-only members', () => {
+    const latestRecord = {
+      id: 'family:ABC123',
+      inviteCode: 'ABC123',
+      version: 4,
+      createdAt: '2026-03-25T20:00:00.000Z',
+      updatedAt: '2026-03-25T22:00:00.000Z',
+      createdByMemberId: 'member-1',
+      members: [
+        {
+          id: 'member-1',
+          name: 'Dana',
+          deviceId: 'device-1',
+          role: 'owner' as const,
+          status: 'needs_check_in' as const,
+          joinedAt: '2026-03-25T20:00:00.000Z',
+          lastStatusAt: '2026-03-25T20:00:00.000Z',
+          lastSeenAt: '2026-03-25T20:00:00.000Z',
+        },
+        {
+          id: 'member-2',
+          name: 'Noam',
+          deviceId: 'device-2',
+          role: 'member' as const,
+          status: 'safe' as const,
+          joinedAt: '2026-03-25T21:00:00.000Z',
+          lastStatusAt: '2026-03-25T21:00:00.000Z',
+          lastSeenAt: '2026-03-25T21:00:00.000Z',
+        },
+      ],
+    };
+    const pendingRecord = {
+      ...latestRecord,
+      version: 3,
+      updatedAt: '2026-03-25T21:30:00.000Z',
+      members: [
+        {
+          ...latestRecord.members[0],
+          status: 'safe' as const,
+          lastStatusAt: '2026-03-25T21:30:00.000Z',
+          lastSeenAt: '2026-03-25T21:30:00.000Z',
+        },
+      ],
+    };
+
+    const rebased = rebaseFamilyRemoteGroupRecord(pendingRecord, latestRecord);
+
+    expect(rebased.version).toBe(4);
+    expect(rebased.members).toHaveLength(2);
+    expect(rebased.members.find((member) => member.id === 'member-1')?.status).toBe('safe');
+    expect(rebased.members.find((member) => member.id === 'member-2')?.status).toBe('safe');
   });
 });
