@@ -218,9 +218,40 @@ async function fetchAndCache(request, cache) {
   }
 }
 
-// Push notification handler — displays alert notification
-self.addEventListener('push', (event) => {
-  const data = event.data ? event.data.json() : {};
+function isFamilyPushPayload(data) {
+  const tag = typeof data?.tag === 'string' ? data.tag : '';
+  const url = typeof data?.url === 'string' ? data.url : '';
+  return tag.startsWith('family-') || url.includes('familyGroup=');
+}
+
+function getFamilyPushGroupCode(data) {
+  const url = typeof data?.url === 'string' ? data.url : '';
+  if (!url) {
+    return null;
+  }
+
+  try {
+    const parsedUrl = new URL(url, self.location.origin);
+    return parsedUrl.searchParams.get('familyGroup')?.toUpperCase() || null;
+  } catch {
+    return null;
+  }
+}
+
+async function notifyFamilyClients(data) {
+  const clientList = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+  const familyMessage = {
+    type: 'FAMILY_SYNC_PUSH',
+    groupCode: getFamilyPushGroupCode(data),
+  };
+
+  const sameOriginClients = clientList.filter((client) => client.url.startsWith(self.location.origin));
+  await Promise.all(sameOriginClients.map((client) => client.postMessage(familyMessage)));
+
+  return sameOriginClients.some((client) => client.visibilityState === 'visible' || client.focused);
+}
+
+async function handlePushEvent(data) {
   const title = data.title || 'Shelter Route Alert';
   const options = {
     body: data.body || 'Alert in your area — seek shelter immediately!',
@@ -234,7 +265,20 @@ self.addEventListener('push', (event) => {
     },
   };
 
-  event.waitUntil(self.registration.showNotification(title, options));
+  if (isFamilyPushPayload(data)) {
+    const hasVisibleClient = await notifyFamilyClients(data);
+    if (hasVisibleClient) {
+      return;
+    }
+  }
+
+  await self.registration.showNotification(title, options);
+}
+
+// Push notification handler — displays alert notification
+self.addEventListener('push', (event) => {
+  const data = event.data ? event.data.json() : {};
+  event.waitUntil(handlePushEvent(data));
 });
 
 // Handle notification click — focus or open the app

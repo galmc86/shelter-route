@@ -125,6 +125,7 @@ async function refreshGroup(groupCode: string, session: FamilyRemoteSession): Pr
 
   const result = await resilientFetch<unknown>(resolvedEndpoint, {
     method: 'GET',
+    cache: 'no-store',
     headers: getHeaders(session),
   }, {
     retries: 1,

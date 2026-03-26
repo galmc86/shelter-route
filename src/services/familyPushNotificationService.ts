@@ -140,7 +140,7 @@ export async function syncFamilyPushSubscription(groupCode: string): Promise<boo
     const existingSubscription = await registration.pushManager.getSubscription();
     subscription = existingSubscription ?? await registration.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey: urlBase64ToArrayBuffer(publicKey),
+      applicationServerKey: urlBase64ToUint8Array(publicKey) as BufferSource,
     });
   } catch {
     patchFamilyPushStatus({
@@ -281,9 +281,13 @@ async function getFamilyPushPublicKey(): Promise<string | null> {
   return cachedPublicKey;
 }
 
-function urlBase64ToArrayBuffer(base64String: string): ArrayBuffer {
+function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
   const normalized = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
   const rawData = atob(normalized);
-  return Uint8Array.from(rawData, (char) => char.charCodeAt(0)).buffer;
+  const bytes = new Uint8Array(rawData.length);
+  for (let index = 0; index < rawData.length; index += 1) {
+    bytes[index] = rawData.charCodeAt(index);
+  }
+  return bytes;
 }

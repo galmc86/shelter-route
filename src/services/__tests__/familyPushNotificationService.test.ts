@@ -46,6 +46,7 @@ describe('familyPushNotificationService', () => {
         },
       }),
     };
+    const subscribe = vi.fn();
 
     Object.defineProperty(window.navigator, 'serviceWorker', {
       configurable: true,
@@ -53,7 +54,7 @@ describe('familyPushNotificationService', () => {
         ready: Promise.resolve({
           pushManager: {
             getSubscription: vi.fn().mockResolvedValue(subscription),
-            subscribe: vi.fn(),
+            subscribe,
           },
         }),
       },
@@ -80,6 +81,50 @@ describe('familyPushNotificationService', () => {
       }),
       expect.any(Object)
     );
+    expect(subscribe).not.toHaveBeenCalled();
+  });
+
+  it('subscribes with a Uint8Array VAPID key when no existing subscription is present', async () => {
+    const subscribe = vi.fn().mockResolvedValue({
+      endpoint: 'https://push.example.com/subscription-2',
+      toJSON: () => ({
+        endpoint: 'https://push.example.com/subscription-2',
+        expirationTime: null,
+        keys: {
+          p256dh: 'p256dh-key',
+          auth: 'auth-key',
+        },
+      }),
+    });
+
+    Object.defineProperty(window.navigator, 'serviceWorker', {
+      configurable: true,
+      value: {
+        ready: Promise.resolve({
+          pushManager: {
+            getSubscription: vi.fn().mockResolvedValue(null),
+            subscribe,
+          },
+        }),
+      },
+    });
+
+    mockResilientFetch
+      .mockResolvedValueOnce({
+        ok: true,
+        data: { enabled: true, publicKey: 'BElocalExampleKey1234567890' },
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        data: { registered: true },
+      });
+
+    const { syncFamilyPushSubscription } = await import('../familyPushNotificationService');
+    expect(await syncFamilyPushSubscription('ABC123')).toBe(true);
+    expect(subscribe).toHaveBeenCalledWith(expect.objectContaining({
+      userVisibleOnly: true,
+      applicationServerKey: expect.any(Uint8Array),
+    }));
   });
 
   it('unregisters the current push subscription for a family group', async () => {
