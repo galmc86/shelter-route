@@ -4,12 +4,14 @@ import {
   FAMILY_REMOTE_USER_ID_STORAGE_KEY,
   getFamilyRemoteSession,
   initializeFamilyRemoteSessionFromUrl,
+  registerFamilyRemoteAuthProvider,
 } from '../familyRemoteSessionService';
 
 describe('familyRemoteSessionService', () => {
   beforeEach(() => {
     localStorage.clear();
     vi.unstubAllEnvs();
+    registerFamilyRemoteAuthProvider(null);
   });
 
   it('provides a stable anonymous remote session by default', () => {
@@ -52,5 +54,22 @@ describe('familyRemoteSessionService', () => {
 
     expect(session.authState).toBe('authenticated');
     expect(session.userId).toBe('env-user');
+  });
+
+  it('prefers a registered auth provider over query, storage, and env bootstrap', () => {
+    localStorage.setItem(FAMILY_REMOTE_AUTH_STATE_STORAGE_KEY, 'anonymous');
+    vi.stubEnv('VITE_FAMILY_REMOTE_AUTH_STATE', 'authenticated');
+    vi.stubEnv('VITE_FAMILY_REMOTE_USER_ID', 'env-user');
+    registerFamilyRemoteAuthProvider({
+      getSessionConfig: () => ({
+        authState: 'authenticated',
+        userId: 'provider-user',
+      }),
+    });
+
+    const session = getFamilyRemoteSession('?familyRemoteAuthState=anonymous');
+
+    expect(session.authState).toBe('authenticated');
+    expect(session.userId).toBe('provider-user');
   });
 });

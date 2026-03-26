@@ -6,18 +6,29 @@ export interface FamilyRemoteSession {
   authState: 'anonymous' | 'authenticated';
 }
 
+export type FamilyRemoteSessionConfig = Pick<FamilyRemoteSession, 'authState' | 'userId'>;
+
+export interface FamilyRemoteAuthProvider {
+  getSessionConfig(): FamilyRemoteSessionConfig | null;
+}
+
 export const FAMILY_REMOTE_AUTH_STATE_STORAGE_KEY = 'shelter-route:family-remote-auth-state';
 export const FAMILY_REMOTE_USER_ID_STORAGE_KEY = 'shelter-route:family-remote-user-id';
 export const FAMILY_REMOTE_AUTH_STATE_QUERY_PARAM = 'familyRemoteAuthState';
 export const FAMILY_REMOTE_USER_ID_QUERY_PARAM = 'familyRemoteUserId';
 
-type FamilyRemoteSessionConfig = Pick<FamilyRemoteSession, 'authState' | 'userId'>;
+let familyRemoteAuthProvider: FamilyRemoteAuthProvider | null = null;
+
+export function registerFamilyRemoteAuthProvider(provider: FamilyRemoteAuthProvider | null): void {
+  familyRemoteAuthProvider = provider;
+}
 
 export function getFamilyRemoteSession(search: string | null = null): FamilyRemoteSession {
+  const providerConfig = getFamilyRemoteSessionConfigFromProvider();
   const queryConfig = getFamilyRemoteSessionConfigFromSearch(search);
   const storageConfig = getFamilyRemoteSessionConfigFromStorage();
   const envConfig = getFamilyRemoteSessionConfigFromEnv();
-  const configuredSession = queryConfig ?? storageConfig ?? envConfig ?? {
+  const configuredSession = providerConfig ?? queryConfig ?? storageConfig ?? envConfig ?? {
     authState: 'anonymous',
     userId: null,
   };
@@ -36,6 +47,15 @@ export function initializeFamilyRemoteSessionFromUrl(search: string | null = nul
   }
 
   return getFamilyRemoteSession(search);
+}
+
+function getFamilyRemoteSessionConfigFromProvider(): FamilyRemoteSessionConfig | null {
+  const config = familyRemoteAuthProvider?.getSessionConfig();
+  if (!config) {
+    return null;
+  }
+
+  return normalizeFamilyRemoteSessionConfig(config);
 }
 
 function getFamilyRemoteSessionConfigFromSearch(search: string | null): FamilyRemoteSessionConfig | null {

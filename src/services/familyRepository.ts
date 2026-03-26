@@ -47,6 +47,8 @@ export interface FamilyRepository {
   getShareLink(): string | null;
 }
 
+type FamilyRemoteSessionSource = () => FamilyRemoteSession;
+
 interface MutableFamilyRepository extends FamilyRepository {
   replaceSnapshot(group: FamilyGroup | null): void;
 }
@@ -97,19 +99,20 @@ export class LocalFamilyRepository implements MutableFamilyRepository {
 export class HybridFamilyRepository implements FamilyRepository {
   private readonly localRepository: MutableFamilyRepository;
   private readonly remoteGateway: FamilyRemoteGateway;
-  private readonly remoteSession: FamilyRemoteSession;
+  private readonly getRemoteSession: FamilyRemoteSessionSource;
   private remoteUnsubscribe: (() => void) | null = null;
   private onlineUnsubscribe: (() => void) | null = null;
   private subscribedGroupCode: string | null = null;
+  private subscribedSessionKey: string | null = null;
 
   constructor(
     localRepository: MutableFamilyRepository,
     remoteGateway: FamilyRemoteGateway,
-    remoteSession: FamilyRemoteSession
+    getRemoteSession: FamilyRemoteSessionSource
   ) {
     this.localRepository = localRepository;
     this.remoteGateway = remoteGateway;
-    this.remoteSession = remoteSession;
+    this.getRemoteSession = getRemoteSession;
   }
 
   getSnapshot(): FamilyGroup | null {
@@ -140,6 +143,7 @@ export class HybridFamilyRepository implements FamilyRepository {
       this.remoteUnsubscribe = null;
       this.onlineUnsubscribe = null;
       this.subscribedGroupCode = null;
+      this.subscribedSessionKey = null;
     };
   }
 
@@ -198,6 +202,7 @@ export class HybridFamilyRepository implements FamilyRepository {
     this.remoteUnsubscribe?.();
     this.remoteUnsubscribe = null;
     this.subscribedGroupCode = null;
+    this.subscribedSessionKey = null;
   }
 
   getShareLink(): string | null {
@@ -206,20 +211,22 @@ export class HybridFamilyRepository implements FamilyRepository {
 
   private ensureRemoteSubscription(): void {
     const groupCode = this.localRepository.getSnapshot()?.groupCode ?? null;
+    const sessionKey = groupCode ? getFamilyRemoteSessionKey(this.getRemoteSession()) : null;
 
-    if (groupCode === this.subscribedGroupCode) {
+    if (groupCode === this.subscribedGroupCode && sessionKey === this.subscribedSessionKey) {
       return;
     }
 
     this.remoteUnsubscribe?.();
     this.remoteUnsubscribe = null;
     this.subscribedGroupCode = groupCode;
+    this.subscribedSessionKey = sessionKey;
 
     if (!groupCode) {
       return;
     }
 
-    this.remoteUnsubscribe = this.remoteGateway.subscribe(groupCode, this.remoteSession, (event) => {
+    this.remoteUnsubscribe = this.remoteGateway.subscribe(groupCode, this.getRemoteSession(), (event) => {
       if (event.kind === 'cleared') {
         clearPendingFamilySyncMutation(event.groupCode);
         if (this.localRepository.getSnapshot()?.groupCode === event.groupCode) {
@@ -255,7 +262,7 @@ export class HybridFamilyRepository implements FamilyRepository {
 
   private hydrateFromRemote(groupCode: string): FamilyGroup | null {
     const localGroup = this.localRepository.getSnapshot();
-    const remoteRecord = this.remoteGateway.getGroup(groupCode, this.remoteSession);
+    const remoteRecord = this.remoteGateway.getGroup(groupCode, this.getRemoteSession());
     const remoteGroup = remoteRecord
       ? mapRemoteRecordToFamilyGroup(remoteRecord, localGroup)
       : null;
@@ -277,7 +284,7 @@ export class HybridFamilyRepository implements FamilyRepository {
       kind: 'upsert',
       groupCode: group.groupCode,
       queuedAt: new Date().toISOString(),
-      record: mapFamilyGroupToRemoteRecord(group, previousRecord, this.remoteSession),
+      record: mapFamilyGroupToRemoteRecord(group, previousRecord, this.getRemoteSession()),
     };
   }
 
@@ -332,7 +339,7 @@ export class HybridFamilyRepository implements FamilyRepository {
         ...group,
         currentMemberId: remainingMembers[0].id,
         members: remainingMembers,
-      }, null, this.remoteSession),
+      }, null, this.getRemoteSession()),
       removedMemberIds: currentMember ? [currentMember.id] : undefined,
       removedDeviceIds: currentMember?.deviceId ? [currentMember.deviceId] : undefined,
     };
@@ -345,7 +352,7 @@ export class HybridFamilyRepository implements FamilyRepository {
 
   private safeGetRemoteRecord(groupCode: string) {
     try {
-      return this.remoteGateway.getGroup(groupCode, this.remoteSession);
+      return this.remoteGateway.getGroup(groupCode, this.getRemoteSession());
     } catch {
       return null;
     }
@@ -410,9 +417,9 @@ export class HybridFamilyRepository implements FamilyRepository {
 
     try {
       if (mutation.kind === 'clear') {
-        this.remoteGateway.clearGroup(mutation.groupCode, this.remoteSession);
+        this.remoteGateway.clearGroup(mutation.groupCode, this.getRemoteSession());
       } else {
-        this.remoteGateway.upsertGroup(mutation.record, this.remoteSession);
+        this.remoteGateway.upsertGroup(mutation.record, this.getRemoteSession());
       }
 
       recordFamilySyncSuccess(attemptedAt);
@@ -546,19 +553,34 @@ function areGroupsEqual(a: FamilyGroup | null, b: FamilyGroup | null): boolean {
   return JSON.stringify(a) === JSON.stringify(b);
 }
 
+function getFamilyRemoteSessionKey(session: FamilyRemoteSession): string {
+  return [
+    session.deviceId,
+    session.userId ?? '',
+    session.authState,
+  ].join('::');
+}
+
 export function createFamilyRepository({
   mode = getFamilySyncMode(),
   remoteGateway = getFamilyRemoteGateway(),
-  remoteSession = getFamilyRemoteSession(),
+  remoteSession,
+  remoteSessionSource,
 }: {
   mode?: FamilySyncMode;
   remoteGateway?: FamilyRemoteGateway;
   remoteSession?: FamilyRemoteSession;
+  remoteSessionSource?: FamilyRemoteSessionSource;
 } = {}): FamilyRepository {
   const localRepository = new LocalFamilyRepository();
+  const resolvedRemoteSessionSource = remoteSessionSource ?? (
+    remoteSession
+      ? () => remoteSession
+      : () => getFamilyRemoteSession()
+  );
 
   if (mode === 'hybrid') {
-    return new HybridFamilyRepository(localRepository, remoteGateway, remoteSession);
+    return new HybridFamilyRepository(localRepository, remoteGateway, resolvedRemoteSessionSource);
   }
 
   return localRepository;

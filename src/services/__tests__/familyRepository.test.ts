@@ -242,6 +242,68 @@ describe('familyRepository', () => {
     expect(storedRecord?.members.find((member) => member.id === 'member-2')?.deviceId).toBe('device-new');
   });
 
+  it('uses the latest remote session from the session source for subscriptions and writes', () => {
+    let currentSession: FamilyRemoteSession = {
+      deviceId: 'device-1',
+      userId: null,
+      authState: 'anonymous',
+    };
+    const subscribeSessions: FamilyRemoteSession[] = [];
+    const upsertSessions: FamilyRemoteSession[] = [];
+    let storedRecord: FamilyRemoteGroupRecord | null = null;
+
+    const remoteGateway: FamilyRemoteGateway = {
+      getGroup: vi.fn((groupCode: string, _session: FamilyRemoteSession) => (
+        storedRecord?.inviteCode === groupCode.toUpperCase() ? storedRecord : null
+      )),
+      upsertGroup: vi.fn((record, session: FamilyRemoteSession) => {
+        upsertSessions.push(session);
+        storedRecord = record;
+        return record;
+      }),
+      clearGroup: vi.fn(),
+      subscribe: vi.fn((_groupCode: string, session: FamilyRemoteSession) => {
+        subscribeSessions.push(session);
+        return () => {};
+      }),
+    };
+
+    const repository = createFamilyRepository({
+      mode: 'hybrid',
+      remoteGateway,
+      remoteSessionSource: () => currentSession,
+    });
+
+    repository.createGroup('Dana');
+    expect(subscribeSessions).toHaveLength(1);
+    expect(subscribeSessions[0]).toEqual({
+      deviceId: 'device-1',
+      userId: null,
+      authState: 'anonymous',
+    });
+
+    currentSession = {
+      deviceId: 'device-2',
+      userId: 'user-123',
+      authState: 'authenticated',
+    };
+
+    repository.retrySync();
+    repository.markCurrentMemberSafe();
+
+    expect(subscribeSessions).toHaveLength(2);
+    expect(subscribeSessions[1]).toEqual({
+      deviceId: 'device-2',
+      userId: 'user-123',
+      authState: 'authenticated',
+    });
+    expect(upsertSessions[upsertSessions.length - 1]).toEqual({
+      deviceId: 'device-2',
+      userId: 'user-123',
+      authState: 'authenticated',
+    });
+  });
+
   it('can be created explicitly in hybrid mode without depending on storage flags', () => {
     const repository = createFamilyRepository({ mode: 'hybrid' });
 
