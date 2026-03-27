@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { getFamilyPushStatus } from '../familyPushStatusService';
 
 const mockResilientFetch = vi.fn();
 const mockGetFamilyRemoteSession = vi.fn(() => ({
@@ -158,5 +159,41 @@ describe('familyPushNotificationService', () => {
       }),
       expect.any(Object)
     );
+  });
+
+  it('refreshes stale push error state back to active when the browser still has a live subscription', async () => {
+    localStorage.setItem('shelter-route:family-push-group', 'ABC123');
+    localStorage.setItem('shelter-route:family-push-status', JSON.stringify({
+      permission: 'granted',
+      state: 'error',
+      environmentHint: 'none',
+      registeredGroupCode: null,
+      lastAttemptAt: '2026-03-27T10:00:00.000Z',
+      lastSuccessAt: null,
+      lastFailureAt: '2026-03-27T10:00:00.000Z',
+      lastError: 'push_subscribe_failed',
+    }));
+
+    Object.defineProperty(window.navigator, 'serviceWorker', {
+      configurable: true,
+      value: {
+        ready: Promise.resolve({
+          pushManager: {
+            getSubscription: vi.fn().mockResolvedValue({
+              endpoint: 'https://push.example.com/subscription-1',
+            }),
+          },
+        }),
+      },
+    });
+
+    const { refreshFamilyPushStatus } = await import('../familyPushNotificationService');
+    await refreshFamilyPushStatus('ABC123');
+
+    expect(getFamilyPushStatus()).toEqual(expect.objectContaining({
+      state: 'active',
+      registeredGroupCode: 'ABC123',
+      lastError: null,
+    }));
   });
 });

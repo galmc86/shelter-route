@@ -4,6 +4,7 @@ import { useFamilyPushSubscription } from '../useFamilyPushSubscription';
 
 const mockUseFamilyGroupState = vi.fn();
 const mockIsFamilyPushSupported = vi.fn();
+const mockRefreshFamilyPushStatus = vi.fn();
 const mockSyncFamilyPushSubscription = vi.fn();
 const mockUnregisterFamilyPushSubscription = vi.fn();
 
@@ -13,6 +14,7 @@ vi.mock('../useFamilyGroupState', () => ({
 
 vi.mock('../../services/familyPushNotificationService', () => ({
   isFamilyPushSupported: () => mockIsFamilyPushSupported(),
+  refreshFamilyPushStatus: (...args: unknown[]) => mockRefreshFamilyPushStatus(...args),
   syncFamilyPushSubscription: (...args: unknown[]) => mockSyncFamilyPushSubscription(...args),
   unregisterFamilyPushSubscription: (...args: unknown[]) => mockUnregisterFamilyPushSubscription(...args),
 }));
@@ -21,6 +23,7 @@ describe('useFamilyPushSubscription', () => {
   beforeEach(() => {
     mockUseFamilyGroupState.mockReset();
     mockIsFamilyPushSupported.mockReset();
+    mockRefreshFamilyPushStatus.mockReset();
     mockSyncFamilyPushSubscription.mockReset();
     mockUnregisterFamilyPushSubscription.mockReset();
     mockIsFamilyPushSupported.mockReturnValue(true);

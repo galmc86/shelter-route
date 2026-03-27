@@ -12,6 +12,7 @@ import {
 } from './familySafetyService';
 import { getFamilyRemoteGateway, type FamilyRemoteGateway } from './familyRemoteGateway';
 import {
+  type FamilyRemoteGroupRecord,
   mapFamilyGroupToRemoteRecord,
   mapRemoteRecordToFamilyGroup,
   rebaseFamilyRemoteGroupRecord,
@@ -422,8 +423,14 @@ export class HybridFamilyRepository implements FamilyRepository {
     this.isFlushingPendingMutations = true;
     try {
       const remainingMutations: FamilySyncMutation[] = [];
+      let resolvedSatisfiedMutation = false;
       for (const mutation of pendingMutations) {
         const nextMutation = this.prepareMutationForApply(mutation);
+        if (!nextMutation) {
+          resolvedSatisfiedMutation = true;
+          continue;
+        }
+
         if (!this.applyMutation(nextMutation)) {
           remainingMutations.push(nextMutation);
         }
@@ -431,6 +438,9 @@ export class HybridFamilyRepository implements FamilyRepository {
 
       if (remainingMutations.length === 0) {
         clearPendingFamilySyncMutations();
+        if (resolvedSatisfiedMutation) {
+          recordFamilySyncSuccess(new Date().toISOString());
+        }
         return;
       }
 
@@ -440,26 +450,36 @@ export class HybridFamilyRepository implements FamilyRepository {
     }
   }
 
-  private prepareMutationForApply(mutation: FamilySyncMutation): FamilySyncMutation {
-    if (mutation.kind !== 'upsert') {
-      return mutation;
+  private prepareMutationForApply(mutation: FamilySyncMutation): FamilySyncMutation | null {
+    if (mutation.kind === 'clear') {
+      return this.safeGetRemoteRecord(mutation.groupCode) ? mutation : null;
     }
 
     const latestRecord = this.safeGetRemoteRecord(mutation.groupCode);
-    if (!latestRecord || latestRecord.version <= mutation.record.version) {
+    if (!latestRecord) {
+      return mutation;
+    }
+
+    const rebasedRecord = rebaseFamilyRemoteGroupRecord(
+      mutation.record,
+      latestRecord,
+      {
+        removedMemberIds: mutation.removedMemberIds,
+        removedDeviceIds: mutation.removedDeviceIds,
+      }
+    );
+
+    if (areRemoteRecordsEqual(rebasedRecord, latestRecord)) {
+      return null;
+    }
+
+    if (latestRecord.version <= mutation.record.version) {
       return mutation;
     }
 
     return {
       ...mutation,
-      record: rebaseFamilyRemoteGroupRecord(
-        mutation.record,
-        latestRecord,
-        {
-          removedMemberIds: mutation.removedMemberIds,
-          removedDeviceIds: mutation.removedDeviceIds,
-        }
-      ),
+      record: rebasedRecord,
     };
   }
 
@@ -483,6 +503,13 @@ export class HybridFamilyRepository implements FamilyRepository {
       return false;
     }
   }
+}
+
+function areRemoteRecordsEqual(
+  left: FamilyRemoteGroupRecord | null,
+  right: FamilyRemoteGroupRecord | null
+): boolean {
+  return JSON.stringify(left) === JSON.stringify(right);
 }
 
 function mergeFamilyGroups(localGroup: FamilyGroup | null, remoteGroup: FamilyGroup | null): FamilyGroup | null {

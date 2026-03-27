@@ -643,6 +643,70 @@ describe('familyRepository', () => {
     expect(getPendingFamilySyncMutations()).toEqual([]);
   });
 
+  it('drops a queued mutation once the remote record already matches the desired family state', () => {
+    const localGroup = {
+      groupCode: 'ABC123',
+      memberName: 'Dana',
+      currentMemberId: 'member-1',
+      members: [
+        {
+          id: 'member-1',
+          name: 'Dana',
+          deviceId: 'device-1',
+          isSafe: true,
+          lastSeen: '2026-03-25T21:30:00.000Z',
+        },
+      ],
+    };
+    replaceStoredGroup(localGroup);
+
+    const storedRecord: FamilyRemoteGroupRecord = {
+      id: 'family:ABC123',
+      inviteCode: 'ABC123',
+      version: 3,
+      createdAt: '2026-03-25T20:00:00.000Z',
+      updatedAt: '2026-03-25T21:30:00.000Z',
+      createdByMemberId: 'member-1',
+      members: [
+        {
+          id: 'member-1',
+          name: 'Dana',
+          deviceId: 'device-1',
+          role: 'owner',
+          status: 'safe',
+          joinedAt: '2026-03-25T20:00:00.000Z',
+          lastStatusAt: '2026-03-25T21:30:00.000Z',
+          lastSeenAt: '2026-03-25T21:30:00.000Z',
+        },
+      ],
+    };
+    const session: FamilyRemoteSession = { deviceId: 'device-1', userId: null, authState: 'anonymous' };
+    const remoteGateway: FamilyRemoteGateway = {
+      getGroup: vi.fn((groupCode: string) => (
+        storedRecord.inviteCode === groupCode.toUpperCase() ? storedRecord : null
+      )),
+      upsertGroup: vi.fn((record) => record),
+      clearGroup: vi.fn(),
+      subscribe: vi.fn((_groupCode: string, _session: FamilyRemoteSession) => () => {}),
+    };
+
+    queueFamilySyncMutation({
+      kind: 'upsert',
+      groupCode: 'ABC123',
+      queuedAt: '2026-03-25T21:31:00.000Z',
+      record: {
+        ...storedRecord,
+        version: 2,
+      },
+    });
+
+    const repository = createFamilyRepository({ mode: 'hybrid', remoteGateway, remoteSession: session });
+    repository.getSnapshot();
+
+    expect(getPendingFamilySyncMutations()).toEqual([]);
+    expect(getFamilySyncStatus().lastError).toBeNull();
+  });
+
   it('retries queued remote writes when retrySync is requested explicitly', () => {
     let shouldFail = true;
     let storedRecord: FamilyRemoteGroupRecord | null = null;

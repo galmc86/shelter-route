@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useFamilyGroupState } from './useFamilyGroupState';
 import {
   isFamilyPushSupported,
+  refreshFamilyPushStatus,
   syncFamilyPushSubscription,
   unregisterFamilyPushSubscription,
 } from '../services/familyPushNotificationService';
@@ -24,6 +25,8 @@ export function useFamilyPushSubscription(): void {
     }
 
     const syncCurrentGroup = () => {
+      void refreshFamilyPushStatus(nextGroupCode);
+
       if (!nextGroupCode || typeof document === 'undefined') {
         return;
       }

@@ -70,6 +70,101 @@ export function isFamilyPushRegisteredForGroup(groupCode: string | null | undefi
   return localStorage.getItem(FAMILY_PUSH_GROUP_KEY) === groupCode.toUpperCase();
 }
 
+export async function refreshFamilyPushStatus(groupCode: string | null | undefined): Promise<void> {
+  const attemptedAt = new Date().toISOString();
+  const environmentHint = getFamilyPushEnvironmentHint();
+  const permission = getFamilyPushPermissionState();
+  const normalizedGroupCode = groupCode?.toUpperCase() ?? null;
+
+  patchFamilyPushStatus({
+    permission,
+    environmentHint,
+    lastAttemptAt: attemptedAt,
+  });
+
+  if (environmentHint === 'ios_home_screen_required') {
+    patchFamilyPushStatus({
+      permission,
+      environmentHint,
+      state: 'needs_user_action',
+      registeredGroupCode: null,
+      lastFailureAt: attemptedAt,
+      lastError: 'ios_home_screen_required',
+    });
+    return;
+  }
+
+  if (!isFamilyPushSupported()) {
+    patchFamilyPushStatus({
+      permission,
+      environmentHint,
+      state: 'unsupported',
+      registeredGroupCode: null,
+      lastFailureAt: attemptedAt,
+      lastError: 'unsupported',
+    });
+    return;
+  }
+
+  if (Notification.permission === 'denied') {
+    patchFamilyPushStatus({
+      permission,
+      environmentHint,
+      state: 'error',
+      registeredGroupCode: null,
+      lastFailureAt: attemptedAt,
+      lastError: 'permission_denied',
+    });
+    return;
+  }
+
+  if (Notification.permission !== 'granted') {
+    patchFamilyPushStatus({
+      permission,
+      environmentHint,
+      state: normalizedGroupCode ? 'needs_user_action' : 'idle',
+      registeredGroupCode: null,
+      lastError: null,
+    });
+    return;
+  }
+
+  try {
+    const registration = await navigator.serviceWorker.ready;
+    const subscription = await registration.pushManager.getSubscription();
+    const storedGroupCode = localStorage.getItem(FAMILY_PUSH_GROUP_KEY)?.toUpperCase() ?? null;
+
+    if (subscription && storedGroupCode && (!normalizedGroupCode || storedGroupCode === normalizedGroupCode)) {
+      patchFamilyPushStatus({
+        permission,
+        environmentHint,
+        state: 'active',
+        registeredGroupCode: storedGroupCode,
+        lastSuccessAt: attemptedAt,
+        lastError: null,
+      });
+      return;
+    }
+
+    patchFamilyPushStatus({
+      permission,
+      environmentHint,
+      state: normalizedGroupCode ? 'needs_user_action' : 'idle',
+      registeredGroupCode: null,
+      lastError: null,
+    });
+  } catch {
+    patchFamilyPushStatus({
+      permission,
+      environmentHint,
+      state: 'error',
+      registeredGroupCode: null,
+      lastFailureAt: attemptedAt,
+      lastError: 'push_status_check_failed',
+    });
+  }
+}
+
 export async function syncFamilyPushSubscription(groupCode: string): Promise<boolean> {
   const attemptedAt = new Date().toISOString();
   const environmentHint = getFamilyPushEnvironmentHint();
