@@ -232,7 +232,7 @@ Notes:
 - Family HTTP polling now fails fast and interactive refreshes can interrupt a stuck in-flight poll, which prevents one slow backend request from blocking family sync updates for 20-30 seconds on an otherwise focused desktop tab.
 - Family sync now drops queued mutations once the remote family record already matches the desired state, and the push-status card re-checks the actual browser subscription on focus, which keeps the Family screen from showing stale red warning cards after sync or push has already recovered.
 - Family worker push fanout now suppresses only the exact originating device subscription, not every subscription that shares the same authenticated `userId`, so the same person can still receive family updates on their other browsers and devices.
-- The OREF proxy now falls back to very recent history when both the live community mirror and the direct OREF endpoint come back empty, which makes alert delivery more resilient when the “active alerts” feed temporarily under-reports.
+- The OREF proxy now treats TzevaAdom’s `ios/feed` payload as the primary source of recent alerts, and still falls back to very recent history if the legacy live feed and direct OREF endpoint both come back empty, which keeps alert delivery resilient across upstream API contract changes.
 
 ### Epic 10: Saved Places to Safety Profiles
 Objective: turn saved locations into reusable routines.

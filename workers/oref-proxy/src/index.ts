@@ -17,7 +17,10 @@ export interface Env {
   ALLOWED_ORIGIN?: string; // backward compat
 }
 
-// Community API that mirrors OREF alerts in real-time with proper access
+// Current Tzeva Adom iOS feed (contains history + system messages + instructions)
+const IOS_FEED_URL = 'https://api.tzevaadom.co.il/ios/feed';
+
+// Legacy community endpoints kept as fallbacks
 const ALERTS_URL = 'https://api.tzevaadom.co.il/notifications';
 const HISTORY_URL = 'https://api.tzevaadom.co.il/alerts-history/';
 
@@ -41,6 +44,10 @@ interface TzevaAdomHistoryEvent {
     threat: number;
     isDrill: boolean;
   }[];
+}
+
+interface TzevaAdomIosFeed {
+  alertsHistory?: TzevaAdomHistoryEvent[];
 }
 
 interface OrefAlert {
@@ -132,16 +139,29 @@ function parseDirectOrefAlerts(text: string): OrefAlert[] {
 }
 
 async function fetchRecentHistoryAlerts(): Promise<OrefAlert[]> {
-  const response = await fetch(HISTORY_URL, {
+  const events = await fetchHistoryEvents(IOS_FEED_URL) ?? await fetchHistoryEvents(HISTORY_URL) ?? [];
+  return convertRecentHistoryToOref(events);
+}
+
+async function fetchHistoryEvents(sourceUrl: string): Promise<TzevaAdomHistoryEvent[] | null> {
+  const response = await fetch(sourceUrl, {
     headers: { 'Accept': 'application/json' },
   });
 
   if (!response.ok) {
-    return [];
+    return null;
   }
 
-  const events: TzevaAdomHistoryEvent[] = await response.json();
-  return convertRecentHistoryToOref(events);
+  const payload = await response.json() as TzevaAdomHistoryEvent[] | TzevaAdomIosFeed;
+  if (Array.isArray(payload)) {
+    return payload;
+  }
+
+  if (payload && Array.isArray(payload.alertsHistory)) {
+    return payload.alertsHistory;
+  }
+
+  return null;
 }
 
 /**
@@ -179,6 +199,14 @@ function jsonResponse(data: unknown, corsHeaders: Record<string, string>, cache 
 
 async function handleActiveAlerts(corsHeaders: Record<string, string>): Promise<Response> {
   try {
+    const iosFeedEvents = await fetchHistoryEvents(IOS_FEED_URL);
+    if (iosFeedEvents) {
+      const recentAlerts = convertRecentHistoryToOref(iosFeedEvents);
+      if (recentAlerts.length > 0) {
+        return jsonResponse(recentAlerts, corsHeaders);
+      }
+    }
+
     // Primary: Tzeva Adom community API
     const response = await fetch(ALERTS_URL, {
       headers: { 'Accept': 'application/json' },
@@ -207,7 +235,10 @@ async function handleActiveAlerts(corsHeaders: Record<string, string>): Promise<
       return jsonResponse(directAlerts, corsHeaders);
     }
 
-    return jsonResponse(await fetchRecentHistoryAlerts(), corsHeaders);
+    return jsonResponse(
+      convertRecentHistoryToOref(iosFeedEvents ?? await fetchHistoryEvents(HISTORY_URL) ?? []),
+      corsHeaders
+    );
   } catch {
     try {
       return jsonResponse(await fetchRecentHistoryAlerts(), corsHeaders);
@@ -219,15 +250,11 @@ async function handleActiveAlerts(corsHeaders: Record<string, string>): Promise<
 
 async function handleHistory(corsHeaders: Record<string, string>): Promise<Response> {
   try {
-    const response = await fetch(HISTORY_URL, {
-      headers: { 'Accept': 'application/json' },
-    });
-
-    if (!response.ok) {
+    const events = await fetchHistoryEvents(IOS_FEED_URL) ?? await fetchHistoryEvents(HISTORY_URL);
+    if (!events) {
       return jsonResponse([], corsHeaders, true);
     }
 
-    const events: TzevaAdomHistoryEvent[] = await response.json();
     return jsonResponse(convertHistoryToOref(events), corsHeaders, true);
   } catch {
     return jsonResponse([], corsHeaders, true);
