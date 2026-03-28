@@ -328,14 +328,12 @@ function canDeleteGroup(
   return isSessionMember(existingRecord.members[0], session);
 }
 
-function isSubscriptionOwnedBySession(
+export function isSubscriptionOwnedBySession(
   subscription: Pick<FamilyPushSubscriptionRecord, 'deviceId' | 'userId'>,
   session: FamilySyncRequestSession
 ): boolean {
-  if (session.userId && subscription.userId === session.userId) {
-    return true;
-  }
-
+  // Suppress push only for the exact originating device/browser.
+  // Other sessions for the same authenticated user should still receive updates.
   return Boolean(session.deviceId) && subscription.deviceId === session.deviceId;
 }
 

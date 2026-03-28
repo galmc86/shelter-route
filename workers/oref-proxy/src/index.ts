@@ -52,6 +52,8 @@ interface OrefAlert {
   alertDate: string;
 }
 
+const ACTIVE_ALERT_WINDOW_MS = 2 * 60 * 1000;
+
 /**
  * Parse allowed origins from env vars.
  * Prefers ALLOWED_ORIGINS (comma-separated), falls back to ALLOWED_ORIGIN (singular).
@@ -69,7 +71,7 @@ export function parseAllowedOrigins(env: Env): string[] {
  * Only includes alerts from the last 2 minutes (active alerts).
  */
 function convertTzevaAdomToOref(alerts: TzevaAdomAlert[]): OrefAlert[] {
-  const twoMinutesAgo = Date.now() - 2 * 60 * 1000;
+  const twoMinutesAgo = Date.now() - ACTIVE_ALERT_WINDOW_MS;
 
   return alerts
     .filter((a) => {
@@ -102,6 +104,44 @@ function convertHistoryToOref(events: TzevaAdomHistoryEvent[]): OrefAlert[] {
         alertDate: new Date(a.time * 1000).toISOString(),
       }))
   );
+}
+
+function convertRecentHistoryToOref(
+  events: TzevaAdomHistoryEvent[],
+  now: number = Date.now()
+): OrefAlert[] {
+  const cutoff = now - ACTIVE_ALERT_WINDOW_MS;
+  return convertHistoryToOref(events).filter((alert) => {
+    const alertTime = Date.parse(alert.alertDate);
+    return Number.isFinite(alertTime) && alertTime > cutoff;
+  });
+}
+
+function parseDirectOrefAlerts(text: string): OrefAlert[] {
+  const normalized = text.replace(/^\uFEFF/, '').trim();
+  if (!normalized) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(normalized);
+    return Array.isArray(parsed) ? parsed as OrefAlert[] : [];
+  } catch {
+    return [];
+  }
+}
+
+async function fetchRecentHistoryAlerts(): Promise<OrefAlert[]> {
+  const response = await fetch(HISTORY_URL, {
+    headers: { 'Accept': 'application/json' },
+  });
+
+  if (!response.ok) {
+    return [];
+  }
+
+  const events: TzevaAdomHistoryEvent[] = await response.json();
+  return convertRecentHistoryToOref(events);
 }
 
 /**
@@ -146,7 +186,10 @@ async function handleActiveAlerts(corsHeaders: Record<string, string>): Promise<
 
     if (response.ok) {
       const alerts: TzevaAdomAlert[] = await response.json();
-      return jsonResponse(convertTzevaAdomToOref(alerts), corsHeaders);
+      const convertedAlerts = convertTzevaAdomToOref(alerts);
+      if (convertedAlerts.length > 0) {
+        return jsonResponse(convertedAlerts, corsHeaders);
+      }
     }
 
     // Fallback: try OREF directly
@@ -159,18 +202,18 @@ async function handleActiveAlerts(corsHeaders: Record<string, string>): Promise<
     });
 
     const text = await orefResponse.text();
-    const body = text.trim() === '' ? '[]' : text;
+    const directAlerts = parseDirectOrefAlerts(text);
+    if (directAlerts.length > 0) {
+      return jsonResponse(directAlerts, corsHeaders);
+    }
 
-    return new Response(body, {
-      status: 200,
-      headers: {
-        ...corsHeaders,
-        'Content-Type': 'application/json; charset=utf-8',
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-      },
-    });
+    return jsonResponse(await fetchRecentHistoryAlerts(), corsHeaders);
   } catch {
-    return jsonResponse([], corsHeaders);
+    try {
+      return jsonResponse(await fetchRecentHistoryAlerts(), corsHeaders);
+    } catch {
+      return jsonResponse([], corsHeaders);
+    }
   }
 }
 

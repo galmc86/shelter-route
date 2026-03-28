@@ -6,6 +6,7 @@ import worker, {
   type DurableObjectStateLike,
   type DurableObjectStorageLike,
   getCorsHeaders,
+  isSubscriptionOwnedBySession,
   normalizeGroupCode,
   type Env,
   type FamilyRemoteGroupRecord,
@@ -247,6 +248,36 @@ describe('family-sync worker', () => {
 
     expect(unregisterResponse.status).toBe(200);
     expect(await unregisterResponse.json()).toEqual({ unregistered: true });
+  });
+
+  it('treats push subscriptions as owned only by the exact originating device', () => {
+    expect(
+      isSubscriptionOwnedBySession(
+        {
+          deviceId: 'device-1',
+          userId: 'user-1',
+        },
+        {
+          deviceId: 'device-1',
+          userId: 'user-1',
+          authState: 'authenticated',
+        }
+      )
+    ).toBe(true);
+
+    expect(
+      isSubscriptionOwnedBySession(
+        {
+          deviceId: 'device-2',
+          userId: 'user-1',
+        },
+        {
+          deviceId: 'device-1',
+          userId: 'user-1',
+          authState: 'authenticated',
+        }
+      )
+    ).toBe(false);
   });
 
   it('rejects stale writes with a 409 and returns the latest stored record', async () => {
