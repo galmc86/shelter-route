@@ -233,6 +233,7 @@ Notes:
 - Family sync now drops queued mutations once the remote family record already matches the desired state, and the push-status card re-checks the actual browser subscription on focus, which keeps the Family screen from showing stale red warning cards after sync or push has already recovered.
 - Family worker push fanout now suppresses only the exact originating device subscription, not every subscription that shares the same authenticated `userId`, so the same person can still receive family updates on their other browsers and devices.
 - The OREF proxy now treats TzevaAdom’s `ios/feed` payload as the primary source of recent alerts, and still falls back to very recent history if the legacy live feed and direct OREF endpoint both come back empty, which keeps alert delivery resilient across upstream API contract changes.
+- The OREF proxy now also exposes a `/status` debug route with source, latest upstream alert timestamp, age, and active-window count, which makes it much easier to verify upstream freshness when `/` is intentionally empty.
 
 ### Epic 10: Saved Places to Safety Profiles
 Objective: turn saved locations into reusable routines.

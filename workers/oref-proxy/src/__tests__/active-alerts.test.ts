@@ -94,4 +94,46 @@ describe('oref-proxy active alert fallback', () => {
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual([]);
   });
+
+  it('exposes an upstream freshness summary on /status', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        alertsHistory: [
+          {
+            id: 6737,
+            description: null,
+            alerts: [
+              {
+                time: Math.floor(Date.parse('2026-03-28T03:58:00.000Z') / 1000),
+                cities: ['עכו'],
+                threat: 5,
+                isDrill: false,
+              },
+              {
+                time: Math.floor(Date.parse('2026-03-28T03:59:10.000Z') / 1000),
+                cities: ['שמרת'],
+                threat: 5,
+                isDrill: false,
+              },
+            ],
+          },
+        ],
+      }), { status: 200 }));
+
+    vi.stubGlobal('fetch', fetchMock);
+
+    const response = await worker.fetch(makeRequest('/status'), env);
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      checkedAt: '2026-03-28T04:00:00.000Z',
+      source: 'ios_feed',
+      activeWindowSeconds: 120,
+      alertsHistoryCount: 1,
+      latestAlertUnix: Math.floor(Date.parse('2026-03-28T03:59:10.000Z') / 1000),
+      latestAlertIso: '2026-03-28T03:59:10.000Z',
+      latestAlertAgeSeconds: 50,
+      activeAlertCount: 1,
+    });
+  });
 });

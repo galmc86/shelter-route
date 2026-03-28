@@ -8,6 +8,7 @@
  * Routes:
  *   GET /         — active alerts (last 2 minutes)
  *   GET /history  — recent alert history (grouped by event)
+ *   GET /status   — upstream freshness / debug summary
  *
  * Deploy: cd workers/oref-proxy && npx wrangler deploy
  */
@@ -60,6 +61,17 @@ interface OrefAlert {
 }
 
 const ACTIVE_ALERT_WINDOW_MS = 2 * 60 * 1000;
+
+interface OrefStatusResponse {
+  checkedAt: string;
+  source: 'ios_feed' | 'legacy_history' | 'unavailable';
+  activeWindowSeconds: number;
+  alertsHistoryCount: number;
+  latestAlertUnix: number | null;
+  latestAlertIso: string | null;
+  latestAlertAgeSeconds: number | null;
+  activeAlertCount: number;
+}
 
 /**
  * Parse allowed origins from env vars.
@@ -124,6 +136,22 @@ function convertRecentHistoryToOref(
   });
 }
 
+function getLatestHistoryAlertUnix(events: TzevaAdomHistoryEvent[]): number | null {
+  let latest: number | null = null;
+
+  for (const event of events) {
+    for (const alert of event.alerts) {
+      if (alert.isDrill) {
+        continue;
+      }
+
+      latest = latest === null ? alert.time : Math.max(latest, alert.time);
+    }
+  }
+
+  return latest;
+}
+
 function parseDirectOrefAlerts(text: string): OrefAlert[] {
   const normalized = text.replace(/^\uFEFF/, '').trim();
   if (!normalized) {
@@ -162,6 +190,32 @@ async function fetchHistoryEvents(sourceUrl: string): Promise<TzevaAdomHistoryEv
   }
 
   return null;
+}
+
+async function buildStatusSummary(): Promise<OrefStatusResponse> {
+  const checkedAt = new Date().toISOString();
+  const nowMs = Date.now();
+
+  const iosFeedEvents = await fetchHistoryEvents(IOS_FEED_URL);
+  const legacyHistoryEvents = iosFeedEvents ? null : await fetchHistoryEvents(HISTORY_URL);
+  const events = iosFeedEvents ?? legacyHistoryEvents ?? [];
+  const source: OrefStatusResponse['source'] = iosFeedEvents
+    ? 'ios_feed'
+    : legacyHistoryEvents
+      ? 'legacy_history'
+      : 'unavailable';
+  const latestAlertUnix = getLatestHistoryAlertUnix(events);
+
+  return {
+    checkedAt,
+    source,
+    activeWindowSeconds: Math.floor(ACTIVE_ALERT_WINDOW_MS / 1000),
+    alertsHistoryCount: events.length,
+    latestAlertUnix,
+    latestAlertIso: latestAlertUnix ? new Date(latestAlertUnix * 1000).toISOString() : null,
+    latestAlertAgeSeconds: latestAlertUnix ? Math.max(0, Math.floor((nowMs / 1000) - latestAlertUnix)) : null,
+    activeAlertCount: convertRecentHistoryToOref(events, nowMs).length,
+  };
 }
 
 /**
@@ -261,6 +315,23 @@ async function handleHistory(corsHeaders: Record<string, string>): Promise<Respo
   }
 }
 
+async function handleStatus(corsHeaders: Record<string, string>): Promise<Response> {
+  try {
+    return jsonResponse(await buildStatusSummary(), corsHeaders, true);
+  } catch {
+    return jsonResponse({
+      checkedAt: new Date().toISOString(),
+      source: 'unavailable',
+      activeWindowSeconds: Math.floor(ACTIVE_ALERT_WINDOW_MS / 1000),
+      alertsHistoryCount: 0,
+      latestAlertUnix: null,
+      latestAlertIso: null,
+      latestAlertAgeSeconds: null,
+      activeAlertCount: 0,
+    } satisfies OrefStatusResponse, corsHeaders, true);
+  }
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const origin = request.headers.get('Origin') || '';
@@ -284,6 +355,10 @@ export default {
     // Route
     if (url.pathname === '/history') {
       return handleHistory(corsHeaders);
+    }
+
+    if (url.pathname === '/status') {
+      return handleStatus(corsHeaders);
     }
 
     // Default: active alerts
